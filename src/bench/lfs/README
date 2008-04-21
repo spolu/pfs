@@ -1,0 +1,24 @@
+This directory contains two files:
+	1. performance.small.c
+	2. performance.large.c
+
+Both files measure file system performance and have been used to test
+the basic performance of LFS (13th SOSP) and LLD (14th SOSP).
+
+Small test the performance of the file system for small files (see description
+in SOSP papers). Large thest the performance of the file system for
+large files.
+
+These program should run out of the box on SunOS4.1.3, compiled with gcc.
+
+Large takes two arguments: the size of the file in blocks, and the block size
+in bytes. Large creates a file ("test_file" in the current dir) and writes
+and read on it. It does pure sequential access and random access. Random
+access can be done in two ways: (1) rand is used to pick the next location
+to write the next block; (2) a fixed scheme is used that jumps around in
+the file.
+
+Small takes two arguments: the number of small files, and the size of
+each file in bytes. The small files are created in directories in the
+current directory. Names are d0/ ... dn-1/. There is a define for the number 
+of directories (n).
