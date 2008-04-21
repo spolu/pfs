@@ -1,7 +1,11 @@
-#include "sys/types.h"
-#include "sys/stat.h"
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/timeb.h>
-#include "fcntl.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 static char buf[40960];
 static char name[32];
@@ -35,7 +39,7 @@ int creat_test(int n, int size)
     int r;
     int fd;
     int j;
-   struct stat statb;
+    //struct stat statb;
 
     unsigned s, f;
     s = time(0);
@@ -55,7 +59,7 @@ int creat_test(int n, int size)
 	}
 
 	if ((r = close(fd)) < 0) {
-	    printf("%s: close failed %d %d\n", r, errno);
+	  printf("%s: close failed %d %d\n", prog_name, r, errno);
 	}
 
 	if ((i+1) % 100 == 0) j++;
@@ -66,6 +70,8 @@ int creat_test(int n, int size)
 
     f = time(0);
     printf("%s: creat took %d sec\n",  prog_name,  f - s);
+
+    return 0;
 }
 
 
@@ -93,14 +99,18 @@ int write_test(char *name, int n, int size)
     }
     
     if ((r = close(fd)) < 0) {
-	printf("%s: mnx_close failed %d %d\n", r, errno);
+      printf("%s: mnx_close failed %d %d\n", prog_name, r, errno);
     }
+
+    return 0;
 }
 
 
 int flush_cache()
 {
     write_test("t", 20000, 4096);
+
+    return 0;
 }
 
 int read_test(int n, int size)
@@ -127,7 +137,7 @@ int read_test(int n, int size)
 	}
 
 	if ((r = close(fd)) < 0) {
-	    printf("%s: close failed %d %d\n", r, errno);
+	  printf("%s: close failed %d %d\n", prog_name, r, errno);
 	}
 
 	if ((i+1) % 100 == 0) j++;
@@ -137,6 +147,8 @@ int read_test(int n, int size)
     printf("%s: read took %d sec\n",
 	   prog_name,
 	   f - s);
+    
+    return 0;
 }
 
 int delete_test(int n)
@@ -166,6 +178,8 @@ int delete_test(int n)
     printf("%s: unlink took %d sec\n",
 	   prog_name,
 	   f - s);
+
+    return 0;
 }
 
 
