@@ -32,9 +32,21 @@ int write_test(int n, int size, int sequential)
   int fd;
   long pos;
   struct stat statb;
-
+  char buf1[128];
+  char buf2[128];
+  struct timeval tv;
+  time_t x;
+  struct tm *tmp;
   unsigned s, fin;
+
   s = time(0);
+
+  gettimeofday (&tv, NULL);
+  x = tv.tv_sec;
+  tmp = localtime (&x);
+  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
+  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
+  printf ("START WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
     
   if((fd = open(name, O_RDWR)) < 0) {
     printf("%s: open %d failed %d %d\n", prog_name, i, fd, errno);
@@ -73,6 +85,13 @@ int write_test(int n, int size, int sequential)
     printf("%s: close failed %d %d\n", prog_name, r, errno);
   }
 
+  gettimeofday (&tv, NULL);
+  x = tv.tv_sec;
+  tmp = localtime (&x);
+  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
+  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
+  printf ("END WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+
   fin = time(0);
   printf("%s: write took %d sec\n", prog_name, fin - s);
 
@@ -93,10 +112,21 @@ int read_test(int n, int size, int sequential)
   int r;
   int fd;
   long pos;
-
-
+  char buf1[128];
+  char buf2[128];
+  struct timeval tv;
+  time_t x;
+  struct tm *tmp;
   unsigned s, fin;
+
   s = time(0);
+
+  gettimeofday (&tv, NULL);
+  x = tv.tv_sec;
+  tmp = localtime (&x);
+  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
+  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
+  printf ("START READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
     
   if((fd = open(name, O_RDONLY)) < 0) {
     printf("%s: open %d failed %d %d\n", prog_name, i, fd, errno);
@@ -104,8 +134,9 @@ int read_test(int n, int size, int sequential)
   }
 
   for (i = 0; i < n; i ++) {
+    
     if (!sequential) {
-
+      
 #ifdef TRULY_RANDOM
       pos = (random() % n) * size;
 #else
@@ -127,6 +158,13 @@ int read_test(int n, int size, int sequential)
     printf("%s: close failed %d %d\n", prog_name, r, errno);
   }
     
+
+  gettimeofday (&tv, NULL);
+  x = tv.tv_sec;
+  tmp = localtime (&x);
+  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
+  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
+  printf ("END READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
 
   fin = time(0);
   printf("%s: read took %d sec\n",
@@ -190,6 +228,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  //flush_cache ();
   write_test(n, size, 1);
   read_test(n, size, 1);
   write_test(n , size, 0);

@@ -1,7 +1,6 @@
 #include "stub.h"
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/xattr.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>

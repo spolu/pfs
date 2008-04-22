@@ -162,16 +162,12 @@ pfs_mk_file_path (struct pfs_instance * pfs,
 		  const char * id)
 {
   char * path;
-  char file [PFS_ID_LEN + 1];
-  strncpy (file, id, PFS_ID_LEN);
-  file[PFS_ID_LEN] = 0;
 
   if (id[0] == 0) 
     return NULL;
-
   path = (char *) malloc (strlen (pfs->data_path) + 
-			  strlen (file) + 1);
-  sprintf (path, "%s%s", pfs->data_path, file);
+			  PFS_ID_LEN + 3);
+  sprintf (path, "%s%c/%.*s", pfs->data_path, id[0], PFS_ID_LEN, id);
   return path;
 }
 
@@ -188,13 +184,12 @@ pfs_mk_dir_path (struct pfs_instance * pfs,
 		 const char * id)
 {
   char * path;
-  char file [PFS_ID_LEN + 1];
-  strncpy (file, id, PFS_ID_LEN);
-  file[PFS_ID_LEN] = 0;
-  
+
+  if (id[0] == 0) 
+    return NULL;
   path = (char *) malloc (strlen (pfs->data_path) + 
-			  strlen (file) + 1);
-  sprintf (path, "%s%s", pfs->data_path, file);
+			  PFS_ID_LEN + 3);
+  sprintf (path, "%s%c/%.*s", pfs->data_path, id[0], PFS_ID_LEN, id);
   return path;
 }
 
@@ -492,7 +487,8 @@ int pfs_bootstrap_inst (const char * root_path,
   char data [2 * PFS_NAME_LEN + 2];
   struct pfs_instance * pfs = NULL;
   char * info_path;
-  int fd = -1;
+  int fd, i;
+  char * data_subdir;
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
 
@@ -536,6 +532,18 @@ int pfs_bootstrap_inst (const char * root_path,
   close (fd);
 
   ASSERT (mkdir (pfs->data_path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+  
+  /* Creating data subdir. */
+  data_subdir = (char *) malloc (strlen (pfs->root_path) + 
+				 strlen (PFS_DATA_PATH) + 5);
+  for (i = 48; i <= 57; i ++) {
+    sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
+    ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+  }
+  for (i = 97; i <= 122; i ++) {
+    sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
+    ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+  }
 
   /* Setting up initial group me. */
   pfs->open_file = NULL;
@@ -560,6 +568,7 @@ int pfs_bootstrap_inst (const char * root_path,
   ASSERT (pfs_create_dir (pfs, pfs->group->v_sd_id, 1) == 0);
   ASSERT (pfs_write_group_info (pfs) == 0);
 
+  free (data_subdir);
   free (pfs->sml_path);
   free (pfs->root_path);
   free (pfs->data_path);
