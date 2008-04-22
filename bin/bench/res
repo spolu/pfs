@@ -1,0 +1,74 @@
+
+FREEBSD
+
+-------
+UFS+S :
+-------
+
+[spolu@hs04 ~/pfs/bin/bench]$ ./lfs_large 30000 4096
+./lfs_large 30000 4096
+START WRITE : Mon Apr 21 17:06:35.989653 PDT 2008
+END WRITE : Mon Apr 21 17:06:37.877093 PDT 2008
+./lfs_large: write took 2 sec
+START READ : Mon Apr 21 17:06:37.877126 PDT 2008
+END READ : Mon Apr 21 17:06:37.939190 PDT 2008
+./lfs_large: read took 0 sec
+START WRITE : Mon Apr 21 17:06:37.939224 PDT 2008
+END WRITE : Mon Apr 21 17:07:20.457197 PDT 2008
+./lfs_large: write took 43 sec
+START READ : Mon Apr 21 17:07:20.457231 PDT 2008
+END READ : Mon Apr 21 17:07:20.553177 PDT 2008
+./lfs_large: read took 0 sec
+START READ : Mon Apr 21 17:07:20.553211 PDT 2008
+END READ : Mon Apr 21 17:07:20.615297 PDT 2008
+./lfs_large: read took 0 sec
+
+
+[spolu@hs04 ~/pfs/bin/bench]$ ./lfs_small 10000 4096
+./lfs_small 10000 4096
+START CREAT : Mon Apr 21 17:09:10.838130 PDT 2008
+END CREAT : Mon Apr 21 17:09:12.454510 PDT 2008
+./lfs_small: creat took 2 sec
+START READ : Mon Apr 21 17:09:12.454541 PDT 2008
+END READ : Mon Apr 21 17:09:12.568089 PDT 2008
+./lfs_small: read took 0 sec
+START DELETE : Mon Apr 21 17:09:12.568119 PDT 2008
+END DELETE : Mon Apr 21 17:09:12.764986 PDT 2008
+./lfs_small: unlink took 0 sec
+
+
+-----------
+NFS local :
+-----------
+
+[spolu@hs04 ~/pfs/bin/bench/nfs/spolu/pfs/bin/bench]$ ./lfs_large 30000 4096
+./lfs_large 30000 4096
+START WRITE : Mon Apr 21 17:18:25.091671 PDT 2008
+END WRITE : Mon Apr 21 17:18:27.574886 PDT 2008
+./lfs_large: write took 2 sec
+START READ : Mon Apr 21 17:18:27.574919 PDT 2008
+END READ : Mon Apr 21 17:18:28.031042 PDT 2008
+./lfs_large: read took 1 sec
+START WRITE : Mon Apr 21 17:18:28.031078 PDT 2008
+END WRITE : Mon Apr 21 17:19:53.402722 PDT 2008
+./lfs_large: write took 85 sec
+START READ : Mon Apr 21 17:19:53.402755 PDT 2008
+END READ : Mon Apr 21 17:19:54.097176 PDT 2008
+./lfs_large: read took 1 sec
+START READ : Mon Apr 21 17:19:54.097209 PDT 2008
+END READ : Mon Apr 21 17:19:54.305888 PDT 2008
+./lfs_large: read took 0 sec
+
+
+[spolu@hs04 ~/pfs/bin/bench/nfs/spolu/pfs/bin/bench]$ ./lfs_small 10000 4096
+./lfs_small 10000 4096
+START CREAT : Mon Apr 21 17:17:41.529552 PDT 2008
+END CREAT : Mon Apr 21 17:17:43.133102 PDT 2008
+./lfs_small: creat took 2 sec
+START READ : Mon Apr 21 17:17:43.133141 PDT 2008
+END READ : Mon Apr 21 17:17:44.440009 PDT 2008
+./lfs_small: read took 1 sec
+START DELETE : Mon Apr 21 17:17:44.440037 PDT 2008
+END DELETE : Mon Apr 21 17:17:45.173027 PDT 2008
+./lfs_small: unlink took 1 sec
+
