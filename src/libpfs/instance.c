@@ -166,8 +166,8 @@ pfs_mk_file_path (struct pfs_instance * pfs,
   if (id[0] == 0) 
     return NULL;
   path = (char *) malloc (strlen (pfs->data_path) + 
-			  PFS_ID_LEN + 3);
-  sprintf (path, "%s%c/%.*s", pfs->data_path, id[0], PFS_ID_LEN, id);
+			  PFS_ID_LEN + 5);
+  sprintf (path, "%s%c/%c/%.*s", pfs->data_path, id[0], id[1], PFS_ID_LEN, id);
   return path;
 }
 
@@ -189,7 +189,7 @@ pfs_mk_dir_path (struct pfs_instance * pfs,
     return NULL;
   path = (char *) malloc (strlen (pfs->data_path) + 
 			  PFS_ID_LEN + 3);
-  sprintf (path, "%s%c/%.*s", pfs->data_path, id[0], PFS_ID_LEN, id);
+  sprintf (path, "%s%c/%c/%.*s", pfs->data_path, id[0], id[1], PFS_ID_LEN, id);
   return path;
 }
 
@@ -487,7 +487,7 @@ int pfs_bootstrap_inst (const char * root_path,
   char data [2 * PFS_NAME_LEN + 2];
   struct pfs_instance * pfs = NULL;
   char * info_path;
-  int fd, i;
+  int fd, i, j;
   char * data_subdir;
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
@@ -536,14 +536,33 @@ int pfs_bootstrap_inst (const char * root_path,
   /* Creating data subdir. */
   data_subdir = (char *) malloc (strlen (pfs->root_path) + 
 				 strlen (PFS_DATA_PATH) + 5);
-  for (i = 48; i <= 57; i ++) {
-    sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
-    ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
-  }
-  for (i = 97; i <= 122; i ++) {
-    sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
-    ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
-  }
+  for (i = 48; i <= 57; i ++)
+    {
+      sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
+      ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      for (j = 48; j <= 57; j ++) {
+	sprintf (data_subdir, "%s%s%c/%c/", pfs->root_path, PFS_DATA_PATH, (char) i, (char) j);
+	ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      }      
+      for (j = 97; j <= 122; j ++) {
+	sprintf (data_subdir, "%s%s%c/%c/", pfs->root_path, PFS_DATA_PATH, (char) i, (char) j);
+	ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      }
+    }
+  
+  for (i = 97; i <= 122; i ++)
+    {
+      sprintf (data_subdir, "%s%s%c/", pfs->root_path, PFS_DATA_PATH, (char) i);
+      ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      for (j = 48; j <= 57; j ++) {
+	sprintf (data_subdir, "%s%s%c/%c/", pfs->root_path, PFS_DATA_PATH, (char) i, (char) j);
+	ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      }      
+      for (j = 97; j <= 122; j ++) {
+	sprintf (data_subdir, "%s%s%c/%c/", pfs->root_path, PFS_DATA_PATH, (char) i, (char) j);
+	ASSERT (mkdir (data_subdir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0);
+      }
+    }
 
   /* Setting up initial group me. */
   pfs->open_file = NULL;

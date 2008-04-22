@@ -1,3 +1,5 @@
+#include <time.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
@@ -241,32 +243,4 @@ int main(int argc, char *argv[])
 }
 
 
-/*
- *			     Print rusage
- */
-
-#include <sys/time.h>
-#include <sys/resource.h>
-
-int print_rusage()
-{
-  struct rusage returnUsage;
-  if (getrusage(RUSAGE_SELF, &returnUsage) != 0) return 0;
-
-  printf("ru_maxrss %ld ru_minflt %ld ru_majflt %ld ru_nswap %ld ru_inblock %ld "
-	 "ru_oublock %ld ru_msgsnd %ld ru_msgrcv %ld ru_nsignals %ld "
-	 "ru_nvcsw %ld ru_nivcsw %ld\n",
-	 returnUsage.ru_maxrss, returnUsage.ru_minflt, returnUsage.ru_majflt,
-	 returnUsage.ru_nswap, returnUsage.ru_inblock,
-	 returnUsage.ru_oublock, returnUsage.ru_msgsnd,
-	 returnUsage.ru_msgrcv,
-	 returnUsage.ru_nsignals, returnUsage.ru_nvcsw,
-	 returnUsage.ru_nivcsw);
-
-  printf("user time %ld sec %ld usec system time %ld sec %ld usec\n",
-	 returnUsage.ru_utime.tv_sec, returnUsage.ru_utime.tv_usec,
-	 returnUsage.ru_stime.tv_sec, returnUsage.ru_stime.tv_usec);
-
-  return 0;
-}
 

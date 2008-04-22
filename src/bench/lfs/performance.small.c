@@ -6,6 +6,8 @@
 #include <sys/timeb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 
 static char buf[40960];
 static char name[32];
