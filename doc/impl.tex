@@ -1,0 +1,31 @@
+% -*-LaTeX-*-
+
+\section{Implementation}
+\label{sec:impl}
+
+pFS presents a unified file system interface on a set of devices. Each
+devices replicates locally as much data as possible. The system is
+composed of 4 components :
+\begin{itemize}
+\item \textbf{pFS Library}: pFS Library exports a generic file system
+  API and store files, directories and versionning information in its
+  back storage using the device's OS native file system.
+\item \textbf{Back Storage}: a local directory containing all data and
+  metadata used by pFS along with a log of all updates performed on
+  this SD.
+\item \textbf{FUSE stub}: stub functions calling pFS Library to
+  present a conventional file system interface to the user.
+\item \textbf{pFS Daemon}: a Daemon process in charge of propagating
+  updates asynchronously and enforcing the eviction policy if space is
+  needed. It relies on the local log written by pFS Library and stored
+  in the back storage to learn about updates to propagate and use
+  specific functions exported by pFS Library to update or evict local
+  copies of data.
+\end{itemize}
+
+
+% Local Variables:
+% tex-main-file: "main.ltx"
+% tex-command: "make;:"
+% tex-dvi-view-command: "make preview;:"
+% End:
