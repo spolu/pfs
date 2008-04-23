@@ -1,5 +1,5 @@
 #!/bin/sh
 
 umount pfs
-./pfsd ~spolu/.pfs/ pfs3 -d
+./pfsd ~spolu/.pfs/ pfs -f
 

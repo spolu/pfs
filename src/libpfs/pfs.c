@@ -6,6 +6,8 @@
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
 
 #include "pfs.h"
 #include "instance.h"
@@ -37,9 +39,6 @@ int pfs_open (struct pfs_instance * pfs,
   char * prt_path = NULL;
   char * file_name;
 
-  /* Unsupported flags. */
-  if ((flags & O_APPEND))
-    return -EOPNOTSUPP;
 
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0)
     return -EISDIR;
@@ -101,7 +100,7 @@ int pfs_open (struct pfs_instance * pfs,
 	retval = -EIO;
 	goto error;
       }
-      
+
       strncpy (open_file->id, open_file->ver->dst_id, PFS_ID_LEN);
       strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
       strncpy (open_file->dir_id, pi.dst_id, PFS_ID_LEN);
@@ -288,14 +287,14 @@ int pfs_open (struct pfs_instance * pfs,
  *
  *---------------------------------------------------------------------*/
 
-size_t pfs_pwrite (struct pfs_instance * pfs,
-		   int pfs_fd,
-		   const void * buf,
-		   size_t len,
-		   off_t offset)
+ssize_t pfs_pwrite (struct pfs_instance * pfs,
+		    int pfs_fd,
+		    const void * buf,
+		    size_t len,
+		    off_t offset)
 {
   struct pfs_open_file * open_file;
-  size_t lenw;
+  ssize_t lenw;
   off_t offset2;
 
   pfs_mutex_lock (&pfs->open_lock);
@@ -307,31 +306,16 @@ size_t pfs_pwrite (struct pfs_instance * pfs,
   if (open_file == NULL)
     return -EBADF;
   
-  printf ("hahah\n");
-
   if (open_file->read_only == 1)
     return -EACCES;  
 
-  printf ("hahah\n");
-
   if (open_file->dirty == 0)
     open_file->dirty = 1;  
-  
-  printf ("hahah\n");
 
-  offset2 = lseek (open_file->fd, offset, SEEK_SET);
-  printf ("lseek : offset : %d offset2 : %d\n", offset, offset2);
-
-  lenw = 0;
-  printf ("file fd : %d\n", open_file->fd);
-
-  if ((lenw = write (open_file->fd, buf, len)) < 0) {
-    printf ("hohoh %d\n", lenw);
+  if (lseek (open_file->fd, offset, SEEK_SET) != offset ||
+      (lenw = write (open_file->fd, buf, len)) < 0)
     return -errno;
-  }
   
-  printf ("ret value : %d\n", (int) lenw);
-
   return lenw;
 }
 
@@ -344,7 +328,7 @@ size_t pfs_pwrite (struct pfs_instance * pfs,
  *
  *---------------------------------------------------------------------*/
 
-size_t pfs_pread (struct pfs_instance * pfs,
+ssize_t pfs_pread (struct pfs_instance * pfs,
 		  int pfs_fd,
 		  void * buf,
 		  size_t len,
@@ -452,7 +436,7 @@ int pfs_close (struct pfs_instance * pfs,
 
 int pfs_stat (struct pfs_instance * pfs,
 	      const char * path,
-	      struct stat * buf)
+	      struct stat * stbuf)
 {
   struct pfs_path_info pi;
   struct pfs_entry * entry = NULL;
@@ -460,9 +444,10 @@ int pfs_stat (struct pfs_instance * pfs,
   int i, retval;
   char * file_path = NULL;
 
+  memset (stbuf, 0, sizeof (struct stat));
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0) {
-    buf->st_mode = S_IFDIR | 0555;
-    buf->st_nlink = 2;
+    stbuf->st_mode = S_IFDIR | 0555;
+    stbuf->st_nlink = 2;
     return 0;
   }
 
@@ -470,20 +455,20 @@ int pfs_stat (struct pfs_instance * pfs,
     goto error;
 
   /* We handle group directory separately. */
-  if (memcmp (pi.dir_id, pi.dst_id, PFS_ID_LEN) == 0)
+  if (pi.type == PFS_GRP)
     {
       file_path = pfs_mk_dir_path (pfs, pi.dst_id);
       if (file_path == NULL) {
 	retval = -EIO;
 	goto error;
       }
-      if (stat (file_path, buf) < 0) {
+      if (stat (file_path, stbuf) < 0) {
 	retval = -errno;
 	goto error;
       }
       free (file_path);
       file_path = NULL;
-      buf->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
+      stbuf->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
 	| S_IXGRP | S_IROTH | S_IXGRP | S_IFDIR;
       return 0;
     }
@@ -525,23 +510,20 @@ int pfs_stat (struct pfs_instance * pfs,
     goto error;
   }
   
-  if (stat (file_path, buf) < 0) {
+  if (stat (file_path, stbuf) < 0) {
     retval = -errno;
     goto error;
   }
   free (file_path);
   file_path = NULL;
 
-  buf->st_mode = S_IRUSR | S_IRGRP | S_IROTH;
-
+  stbuf->st_mode = S_IRUSR | S_IRGRP | S_IROTH;
   if (pi.is_main)
-    buf->st_mode |= S_IWUSR | S_IWGRP;
-
+    stbuf->st_mode |= S_IWUSR | S_IWGRP;
   if (ver->type == PFS_DIR)
-    buf->st_mode |= S_IXUSR | S_IXGRP | S_IXOTH | S_IFDIR;
-
+    stbuf->st_mode |= S_IXUSR | S_IXGRP | S_IXOTH | S_IFDIR;
   if (ver->type == PFS_FIL_INCH || ver->type == PFS_FIL_PRST)
-    buf->st_mode |= S_IFREG;
+    stbuf->st_mode |= S_IFREG;
 
   pfs_free_ver (ver);
   ver = NULL;

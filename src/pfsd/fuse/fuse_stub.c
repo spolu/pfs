@@ -1,11 +1,17 @@
 #include "fuse_stub.h"
 #include <stdlib.h>
 #include <unistd.h>
-//#include <sys/xattr.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+
 
 int pfs_fuse_getattr (const char *path, struct stat *stbuf)
 {
   int retval;
+
   retval = pfs_stat (pfs, path, stbuf);
   return retval;
 }
@@ -61,7 +67,6 @@ int pfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi)
   int fd;
   
   fi->flags |= O_CREAT;
-  fi->flags |= O_RDWR;
   if ((fd = pfs_open (pfs, path, fi->flags)) < 0) {
     return fd;
   }

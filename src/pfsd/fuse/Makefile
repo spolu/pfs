@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse -Wall -g -std=gnu99 -L/usr/local/lib -I/usr/local/include
+CFLAGS = -Wall -std=gnu99 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse
 
 FUSE_SRC = fuse_stub.c
 

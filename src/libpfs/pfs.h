@@ -20,19 +20,19 @@ int pfs_open (struct pfs_instance * pfs,
 
 /** Write data to an open file.
  */
-size_t pfs_pwrite (struct pfs_instance * pfs,
-		   int pfs_fd,
-		   const void * buf,
-		   size_t len,
-		   off_t offset);
+ssize_t pfs_pwrite (struct pfs_instance * pfs,
+		    int pfs_fd,
+		    const void * buf,
+		    size_t len,
+		    off_t offset);
 
 /** Read data from an open file.
  */
-size_t pfs_pread (struct pfs_instance * pfs,
-		  int pfs_fd,
-		  void * buf,
-		  size_t len,
-		  off_t offset);
+ssize_t pfs_pread (struct pfs_instance * pfs,
+		   int pfs_fd,
+		   void * buf,
+		   size_t len,
+		   off_t offset);
 
 /** Close an open file.
  *
