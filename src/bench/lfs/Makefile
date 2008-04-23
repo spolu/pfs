@@ -8,7 +8,7 @@ LFS_SMALL_DIRECT_SRC = direct.pfs.small.c
 
 TARGET_LFS_LARGE = lfs_large
 TARGET_LFS_SMALL = lfs_small
-TARGET_LFS_SMALL_DIRECT = lfs_small_direct
+TARGET_LFS_SMALL_DIRECT = lfs_small2
 
 lfs:
 	$(CC) $(CFLAGS) -o ../../../bin/bench/$(TARGET_LFS_LARGE) $(LFS_LARGE_SRC) 
