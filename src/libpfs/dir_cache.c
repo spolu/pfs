@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/errno.h>
+#include <sys/time.h>
 
 #include "dir_cache.h"
 #include "instance.h"
@@ -203,6 +204,7 @@ struct pfs_dir * pfs_get_dir_cache (struct pfs_instance * pfs,
   pdce_t * val;
   char * dir_path;
   int fd;
+  struct timeval tv;
 
   pfs_mutex_lock (&pfs->dir_cache->lock);
 
@@ -237,7 +239,10 @@ struct pfs_dir * pfs_get_dir_cache (struct pfs_instance * pfs,
 
   pfs_mutex_lock (&val->dir->lock);
   pfs_mutex_unlock (&pfs->dir_cache->lock);
+
+  gettimeofday (&tv, NULL);
   val->atime = time (NULL);
+  val->usec = tv.tv_usec;
 
   return val->dir;
 }
@@ -299,11 +304,16 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
   pdce_t * val;
   char * dir_path;
   int fd;
+  struct timeval tv;
 
   val = (pdce_t *) malloc (sizeof (pdce_t));
   val->dir = (struct pfs_dir *) malloc (sizeof (struct pfs_dir));
   val->dirty = 0;
+
+  gettimeofday (&tv, NULL);
   val->atime = time (NULL);
+  val->usec = tv.tv_usec;
+
   pfs_mutex_init (&val->dir->lock);
   
   if (gen_id == 1)
@@ -398,14 +408,21 @@ pfs_dir_cache_evict (struct pfs_instance *pfs)
     for (i = 0; i < pfs->dir_cache->ht->num_buck; i++) {
       ht_pair_t *pair = pfs->dir_cache->ht->bucks[i];
       while (pair != NULL) {
-	if (val == NULL || ((pdce_t *) pair->value)->atime < val->atime) {
+	if (val == NULL || 
+	    (((pdce_t *) pair->value)->atime < val->atime &&
+	     ((pdce_t *) pair->value)->usec < val->usec)) {
 	  val = ((pdce_t *) pair->value);
 	}
 	pair = pair->next;
       }
     }
     
-    printf ("EVICTION : %.*s\n", PFS_ID_LEN, val->dir->id);
+    printf ("EVICTION : %.*s ", PFS_ID_LEN, val->dir->id);    
+    if (val->dir->entry != NULL &&
+	val->dir->entry[0] != NULL) {
+      printf ("%s", val->dir->entry[0]->name);
+    }
+    printf ("\n");
 
     pfs_mutex_lock (&val->dir->lock);
     

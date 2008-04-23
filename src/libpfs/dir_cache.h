@@ -19,6 +19,7 @@ typedef struct pfs_dir_cache {
 typedef struct pfs_dir_cache_entry {
   struct pfs_dir * dir;
   time_t atime;
+  int usec;
   uint8_t dirty;
 } pdce_t;
 
