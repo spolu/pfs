@@ -17,7 +17,7 @@ int nopfs_fuse_getattr (const char *path, struct stat *stbuf)
 {
   int retval;
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   
   retval = stat (new_path, stbuf);
@@ -35,7 +35,7 @@ int nopfs_fuse_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
   struct dirent * dp;
 
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
 
   dirp = opendir(new_path);
@@ -51,7 +51,7 @@ int nopfs_fuse_open (const char *path, struct fuse_file_info *fi)
 {
   int fd;
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
 
   if ((fd = open (new_path, fi->flags)) < 0) {
@@ -83,7 +83,7 @@ int nopfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi)
   int fd;
   
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   fi->flags |= O_CREAT;
   fi->flags |= O_RDWR;
@@ -104,7 +104,7 @@ int nopfs_fuse_release (const char *path, struct fuse_file_info *fi)
 int nopfs_fuse_truncate (const char *path, off_t offset)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   return truncate (new_path, offset);
 }
@@ -112,7 +112,7 @@ int nopfs_fuse_truncate (const char *path, off_t offset)
 int nopfs_fuse_mkdir (const char *path, mode_t mode)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   return mkdir (new_path, mode);
 }
@@ -120,7 +120,7 @@ int nopfs_fuse_mkdir (const char *path, mode_t mode)
 int nopfs_fuse_unlink (const char *path)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   int retval = unlink (new_path);
 
@@ -133,7 +133,7 @@ int nopfs_fuse_unlink (const char *path)
 int nopfs_fuse_rmdir (const char *path)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   return rmdir (new_path);
 }
@@ -141,10 +141,10 @@ int nopfs_fuse_rmdir (const char *path)
 int nopfs_fuse_rename (const char *path, const char *to)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", path);
+  sprintf (new_path, "/home/spolu/test%s", path);
 
   char * new_path_to = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/Users/spolu/test%s", to);
+  sprintf (new_path, "/home/spolu/test%s", to);
 
   return rename (new_path, new_path_to);
 }
@@ -187,7 +187,7 @@ int nopfs_fuse_chown (const char *path, uid_t uid, gid_t gid)
 int nopfs_fuse_utimens (const char *path, const struct timespec tv[2])
 {
   //  char * new_path = malloc (sizeof (path) + 30);
-  //  sprintf (new_path, "/Users/spolu/test%s", path);
+  //  sprintf (new_path, "/home/spolu/test%s", path);
 
   //  return utimes (new_path, tv);
   return 0;

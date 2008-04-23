@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -std=gnu99 -D_FILE_OFFSET_BITS=64 -L/usr/local/lib -I/usr/local/include
+CFLAGS = -Wall -std=gnu99 -L/usr/local/lib -I/usr/local/include
 
 NOPFS_FUSE_SRC = stub.c nopfs.c
 

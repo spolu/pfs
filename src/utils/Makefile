@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -std=gnu99 -D_FILE_OFFSET_BITS=64
+CFLAGS = -Wall -g -std=gnu99
 MAKE = make
 
 INIT_SRC = pfs_init.c
