@@ -1,0 +1,25 @@
+% -*-LaTeX-*-
+
+\begin{abstract}
+
+pFS is a distributed storage system designed to reflect the fact that
+end users have more and more different devices on which they want to
+have access to their data, ranging from desktop computers, to laptop
+computers and mobile smartphones.  pFS exploits a principle that
+relieve users from having to be connected or to wait for communication
+with a centralized system : Update locally, propagate asynchronously.
+It makes no assumption on connectivity or network partitioning and
+disconnected operations is the normal mode of operation. In such
+system, concurrent updates to the same ressource become an issue since
+we have no centralized instance to synchronize them. We introduce a
+versioning system that allow to keep track of every versions of a
+ressource, without global reconciliation, allowing the end users to
+resolve conflicts at will.
+
+\end{abstract}
+
+% Local Variables:
+% tex-main-file: "main.ltx"
+% tex-command: "make;:"
+% tex-dvi-view-command: "make preview;:"
+% End:

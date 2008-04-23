@@ -1,0 +1,10 @@
+*~
+*.aux
+*.bbl
+*.blg
+*.log
+*.dvi
+*.bak
+.xpdf-running
+main.ps
+main.pdf

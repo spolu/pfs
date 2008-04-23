@@ -1,0 +1,52 @@
+% -*-LaTeX-*-
+\documentclass[letterpaper,twocolumn,10pt]{article}
+\usepackage{usenix,epsfig,endnotes}
+\usepackage{amsmath, amsthm} 
+\usepackage{amsfonts,amssymb}
+\usepackage{graphicx,color}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+
+\newtheorem{definition}{Definition}
+
+%%
+%%  You need this definition for dm.bib to work.
+%%
+\def\discretionaryslash{\discretionary{/}{}{/}}
+{\catcode`\/\active
+\gdef\URLprepare{\catcode`\/\active\let/\discretionaryslash
+        \def~{\char`\~}}}%
+\def\URL{\bgroup\URLprepare\realURL}%
+\def\realURL#1{\tt #1\egroup}%
+
+\date{}
+\title{pFS: Update Locally, Propagate Asynchronously}
+
+\author{
+Stanislas Polu \and David Mazi\`eres
+}
+
+\begin{document}
+
+\maketitle
+
+\input{abstract}
+\input{intro}
+\input{relwk}
+\input{model}
+\input{vers}
+\input{impl}
+\input{eval}
+\input{conc}
+
+\bibliographystyle{plain}
+\bibliography{local,dm,conferences}
+
+\end{document}
+
+% Local Variables:
+% tex-main-file: "main.ltx"
+% tex-command: "make;:"
+% tex-dvi-view-command: "make preview;:"
+% End:
