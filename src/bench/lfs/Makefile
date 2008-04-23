@@ -10,10 +10,12 @@ TARGET_LFS_LARGE = lfs_large
 TARGET_LFS_SMALL = lfs_small
 TARGET_LFS_SMALL_DIRECT = lfs_small_direct
 
-lfs:
+lfs_small_direct_obj = $(LFS_SMALL_DIRECT_SRC:.c=.o)
+
+lfs: $(lfs_small_direct_obj)
 	$(CC) $(CFLAGS) -o ../../../bin/bench/$(TARGET_LFS_LARGE) $(LFS_LARGE_SRC) 
 	$(CC) $(CFLAGS) -o ../../../bin/bench/$(TARGET_LFS_SMALL) $(LFS_SMALL_SRC) 
-	$(CC) $(CFLAGS) -o ../../../bin/bench/$(TARGET_LFS_SMALL_DIRECT) -lcrypto ../../../lib/libpfs.a $(LFS_SMALL_DIRECT_SRC) 
+	$(CC) $(CFLAGS) -o ../../../bin/bench/$(TARGET_LFS_SMALL_DIRECT) -lcrypto $(lfs_small_direct_obj) ../../../lib/libpfs.a
 
 clean: 
 	@rm -f *.o *~

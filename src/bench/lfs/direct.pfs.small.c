@@ -60,8 +60,8 @@ int creat_test(struct pfs_instance * pfs, int n, int size)
 
   for (i = 0, j = 0; i < n; i ++) {
 
-    //sprintf(name, "/me/d%d/g%d", j, i);
-    sprintf(name, "/me/g%d", i);
+    sprintf(name, "/me/d%d/g%d", j, i);
+    //sprintf(name, "/me/g%d", i);
 
     if((fd = pfs_open(pfs, name, O_RDWR | O_CREAT | O_TRUNC)) < 0) {
       printf("%s: create %d failed %d %d\n", prog_name, i, fd, errno);
@@ -122,8 +122,8 @@ int read_test(struct pfs_instance * pfs, int n, int size)
 
   for (i = 0, j = 0; i < n; i ++) {
 
-    //sprintf(name, "/me/d%d/g%d", j, i);
-    sprintf(name, "/me/g%d", i);
+    sprintf(name, "/me/d%d/g%d", j, i);
+    //sprintf(name, "/me/g%d", i);
 
     if((fd = pfs_open(pfs, name, O_RDONLY)) < 0) {
       printf("%s: open %d failed %d %d\n", prog_name, i, fd, errno);
@@ -182,8 +182,8 @@ int delete_test(struct pfs_instance * pfs, int n)
 
   for (i = 0, j = 0; i < n; i ++) {
 
-    //sprintf(name, "/me/d%d/g%d", j, i);
-    sprintf(name, "/me/g%d", i);
+    sprintf(name, "/me/d%d/g%d", j, i);
+    //sprintf(name, "/me/g%d", i);
 
     if ((r = pfs_unlink(pfs, name)) < 0) {
       printf("%s: unlink failed %d\n", prog_name, r);
@@ -224,14 +224,14 @@ int main(int argc, char *argv[])
   // exit(1);
   //}
 
-  pfs = pfs_init ("/Users/spolu/.pfs/");
+  pfs = pfs_init ("/home/spolu/.pfs/");
 
   n = 10000;
   size = 4096;
 
   printf("%s %d %d\n", prog_name, n, size);
 
-  //creat_dir(pfs);
+  creat_dir(pfs);
   creat_test(pfs, n, size);
   read_test(pfs, n, size);
   delete_test(pfs, n);
