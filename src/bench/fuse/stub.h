@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <string.h>
 
-#define FUSE_USE_VERSION 26
+#define FUSE_USE_VERSION 27
 #define _FILE_OFFSET_BITS 64
 #include <fuse.h>
 

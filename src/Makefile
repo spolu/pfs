@@ -5,13 +5,15 @@ MAKE = make
 LIBPFS = libpfs
 PFSD = pfsd
 UTILS = utils
-BENCH = bench
+BENCH_LFS = bench/lfs
 
 all:
 	$(MAKE) -C $(PFSD)
 	$(MAKE) -C $(UTILS)
+	$(MAKE) -C $(BENCH_LFS)
 
 clean:
 	@$(MAKE) -C $(PFSD) clean
 	@$(MAKE) -C $(UTILS) clean
+	@$(MAKE) -C $(BENCH_LFS) clean
 	@rm -f *~

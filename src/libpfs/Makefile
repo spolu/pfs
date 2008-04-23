@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -std=gnu99 -DPFS_PTHREAD_LOCK
+CFLAGS = -Wall -O3 -std=gnu99 -DPFS_PTHREAD_LOCK
 
 LIB = lib
 LIB_SRC = lib/io.c lib/debug.c lib/hashtable.c lib/lock.c
