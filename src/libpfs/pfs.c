@@ -38,9 +38,7 @@ int pfs_open (struct pfs_instance * pfs,
   char * file_name;
 
   /* Unsupported flags. */
-  if ((flags & O_SHLOCK) ||
-      (flags & O_EXLOCK) ||
-      (flags & O_APPEND))
+  if ((flags & O_APPEND))
     return -EOPNOTSUPP;
 
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0)
@@ -298,6 +296,7 @@ size_t pfs_pwrite (struct pfs_instance * pfs,
 {
   struct pfs_open_file * open_file;
   size_t lenw;
+  off_t offset2;
 
   pfs_mutex_lock (&pfs->open_lock);
   open_file = pfs->open_file;
@@ -308,14 +307,30 @@ size_t pfs_pwrite (struct pfs_instance * pfs,
   if (open_file == NULL)
     return -EBADF;
   
+  printf ("hahah\n");
+
   if (open_file->read_only == 1)
     return -EACCES;  
+
+  printf ("hahah\n");
 
   if (open_file->dirty == 0)
     open_file->dirty = 1;  
   
-  if ((lenw = pwrite (open_file->fd, buf, len, offset)) < 0)
+  printf ("hahah\n");
+
+  offset2 = lseek (open_file->fd, offset, SEEK_SET);
+  printf ("lseek : offset : %d offset2 : %d\n", offset, offset2);
+
+  lenw = 0;
+  printf ("file fd : %d\n", open_file->fd);
+
+  if ((lenw = write (open_file->fd, buf, len)) < 0) {
+    printf ("hohoh %d\n", lenw);
     return -errno;
+  }
+  
+  printf ("ret value : %d\n", (int) lenw);
 
   return lenw;
 }
@@ -347,7 +362,8 @@ size_t pfs_pread (struct pfs_instance * pfs,
   if (open_file == NULL)
     return -EBADF;
   
-  if ((lenr = pread (open_file->fd, buf, len, offset)) < 0)
+  if (lseek (open_file->fd, offset, SEEK_SET) != offset ||
+      (lenr = read (open_file->fd, buf, len)) < 0)
     return -errno;
   
   return lenr;

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/errno.h>
 #include <sys/time.h>
+#include <sys/file.h>
 
 #include "dir_cache.h"
 #include "instance.h"

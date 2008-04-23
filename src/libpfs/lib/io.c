@@ -55,55 +55,6 @@ writen (int fd, const void *vptr, size_t n)
 }
 
 
-size_t
-preadn (int fd, void *vptr, size_t n, off_t offset)
-{
-  size_t nleft;
-  size_t nread;
-  char *ptr;
-
-  ptr = vptr;
-  nleft = n;
-  while (nleft > 0) {
-    if ((nread = pread (fd, ptr, nleft, offset)) < 0) {
-      if (errno == EINTR)
-        nread = 0;
-      else
-        return -1;
-    }
-    else if (nread == 0)
-      break;
-    offset += nread;
-    nleft -= nread;
-    ptr += nread;
-  }
-  return (n - nleft);
-}
-
-
-size_t
-pwriten (int fd, const void *vptr, size_t n, off_t offset)
-{
-  size_t nleft;
-  size_t nwritten;
-  const char *ptr;
-
-  ptr = vptr;
-  nleft = n;
-  while (nleft > 0) {
-    if ((nwritten = pwrite (fd, ptr, nleft, offset)) <= 0) {
-      if (nwritten < 0 && errno == EINTR)
-        nwritten = 0;
-      else
-        return -1;
-    }
-    offset += nwritten;
-    nleft -= nwritten;
-    ptr += nwritten;
-  }
-  return n;
-}
-
 char *
 readline (int fd)
 {

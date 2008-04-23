@@ -9,6 +9,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "../../libpfs/pfs.h"
+#include <errno.h>
 
 static char buf[40960];
 static char name[64];

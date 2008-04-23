@@ -1,13 +1,14 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/uio.h>
+//#include <sys/uio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/timeb.h>
+//#include <sys/timeb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #define SIZE	8192
 

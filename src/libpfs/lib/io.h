@@ -9,8 +9,6 @@
 
 size_t readn (int fd, void *vptr, size_t n);
 size_t writen (int fd, const void *vptr, size_t n);
-size_t preadn (int fd, void *vptr, size_t n, off_t offset);
-size_t pwriten (int fd, const void *vptr, size_t n, off_t offset);
 char * readline (int fd);
 size_t writeline (int fd, char *ptr, size_t n);
 

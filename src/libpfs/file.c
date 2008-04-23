@@ -88,7 +88,7 @@ pfs_file_create (struct pfs_instance * pfs,
   pfs_mk_id (pfs, id);
   file_path = pfs_mk_file_path (pfs, id);
 
-  if ((fd = open (file_path, flags, S_IRUSR | S_IWUSR)) < 0) {
+  if ((fd = open (file_path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) < 0) {
     free (file_path);
     return -errno;
   }  

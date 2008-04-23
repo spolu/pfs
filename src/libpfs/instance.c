@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <openssl/md5.h>
+#include <sys/file.h>
 
 #include "instance.h"
 #include "entry.h"
