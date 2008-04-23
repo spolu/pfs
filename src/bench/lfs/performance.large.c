@@ -32,7 +32,7 @@ int write_test(int n, int size, int sequential)
   int i;
   int r;
   int fd;
-  long pos;
+  long pos = 0;
   struct stat statb;
   char buf1[128];
   char buf2[128];
@@ -41,6 +41,7 @@ int write_test(int n, int size, int sequential)
   struct tm *tmp;
   unsigned s, fin;
 
+  i = 0;
   s = time(0);
 
   gettimeofday (&tv, NULL);
@@ -120,6 +121,7 @@ int read_test(int n, int size, int sequential)
   time_t x;
   struct tm *tmp;
   unsigned s, fin;
+  i = 0;
 
   s = time(0);
 
@@ -180,6 +182,7 @@ int read_test(int n, int size, int sequential)
 int flush_cache()
 {
   int i, r;
+  i = 0;
 
   if((fd = open("t", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU)) < 0) {
     printf("%s: create %d failed %d %d\n", prog_name, i, fd, errno);

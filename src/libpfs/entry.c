@@ -130,7 +130,7 @@ pfs_set_entry (struct pfs_instance * pfs,
   struct pfs_entry * new_entry = NULL;
   struct pfs_entry * entry = NULL;
   struct pfs_dir * dir;
-  int retval;
+  int retval = 0;
 
   /* get struct pfs_dir. */
   dir = pfs_get_dir_cache (pfs, dir_id);

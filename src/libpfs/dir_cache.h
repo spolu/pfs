@@ -7,7 +7,7 @@
 #include "lib/hashtable.h"
 #include "lib/lock.h"
 
-#define DIR_CACHE_SIZE 64
+#define DIR_CACHE_SIZE 512
 
 struct pfs_instance;
 

@@ -215,21 +215,37 @@ int pfs_open (struct pfs_instance * pfs,
 	goto error;
       }
       
-      if (pfs_file_link_new_id (pfs, pi.dst_id, open_file->id) != 0 ||
-	  (prt_path = pfs_mk_file_path (pfs, open_file->id)) == NULL ||
-	  (open_file->fd = open (prt_path, flags)) < 0) {
-	if (open_file->fd < 0)
-	  retval = open_file->fd;
-	else
-	  retval = -EIO;
-	goto error;
-      }
+      if (pi.is_main == 1 && ((flags & O_WRONLY) || (flags & O_RDWR)))
+	{
+	  if (pfs_file_link_new_id (pfs, pi.dst_id, open_file->id) != 0 ||
+	      (prt_path = pfs_mk_file_path (pfs, open_file->id)) == NULL ||
+	      (open_file->fd = open (prt_path, flags)) < 0) {
+	    if (open_file->fd < 0)
+	      retval = open_file->fd;
+	    else
+	      retval = -EIO;
+	    goto error;
+	  }
+	  open_file->dirty = 0;
+	}
+      else
+	{
+	  strncpy (open_file->id, open_file->ver->dst_id, PFS_ID_LEN);
+	  if((prt_path = pfs_mk_file_path (pfs, open_file->id)) == NULL ||
+	     (open_file->fd = open (prt_path, flags)) < 0) {
+	    if (open_file->fd < 0)
+	      retval = open_file->fd;
+	    else
+	      retval = -EIO;
+	    goto error;
+	  }
+	  open_file->dirty = 2;
+	}
 
       strncpy (open_file->ver->dst_id, open_file->id, PFS_ID_LEN);
       strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
       strncpy (open_file->dir_id, pi.dir_id, PFS_ID_LEN);
       strncpy (open_file->file_name, pi.name, PFS_NAME_LEN);
-      open_file->dirty = 0;
 
       /* We don't need to call pfs_set_entry. File is already present. */
 

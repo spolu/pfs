@@ -390,6 +390,7 @@ pfs_dir_cache_evict (struct pfs_instance *pfs)
   char * dir_path;
   int fd, i;
 
+  //printf ("EVICTION ENTER\n");
   /*
    * We evict the LRU pcde if num_elem >= DIR_CACHE_SIZE
    */
@@ -405,7 +406,7 @@ pfs_dir_cache_evict (struct pfs_instance *pfs)
       }
     }
     
-    printf ("EVICTION : %.*s\n", PFS_ID_LEN, val->dir->id);
+    //printf ("EVICTION : %.*s\n", PFS_ID_LEN, val->dir->id);
 
     pfs_mutex_lock (&val->dir->lock);
     
