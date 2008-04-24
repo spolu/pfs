@@ -21,6 +21,24 @@ int do_fsync;
 
 static char dir[32];
 
+int print_time (char *str, struct timeval tv1, struct timeval tv2)
+{
+  int usec = 0;
+
+  while (tv1.tv_sec != tv2.tv_sec) {
+    usec += 1000000;
+    tv2.tv_sec --;
+  }
+  usec += tv2.tv_usec;
+  usec -= tv1.tv_usec;
+
+  usec /= 1000;
+
+  printf ("%s %d msec\n", str, usec);
+
+  return 0;
+}
+
 void creat_dir()
 {
   int i;
@@ -52,21 +70,10 @@ int creat_test(int n, int size)
   int r;
   int fd = 0;
   int j;
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;  
-  unsigned s, f;
+  struct timeval tv1;
+  struct timeval tv2;
 
-  s = time(0);
-
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START CREAT : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
 
   for (i = 0, j = 0; i < n; i ++) {
 
@@ -89,15 +96,12 @@ int creat_test(int n, int size)
     if ((i+1) % 100 == 0) j++;  
   }
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END CREAT : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
-
-  f = time(0);
-  printf("%s: creat took %d sec\n",  prog_name,  f - s);
+  gettimeofday (&tv2, NULL);
+  if (do_fsync)
+    print_time ("LFSS-FC : ", tv1, tv2);
+  else {
+    print_time ("LFSS-NFC : ", tv1, tv2);    
+  }
 
   return 0;
 }
@@ -108,24 +112,13 @@ int write_test(int n, int size)
   int i = 0;
   int j = 0;
   int r;
-  unsigned s, f;
   int fd = 0;
   long pos = 0;
 
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;  
+  struct timeval tv1;
+  struct timeval tv2;
 
-  s = time(0);
-
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
     
   for (i = 0, j = 0; i < n; i ++) {
     
@@ -152,15 +145,12 @@ int write_test(int n, int size)
     if ((i+1) % 100 == 0) j++;  
   }
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
-
-  f = time(0);
-  printf("%s: write took %d sec\n",  prog_name,  f - s);
+  gettimeofday (&tv2, NULL);
+  if (do_fsync)
+    print_time ("LFSS-FW : ", tv1, tv2);
+  else {
+    print_time ("LFSS-NFW : ", tv1, tv2);    
+  }
 
   return 0;
 }
@@ -172,22 +162,10 @@ int read_test(int n, int size)
   int r;
   int fd;
   int j;
-  unsigned s, f;
+  struct timeval tv1;
+  struct timeval tv2;
 
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;  
-
-  s = time(0);
-
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
 
   for (i = 0, j = 0; i < n; i ++) {
 
@@ -210,17 +188,12 @@ int read_test(int n, int size)
     if ((i+1) % 100 == 0) j++;
   }
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
-
-  f = time(0);
-  printf("%s: read took %d sec\n",
-	 prog_name,
-	 f - s);
+  gettimeofday (&tv2, NULL);
+  if (do_fsync)
+    print_time ("LFSS-FR : ", tv1, tv2);
+  else {
+    print_time ("LFSS-NFR : ", tv1, tv2);    
+  }
     
   return 0;
 }
@@ -231,23 +204,10 @@ int delete_test(int n)
   int r;
   int fd = 0;
   int j;
- 
-  unsigned s, f;
+  struct timeval tv1;
+  struct timeval tv2;
 
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;  
-
-  s = time(0);
-
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START DELETE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
 
   for (i = 0, j = 0; i < n; i ++) {
 
@@ -263,17 +223,12 @@ int delete_test(int n)
 
   fsync(fd);
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END DELETE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
-
-  f = time(0);
-  printf("%s: unlink took %d sec\n",
-	 prog_name,
-	 f - s);
+  gettimeofday (&tv2, NULL);
+  if (do_fsync)
+    print_time ("LFSS-FD : ", tv1, tv2);
+  else {
+    print_time ("LFSS-NFD : ", tv1, tv2);    
+  }
   
   return 0;
 }

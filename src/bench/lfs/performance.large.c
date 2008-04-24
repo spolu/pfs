@@ -22,6 +22,24 @@ int do_fsync;
 
 #define TRULY_RANDOM
 
+int print_time (char *str, struct timeval tv1, struct timeval tv2)
+{
+  int usec = 0;
+
+  while (tv1.tv_sec != tv2.tv_sec) {
+    usec += 1000000;
+    tv2.tv_sec --;
+  }
+  usec += tv2.tv_usec;
+  usec -= tv1.tv_usec;
+
+  usec /= 1000;
+
+  printf ("%s %d msec\n", str, usec);
+
+  return 0;
+}
+
 int f(int i, int n)
 {
   return ((i * 11) % n);
@@ -34,22 +52,12 @@ int write_test(int n, int size, int sequential)
   int fd;
   long pos = 0;
   struct stat statb;
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;
-  unsigned s, fin;
+  struct timeval tv1;
+  struct timeval tv2;
 
   i = 0;
-  s = time(0);
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
     
   if((fd = open(name, O_RDWR)) < 0) {
     printf("%s: open %d failed %d %d\n", prog_name, i, fd, errno);
@@ -89,16 +97,25 @@ int write_test(int n, int size, int sequential)
     printf("%s: close failed %d %d\n", prog_name, r, errno);
   }
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv2, NULL);
 
-  fin = time(0);
-  printf("%s: write took %d sec\n", prog_name, fin - s);
-
+  if (sequential) {
+    if (do_fsync) {
+      print_time ("LFSL-FSW : ", tv1, tv2);
+    }
+    else {
+      print_time ("LFSL-NFSW : ", tv1, tv2);    
+    }
+  }
+  else {
+    if (do_fsync) {
+      print_time ("LFSL-FRW : ", tv1, tv2);
+    }
+    else {
+      print_time ("LFSL-NFRW : ", tv1, tv2);    
+    }
+  }
+  
   return 0;
 }
 
@@ -116,22 +133,11 @@ int read_test(int n, int size, int sequential)
   int r;
   int fd;
   long pos;
-  char buf1[128];
-  char buf2[128];
-  struct timeval tv;
-  time_t x;
-  struct tm *tmp;
-  unsigned s, fin;
+  struct timeval tv1;
+  struct timeval tv2;
   i = 0;
 
-  s = time(0);
-
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("START READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv1, NULL);
     
   if((fd = open(name, O_RDONLY)) < 0) {
     printf("%s: open %d failed %d %d\n", prog_name, i, fd, errno);
@@ -164,17 +170,24 @@ int read_test(int n, int size, int sequential)
   }
     
 
-  gettimeofday (&tv, NULL);
-  x = tv.tv_sec;
-  tmp = localtime (&x);
-  strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
-  strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
-  printf ("END READ : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+  gettimeofday (&tv2, NULL);
 
-  fin = time(0);
-  printf("%s: read took %d sec\n",
-	 prog_name,
-	 fin - s);
+  if (sequential) {
+    if (do_fsync) {
+      print_time ("LFSL-FSR : ", tv1, tv2);
+    }
+    else {
+      print_time ("LFSL-NFSR : ", tv1, tv2);    
+    }
+  }
+  else {
+    if (do_fsync) {
+      print_time ("LFSL-FRR : ", tv1, tv2);
+    }
+    else {
+      print_time ("LFSL-NFRR : ", tv1, tv2);    
+    }
+  }
 
   return 0;
 }
