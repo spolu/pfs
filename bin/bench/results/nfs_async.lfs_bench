@@ -1,0 +1,130 @@
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-FC :  1686 msec
+LFSS-FR :  651 msec
+LFSS-FW :  1645 msec
+LFSS-FD :  899 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-FC :  1667 msec
+LFSS-FR :  648 msec
+LFSS-FW :  2158 msec
+LFSS-FD :  776 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-FC :  1663 msec
+LFSS-FR :  647 msec
+LFSS-FW :  1812 msec
+LFSS-FD :  776 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-FC :  1681 msec
+LFSS-FR :  662 msec
+LFSS-FW :  1662 msec
+LFSS-FD :  779 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-FC :  1703 msec
+LFSS-FR :  651 msec
+LFSS-FW :  1632 msec
+LFSS-FD :  779 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-NFC :  1693 msec
+LFSS-NFR :  646 msec
+LFSS-NFW :  1626 msec
+LFSS-NFD :  778 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-NFC :  1667 msec
+LFSS-NFR :  648 msec
+LFSS-NFW :  1627 msec
+LFSS-NFD :  779 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-NFC :  1673 msec
+LFSS-NFR :  650 msec
+LFSS-NFW :  1648 msec
+LFSS-NFD :  1194 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-NFC :  1661 msec
+LFSS-NFR :  646 msec
+LFSS-NFW :  1715 msec
+LFSS-NFD :  776 msec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+LFSS-NFC :  1678 msec
+LFSS-NFR :  649 msec
+LFSS-NFW :  1726 msec
+LFSS-NFD :  779 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-FSW :  983 msec
+LFSL-FSR :  40 msec
+LFSL-FRW :  6840 msec
+LFSL-FRR :  54 msec
+LFSL-FSR :  41 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-FSW :  1139 msec
+LFSL-FSR :  40 msec
+LFSL-FRW :  1467 msec
+LFSL-FRR :  52 msec
+LFSL-FSR :  39 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-FSW :  740 msec
+LFSL-FSR :  39 msec
+LFSL-FRW :  387 msec
+LFSL-FRR :  52 msec
+LFSL-FSR :  40 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-FSW :  847 msec
+LFSL-FSR :  40 msec
+LFSL-FRW :  2222 msec
+LFSL-FRR :  51 msec
+LFSL-FSR :  40 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-FSW :  681 msec
+LFSL-FSR :  40 msec
+LFSL-FRW :  521 msec
+LFSL-FRR :  52 msec
+LFSL-FSR :  40 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-NFSW :  967 msec
+LFSL-NFSR :  40 msec
+LFSL-NFRW :  2169 msec
+LFSL-NFRR :  52 msec
+LFSL-NFSR :  40 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-NFSW :  953 msec
+LFSL-NFSR :  39 msec
+LFSL-NFRW :  1731 msec
+LFSL-NFRR :  52 msec
+LFSL-NFSR :  39 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-NFSW :  597 msec
+LFSL-NFSR :  39 msec
+LFSL-NFRW :  409 msec
+LFSL-NFRR :  54 msec
+LFSL-NFSR :  40 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-NFSW :  864 msec
+LFSL-NFSR :  40 msec
+LFSL-NFRW :  394 msec
+LFSL-NFRR :  54 msec
+LFSL-NFSR :  41 msec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+LFSL-NFSW :  907 msec
+LFSL-NFSR :  40 msec
+LFSL-NFRW :  379 msec
+LFSL-NFRR :  52 msec
+LFSL-NFSR :  40 msec

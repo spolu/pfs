@@ -1,0 +1,29 @@
+
+--------------
+pFS Benchmarks
+--------------
+
+LFS : S (small) / L (large)
+C  : create
+R  : read
+W  : write
+D  : delete
+S  : seq
+R  : rand
+NF : no_fsync
+
+All data in msec, amortized value over 5 runs
+nfs_* : client/server on the same computer
+
+
+            LFSS-C    LFSS-R    LFSS_W    LFSS-NFW  LFSS-D    LFSL-SW   LFSL-NFSW   LFSL-SR   LFSL-RW   LFSL-NFRW   LFSL-RR
+
+ext3        221       39        10984     215       126       2030      211         38        20529     75          50
+fuse        723       340       17285     785       297       2424      673         140       23767     504         316  
+pfs         1017      489       29755     1836      678       2522      673         141       23836     512         317  
+nfs_sync    16941     645       15838     15526     15803     2288      2350        124       9171      8949        638  
+nfs_async   1680      651       1781      1661      801       878       857         39        2287      1010        52  
+
+
+next... tar/untar (L/S), cp (L/S), compile, maybe a nfs_lan
+
