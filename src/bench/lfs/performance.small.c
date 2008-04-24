@@ -108,7 +108,7 @@ int write_test(int n, int size)
   int i = 0;
   int j = 0;
   int r;
-  int s;
+  unsigned s, f;
   int fd = 0;
   long pos = 0;
 
@@ -158,6 +158,9 @@ int write_test(int n, int size)
   strftime (buf1, sizeof (buf1), "%a %b %e %H:%M:%S", tmp);
   strftime (buf2, sizeof (buf2), "%Z %Y", tmp);
   printf ("END WRITE : %s.%06d %s\n", buf1, (int) tv.tv_usec, buf2);
+
+  f = time(0);
+  printf("%s: write took %d sec\n",  prog_name,  f - s);
 
   return 0;
 }

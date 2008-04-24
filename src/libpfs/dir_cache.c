@@ -97,7 +97,7 @@ pfs_write_back_dir_cache (struct pfs_instance * pfs,
     pfs_mutex_lock (&val->dir->lock);
 
     if (val->dirty != 0) {
-      dir_path = pfs_mk_dir_path (pfs, dir_id);	  
+      dir_path = pfs_mk_dir_path (pfs, val->dir->id);	  
       
       if (dir_path == NULL) {
 	pfs_mutex_unlock (&val->dir->lock);

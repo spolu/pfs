@@ -364,7 +364,7 @@ ssize_t pfs_pread (struct pfs_instance * pfs,
 int pfs_fsync (struct pfs_instance * pfs,
 	       int pfs_fd)
 {
-  int retval;
+  int retval = 0;
   struct pfs_open_file * open_file;
 
   pfs_mutex_lock (&pfs->open_lock);
@@ -379,7 +379,8 @@ int pfs_fsync (struct pfs_instance * pfs,
   if (fsync (open_file->fd) < 0)
     return -errno;
   
-  retval = pfs_sync_dir_cache (pfs);
+  if (open_file->dirty == 2)
+    retval = pfs_write_back_dir_cache (pfs, open_file->dir_id);
   
   return retval;
 }

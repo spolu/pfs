@@ -1,7 +1,9 @@
 #!/bin/sh
 
-umount ./pfs
-rm -Rf ~spolu/.pfs
-mkdir ~spolu/.pfs
-./pfs_init ~spolu/.pfs/ spolu iMac
+fusermount -u pfs
+rm -Rf back
+rm -Rf pfs
+mkdir back
+mkdir pfs
+./pfs_init back/ spolu bench
 

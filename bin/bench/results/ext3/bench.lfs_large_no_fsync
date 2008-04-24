@@ -1,0 +1,85 @@
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+START WRITE : Thu Apr 24 01:49:34.243711 PDT 2008
+END WRITE : Thu Apr 24 01:49:34.452785 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:34.452820 PDT 2008
+END READ : Thu Apr 24 01:49:34.491452 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START WRITE : Thu Apr 24 01:49:34.491475 PDT 2008
+END WRITE : Thu Apr 24 01:49:34.567084 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:34.567110 PDT 2008
+END READ : Thu Apr 24 01:49:34.617489 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START READ : Thu Apr 24 01:49:34.617512 PDT 2008
+END READ : Thu Apr 24 01:49:34.656104 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+START WRITE : Thu Apr 24 01:49:36.712702 PDT 2008
+END WRITE : Thu Apr 24 01:49:36.921773 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:36.921809 PDT 2008
+END READ : Thu Apr 24 01:49:36.961134 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START WRITE : Thu Apr 24 01:49:36.961157 PDT 2008
+END WRITE : Thu Apr 24 01:49:37.037665 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 1 sec
+START READ : Thu Apr 24 01:49:37.037696 PDT 2008
+END READ : Thu Apr 24 01:49:37.089304 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START READ : Thu Apr 24 01:49:37.089327 PDT 2008
+END READ : Thu Apr 24 01:49:37.128747 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+START WRITE : Thu Apr 24 01:49:39.022572 PDT 2008
+END WRITE : Thu Apr 24 01:49:39.231994 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:39.232027 PDT 2008
+END READ : Thu Apr 24 01:49:39.270532 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START WRITE : Thu Apr 24 01:49:39.270554 PDT 2008
+END WRITE : Thu Apr 24 01:49:39.346394 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:39.346420 PDT 2008
+END READ : Thu Apr 24 01:49:39.396883 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START READ : Thu Apr 24 01:49:39.396904 PDT 2008
+END READ : Thu Apr 24 01:49:39.437270 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+START WRITE : Thu Apr 24 01:49:41.486898 PDT 2008
+END WRITE : Thu Apr 24 01:49:41.697651 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:41.697685 PDT 2008
+END READ : Thu Apr 24 01:49:41.736428 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START WRITE : Thu Apr 24 01:49:41.736450 PDT 2008
+END WRITE : Thu Apr 24 01:49:41.812017 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:41.812043 PDT 2008
+END READ : Thu Apr 24 01:49:41.862891 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START READ : Thu Apr 24 01:49:41.862913 PDT 2008
+END READ : Thu Apr 24 01:49:41.903431 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_large 30000 4096
+START WRITE : Thu Apr 24 01:49:44.103087 PDT 2008
+END WRITE : Thu Apr 24 01:49:44.312619 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:44.312652 PDT 2008
+END READ : Thu Apr 24 01:49:44.352341 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START WRITE : Thu Apr 24 01:49:44.352364 PDT 2008
+END WRITE : Thu Apr 24 01:49:44.428594 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: write took 0 sec
+START READ : Thu Apr 24 01:49:44.428621 PDT 2008
+END READ : Thu Apr 24 01:49:44.479570 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec
+START READ : Thu Apr 24 01:49:44.479592 PDT 2008
+END READ : Thu Apr 24 01:49:44.518787 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_large: read took 0 sec

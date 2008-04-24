@@ -1,0 +1,70 @@
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+START CREAT : Thu Apr 24 01:46:07.569315 PDT 2008
+END CREAT : Thu Apr 24 01:46:07.801406 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: creat took 0 sec
+START READ : Thu Apr 24 01:46:07.801433 PDT 2008
+END READ : Thu Apr 24 01:46:07.836992 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: read took 0 sec
+START WRITE : Thu Apr 24 01:46:07.837011 PDT 2008
+END WRITE : Thu Apr 24 01:46:19.175757 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: write took 12 sec
+START DELETE : Thu Apr 24 01:46:19.175779 PDT 2008
+END DELETE : Thu Apr 24 01:46:19.293474 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: unlink took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+START CREAT : Thu Apr 24 01:46:21.104655 PDT 2008
+END CREAT : Thu Apr 24 01:46:21.324534 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: creat took 0 sec
+START READ : Thu Apr 24 01:46:21.324560 PDT 2008
+END READ : Thu Apr 24 01:46:21.364406 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: read took 0 sec
+START WRITE : Thu Apr 24 01:46:21.364425 PDT 2008
+END WRITE : Thu Apr 24 01:46:33.449051 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: write took 12 sec
+START DELETE : Thu Apr 24 01:46:33.449075 PDT 2008
+END DELETE : Thu Apr 24 01:46:33.570072 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: unlink took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+START CREAT : Thu Apr 24 01:46:35.110277 PDT 2008
+END CREAT : Thu Apr 24 01:46:35.330128 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: creat took 0 sec
+START READ : Thu Apr 24 01:46:35.330154 PDT 2008
+END READ : Thu Apr 24 01:46:35.369760 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: read took 0 sec
+START WRITE : Thu Apr 24 01:46:35.369779 PDT 2008
+END WRITE : Thu Apr 24 01:46:46.995489 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: write took 11 sec
+START DELETE : Thu Apr 24 01:46:46.995512 PDT 2008
+END DELETE : Thu Apr 24 01:46:47.113680 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: unlink took 1 sec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+START CREAT : Thu Apr 24 01:46:48.855574 PDT 2008
+END CREAT : Thu Apr 24 01:46:49.074502 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: creat took 1 sec
+START READ : Thu Apr 24 01:46:49.074534 PDT 2008
+END READ : Thu Apr 24 01:46:49.123026 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: read took 0 sec
+START WRITE : Thu Apr 24 01:46:49.123046 PDT 2008
+END WRITE : Thu Apr 24 01:47:00.776854 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: write took 11 sec
+START DELETE : Thu Apr 24 01:47:00.776876 PDT 2008
+END DELETE : Thu Apr 24 01:47:00.895220 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: unlink took 0 sec
+
+/home/spolu/pfs/bin/bench/lfs_small 10000 4096
+START CREAT : Thu Apr 24 01:47:02.298871 PDT 2008
+END CREAT : Thu Apr 24 01:47:02.517740 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: creat took 0 sec
+START READ : Thu Apr 24 01:47:02.517764 PDT 2008
+END READ : Thu Apr 24 01:47:02.557596 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: read took 0 sec
+START WRITE : Thu Apr 24 01:47:02.557615 PDT 2008
+END WRITE : Thu Apr 24 01:47:14.207262 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: write took 12 sec
+START DELETE : Thu Apr 24 01:47:14.207284 PDT 2008
+END DELETE : Thu Apr 24 01:47:14.325197 PDT 2008
+/home/spolu/pfs/bin/bench/lfs_small: unlink took 0 sec

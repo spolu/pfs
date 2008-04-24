@@ -20,7 +20,7 @@ int main (int argc, char ** argv)
   strncpy (sd_owner, argv[2], PFS_NAME_LEN);
   strncpy (sd_name, argv[3], PFS_NAME_LEN);
 
-  printf ("Initiating %s.%s in dir %s\n", root_path, sd_owner, sd_name);
+  printf ("Initiating %s.%s in dir %s\n", sd_owner, sd_name, root_path);
   
   pfs_bootstrap (root_path, sd_owner, sd_name);
   
