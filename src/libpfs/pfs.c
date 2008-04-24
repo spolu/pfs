@@ -334,7 +334,7 @@ ssize_t pfs_pread (struct pfs_instance * pfs,
 		  off_t offset)
 {
   struct pfs_open_file * open_file;
-  size_t lenr;
+  ssize_t lenr;
 
   pfs_mutex_lock (&pfs->open_lock);
   open_file = pfs->open_file;

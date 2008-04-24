@@ -6,7 +6,6 @@
 #include <string.h>
 
 #define FUSE_USE_VERSION 27
-#define _FILE_OFFSET_BITS 64
 #include <fuse.h>
 
 int nopfs_fuse_getattr (const char *path, struct stat *stbuf);

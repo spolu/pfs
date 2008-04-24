@@ -249,6 +249,8 @@ int main(int argc, char *argv[])
   read_test(n , size, 1);
 
   unlink(name);
+
+  return 0;
 }
 
 

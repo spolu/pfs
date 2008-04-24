@@ -17,7 +17,7 @@ int nopfs_fuse_getattr (const char *path, struct stat *stbuf)
 {
   int retval;
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   retval = stat (new_path, stbuf);
   
@@ -34,7 +34,7 @@ int nopfs_fuse_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
   struct dirent * dp;
 
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
 
   dirp = opendir(new_path);
@@ -50,7 +50,7 @@ int nopfs_fuse_open (const char *path, struct fuse_file_info *fi)
 {
   int fd;
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   if ((fd = open (new_path, fi->flags)) < 0) {
     return fd;
@@ -60,15 +60,27 @@ int nopfs_fuse_open (const char *path, struct fuse_file_info *fi)
 }
 
 int nopfs_fuse_read (const char *path, char *buf, size_t size, off_t offset,
-		   struct fuse_file_info *fi)
+		     struct fuse_file_info *fi)
 {
-  return pread ((int) fi->fh, buf, size, offset);
+  ssize_t lenr;
+  
+  if (lseek ((int) fi->fh, offset, SEEK_SET) != offset ||
+      (lenr = read ((int) fi->fh, buf, size)) < 0)
+    return -errno;
+  
+  return lenr;
 }
 
 int nopfs_fuse_write (const char *path, const char *buf, size_t size, off_t offset,
-	       struct fuse_file_info *fi)
+		      struct fuse_file_info *fi)
 {
-  return pwrite ((int) fi->fh, buf, size, offset);
+  ssize_t lenw;
+  
+  if (lseek ((int) fi->fh, offset, SEEK_SET) != offset ||
+      (lenw = write ((int) fi->fh, buf, size)) < 0)
+    return -errno;
+
+  return lenw;
 }
 
 int nopfs_fuse_fsync (const char *path, int param, struct fuse_file_info *fi)
@@ -86,7 +98,7 @@ int nopfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi)
   int fd;
   
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   fi->flags |= O_CREAT;
   if ((fd = open (new_path, fi->flags)) < 0) {
@@ -106,7 +118,7 @@ int nopfs_fuse_release (const char *path, struct fuse_file_info *fi)
 int nopfs_fuse_truncate (const char *path, off_t offset)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   return truncate (new_path, offset);
 }
@@ -114,7 +126,7 @@ int nopfs_fuse_truncate (const char *path, off_t offset)
 int nopfs_fuse_mkdir (const char *path, mode_t mode)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   return mkdir (new_path, mode);
 }
@@ -122,7 +134,7 @@ int nopfs_fuse_mkdir (const char *path, mode_t mode)
 int nopfs_fuse_unlink (const char *path)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   int retval = unlink (new_path);
 
@@ -135,7 +147,7 @@ int nopfs_fuse_unlink (const char *path)
 int nopfs_fuse_rmdir (const char *path)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   return rmdir (new_path);
 }
@@ -143,10 +155,10 @@ int nopfs_fuse_rmdir (const char *path)
 int nopfs_fuse_rename (const char *path, const char *to)
 {
   char * new_path = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", path);
+  sprintf (new_path, "back%s", path);
 
   char * new_path_to = malloc (sizeof (path) + 30);
-  sprintf (new_path, "/home/spolu/test%s", to);
+  sprintf (new_path, "back%s", to);
 
   return rename (new_path, new_path_to);
 }
@@ -189,7 +201,7 @@ int nopfs_fuse_chown (const char *path, uid_t uid, gid_t gid)
 int nopfs_fuse_utimens (const char *path, const struct timespec tv[2])
 {
   //  char * new_path = malloc (sizeof (path) + 30);
-  //  sprintf (new_path, "/home/spolu/test%s", path);
+  //  sprintf (new_path, "back%s", path);
 
   //  return utimes (new_path, tv);
   return 0;

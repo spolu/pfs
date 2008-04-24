@@ -33,6 +33,17 @@ void creat_dir()
   }
 }
 
+void rm_dir()
+{
+  int i;
+
+  umask(0);
+
+  for (i = 0; i < NDIR; i++) {
+    sprintf(dir, "d%d", i);
+    rmdir(dir);
+  }
+}
 
 
 int creat_test(int n, int size)
@@ -328,4 +339,7 @@ int main(int argc, char *argv[])
   read_test(n, size);
   write_test(n, size);
   delete_test(n);
+  rm_dir();
+
+  return 0;
 }
