@@ -18,9 +18,9 @@ static char *prog_name;
 
 extern int errno;
 
+int do_fsync;
 
 #define TRULY_RANDOM
-
 
 int f(int i, int n)
 {
@@ -64,7 +64,7 @@ int write_test(int n, int size, int sequential)
 #else
       pos = f(i, n) * size;
 #endif
-
+      
       if ((r = lseek(fd, pos, 0)) < 0) {
 	printf("%s: lseek failed %d %d\n", prog_name, r, errno);
       }
@@ -77,8 +77,9 @@ int write_test(int n, int size, int sequential)
     }
   }
     
+  if (do_fsync)
+    fsync(fd);
 
-  fsync(fd);
   fstat(fd, &statb);
   if (fchown(fd, statb.st_uid, -1) < 0) {
     perror("fchown");
@@ -183,13 +184,13 @@ int flush_cache()
 {
   int i, r, fd;
   i = 0;
-
+  
   if((fd = open("t", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU)) < 0) {
     printf("%s: create %d failed %d %d\n", prog_name, i, fd, errno);
     exit(1);
   }
 
-  for (i = 0; i < 15000; i ++) {
+  for (i = 0; i < 20000; i ++) {
     if ((r = write(fd, buf, 4096)) < 0) {
       printf("%s: write failed %d %d\n", prog_name, r, errno);
       exit(1);
@@ -216,15 +217,21 @@ int main(int argc, char *argv[])
 
   prog_name = argv[0];
 
-  if (argc != 3) {
-    printf("%s: %s num size\n", prog_name, prog_name);
+  if (argc != 4) {
+    printf("%s: %s num size fsync\n", prog_name, prog_name);
     exit(1);
   }
 
   n = atoi(argv[1]);
   size = atoi(argv[2]);
+  do_fsync = atoi (argv[3]);
 
-  printf("%s %d %d\n", prog_name, n, size);
+  if (do_fsync != 0 && do_fsync != 1) {
+    printf("%s: fsync 0 or 1!\n", prog_name);    
+    exit (1);
+  }
+
+  printf("\n%s %d %d\n", prog_name, n, size);
 
   srandom(getpid());
 

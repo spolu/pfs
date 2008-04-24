@@ -22,3 +22,8 @@ Small takes two arguments: the number of small files, and the size of
 each file in bytes. The small files are created in directories in the
 current directory. Names are d0/ ... dn-1/. There is a define for the number 
 of directories (n).
+
+Modified by Stanislas Polu :
+- added option to call fsync or not
+- added write_test in performance.small.c
+- added microsecond time printing before and after all the tests
