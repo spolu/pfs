@@ -326,7 +326,6 @@ int main(int argc, char *argv[])
   flush_cache ();
   creat_test(n, size);
   read_test(n, size);
+  write_test(n, size);
   delete_test(n);
-
-  unlink("t");
 }

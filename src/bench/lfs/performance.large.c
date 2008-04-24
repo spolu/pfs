@@ -248,9 +248,7 @@ int main(int argc, char *argv[])
   read_test(n, size, 0);
   read_test(n , size, 1);
 
-  printf ("return unlink : %d\n", unlink(name));
-
-  sync();
+  unlink(name);
 }
 
 
