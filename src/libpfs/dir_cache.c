@@ -114,7 +114,7 @@ pfs_write_back_dir_cache (struct pfs_instance * pfs,
       free (dir_path);
       
       flock (fd, LOCK_EX);
-      printf ("Writing back dir : %.*s\n", PFS_ID_LEN, val->dir->id);
+      //printf ("Writing back dir : %.*s\n", PFS_ID_LEN, val->dir->id);
       pfs_write_dir (fd, val->dir);
       flock (fd, LOCK_UN);
       close (fd);
@@ -171,7 +171,7 @@ int pfs_sync_dir_cache (struct pfs_instance * pfs)
 	free (dir_path);
 	
 	flock (fd, LOCK_EX);
-	printf ("Writing back dir : %.*s\n", PFS_ID_LEN, val->dir->id);
+	//printf ("Writing back dir : %.*s\n", PFS_ID_LEN, val->dir->id);
 	pfs_write_dir (fd, val->dir);
 	flock (fd, LOCK_UN);
 	close (fd);

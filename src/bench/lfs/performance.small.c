@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
   printf("%s %d %d\n", prog_name, n, size);
 
   creat_dir();
-
+  flush_cache ();
   creat_test(n, size);
   read_test(n, size);
   delete_test(n);

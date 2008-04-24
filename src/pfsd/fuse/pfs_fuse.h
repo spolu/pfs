@@ -6,6 +6,7 @@ struct fuse_operations pfs_operations = {
   .open = pfs_fuse_open,
   .read = pfs_fuse_read,
   .write = pfs_fuse_write,
+  .fsync = pfs_fuse_fsync,
   .ftruncate = pfs_fuse_ftruncate,
   .create = pfs_fuse_create,
   .release = pfs_fuse_release,

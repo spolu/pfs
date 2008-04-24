@@ -34,6 +34,11 @@ ssize_t pfs_pread (struct pfs_instance * pfs,
 		   size_t len,
 		   off_t offset);
 
+/** Fsync file.
+ */
+int pfs_fsync (struct pfs_instance * pfs,
+	       int pfs_fd);
+
 /** Close an open file.
  *
  * Must be called once for each open call.

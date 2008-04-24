@@ -1,13 +1,13 @@
-#include <time.h>
-#include <sys/time.h>
 #include <sys/types.h>
-//#include <sys/uio.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-//#include <sys/timeb.h>
+#include <sys/timeb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 #include <errno.h>
 
 #define SIZE	8192
@@ -15,7 +15,6 @@
 static char buf[SIZE];
 static char name[32] = "test_file";
 static char *prog_name;
-static int fd;
 
 extern int errno;
 
@@ -182,7 +181,7 @@ int read_test(int n, int size, int sequential)
 
 int flush_cache()
 {
-  int i, r;
+  int i, r, fd;
   i = 0;
 
   if((fd = open("t", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU)) < 0) {
@@ -212,7 +211,7 @@ int flush_cache()
 
 int main(int argc, char *argv[])
 {
-  int n;
+  int n, fd;
   int size;
 
   prog_name = argv[0];
@@ -233,15 +232,16 @@ int main(int argc, char *argv[])
     printf("%s: create %d failed %d\n", prog_name, fd, errno);
     exit(1);
   }
+  close (fd);
 
-  //flush_cache ();
+  flush_cache ();
   write_test(n, size, 1);
   read_test(n, size, 1);
   write_test(n , size, 0);
   read_test(n, size, 0);
   read_test(n , size, 1);
 
-  unlink(name);
+  printf ("return unlink : %d\n", unlink(name));
 
   sync();
 }

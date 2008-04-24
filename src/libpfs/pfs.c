@@ -295,7 +295,6 @@ ssize_t pfs_pwrite (struct pfs_instance * pfs,
 {
   struct pfs_open_file * open_file;
   ssize_t lenw;
-  off_t offset2;
 
   pfs_mutex_lock (&pfs->open_lock);
   open_file = pfs->open_file;
@@ -351,6 +350,35 @@ ssize_t pfs_pread (struct pfs_instance * pfs,
     return -errno;
   
   return lenr;
+}
+
+
+/*---------------------------------------------------------------------
+ * Method: pfs_fsync
+ * Scope: Global Public
+ * FINAL
+ * fsync file desc
+ *
+ *---------------------------------------------------------------------*/
+
+int pfs_fsync (struct pfs_instance * pfs,
+	       int pfs_fd)
+{
+  struct pfs_open_file * open_file;
+
+  pfs_mutex_lock (&pfs->open_lock);
+  open_file = pfs->open_file;
+  while (open_file != NULL && open_file->fd != pfs_fd)
+    open_file = open_file->next;
+  pfs_mutex_unlock (&pfs->open_lock);
+  
+  if (open_file == NULL)
+    return -EBADF;
+  
+  if (fsync (open_file->fd) < 0)
+    return -errno;
+  
+  return 0;
 }
 
 
@@ -884,8 +912,6 @@ int pfs_unlink (struct pfs_instance * pfs,
   struct pfs_ver * ver = NULL;
   int retval;
 
-  //printf ("PFS_LOG : PFS_UNLINK\n");
-
   if (strlen (path) == 1 && strcmp (path, "/") == 0) {
     retval = -EPERM;
     goto error;
@@ -925,8 +951,6 @@ int pfs_unlink (struct pfs_instance * pfs,
   
   pfs_free_ver (ver);
   ver = NULL;
-
-  //printf ("PFS_LOG : PFS_UNLINK DONE\n");
 
   return 0;
 

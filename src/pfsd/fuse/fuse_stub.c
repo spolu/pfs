@@ -52,9 +52,14 @@ int pfs_fuse_read (const char *path, char *buf, size_t size, off_t offset,
 }
 
 int pfs_fuse_write (const char *path, const char *buf, size_t size, off_t offset,
-	       struct fuse_file_info *fi)
+		    struct fuse_file_info *fi)
 {
   return pfs_pwrite (pfs, (int) fi->fh, buf, size, offset);
+}
+
+int pfs_fuse_fsync (const char *path, int param, struct fuse_file_info *fi)
+{
+  return pfs_fsync (pfs, (int) fi->fh);
 }
 
 int pfs_fuse_ftruncate (const char *path, off_t offset, struct fuse_file_info *fi)

@@ -19,7 +19,6 @@ int nopfs_fuse_getattr (const char *path, struct stat *stbuf)
   char * new_path = malloc (sizeof (path) + 30);
   sprintf (new_path, "/home/spolu/test%s", path);
 
-  
   retval = stat (new_path, stbuf);
   
   if (retval < 0)
@@ -53,7 +52,6 @@ int nopfs_fuse_open (const char *path, struct fuse_file_info *fi)
   char * new_path = malloc (sizeof (path) + 30);
   sprintf (new_path, "/home/spolu/test%s", path);
 
-
   if ((fd = open (new_path, fi->flags)) < 0) {
     return fd;
   }
@@ -86,7 +84,6 @@ int nopfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi)
   sprintf (new_path, "/home/spolu/test%s", path);
 
   fi->flags |= O_CREAT;
-  fi->flags |= O_RDWR;
   if ((fd = open (new_path, fi->flags)) < 0) {
     return -errno;
   }
