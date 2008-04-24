@@ -18,6 +18,7 @@ int nopfs_fuse_read (const char *path, char *buf, size_t size, off_t offset,
 		   struct fuse_file_info *fi);
 int nopfs_fuse_write (const char *path, const char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi);
+int nopfs_fuse_fsync (const char *path, int param, struct fuse_file_info *fi);
 int nopfs_fuse_ftruncate (const char *path, off_t offset, struct fuse_file_info *fi);
 int nopfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi);
 int nopfs_fuse_release (const char *path, struct fuse_file_info *fi);

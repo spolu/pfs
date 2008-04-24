@@ -6,6 +6,7 @@ struct fuse_operations nopfs_operations = {
   .open = nopfs_fuse_open,
   .read = nopfs_fuse_read,
   .write = nopfs_fuse_write,
+  .fsync = nopfs_fuse_fsync,
   .ftruncate = nopfs_fuse_ftruncate,
   .create = nopfs_fuse_create,
   .release = nopfs_fuse_release,
