@@ -1,3 +1,10 @@
+/*
+ * pFS API
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

@@ -1,3 +1,10 @@
+/*
+ * pFS Daemon
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>

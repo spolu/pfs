@@ -1,3 +1,10 @@
+/*
+ * Update callback
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #ifndef _PFS_UPDT_H
 #define _PFS_UPDT_H
 

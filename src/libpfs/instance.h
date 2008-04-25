@@ -1,3 +1,10 @@
+/*
+ * pFS Instance Management
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #ifndef _PFS_INSTANCE_H
 #define _PFS_INSTANCE_H
 

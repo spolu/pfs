@@ -1,3 +1,10 @@
+/*
+ * Directory, entry, version management
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #ifndef _PFS_ENTRY_H
 #define _PFS_ENTRY_H
 

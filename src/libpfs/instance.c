@@ -1,3 +1,10 @@
+/*
+ * pFS Instance Management
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

@@ -1,3 +1,10 @@
+/*
+ * File Helper functions
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

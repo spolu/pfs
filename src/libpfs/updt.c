@@ -1,3 +1,10 @@
+/*
+ * Update callback
+ *
+ * Copyright (C) 2008 Stanislas Polu <spolu@stanford.edu>. 
+ * All Rights Reserved.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -17,8 +24,7 @@
  * Method: pfs_push_log_entry
  * Scope:  Global
  *
- * Push a new log entry to the push_log file for an entry
- * If passed prop_cnt = 0 and NULL set the current sd_id
+ * Callback the updt_cb function to pfsd.
  *
  *---------------------------------------------------------------------*/
 
