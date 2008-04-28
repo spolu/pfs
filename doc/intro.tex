@@ -2,7 +2,63 @@
 
 \section{Introduction}
 
-Users having an increasing number of devices on which they need to
+%
+%  More storage devices
+%    More failures
+%    More places your data could be--harder to manage
+%  One solution:  The cloud
+%    Put all your data at Google or Amazon
+%    Alleviates the failure and management problems
+%  Limitations of the cloud model
+%    Requires you to be on-line (even phones don't always have net access)
+%    Potentially uses lots of network bandwidth to the outside world
+%    Creates massive single points of failure
+%    Creates need to support storage provider business model
+%         (e.g., why pay Amazon S3 charges if you don't have to?)
+%  But don't really need storage provider's hardware, just management
+%    People usually have enough raw storage on devices for their data
+%          Storage growing faster than net connectivity (cite Rodriguez)
+%    People lose servers, desktop machines, and cell phones,
+%          but usually not all at once
+%  Suggests an alternative:  Personal clouds
+%    Serverless cloud model based on your own devices
+%    Example of taking data to work on cell phone
+%  Requires a new data model
+%    Don't want to copy files manually all the time--too inconvenient
+%    Don't want a network file system
+%          Synchronous network file system too dependent on network
+%          Coda/Ficus still require server which requires maintenance
+%    We advocate new type of FS:  Update locally, propagate asynchronously
+%  Roadmap
+%
+
+Users have an increasing number of devices with sizable data storage.
+PDAs, digital audio players, cell phones, and cameras will all soon
+provide storage capacities comparable to today's laptops.  The ability
+to carry around more storage opens up new opportunities but also
+creates several complications.  More devices mean more failures.
+People are more likely to lose or damage a cell phone or PDA than a
+desktop machine; yet when the cell phone has 60~GB of storage, it will
+be more likely to contain irreplaceable data.  Second, more devices
+mean there are more places any given file can live, so that whatever
+file a user wants is less likely to be on the device he or she is
+currently using.  Synchronizing data back and forth between devices
+creates its own management hassle.
+
+One solution people appear to be moving towards is storing all data
+``in the cloud''---i.e., keeping the primary copy of data at external
+service providers such as Amazon or Google rather than in any of a
+user's own devices.  This trend is particularly evident with web mail,
+which many people find preferable to using their own mail servers
+as it allows them to check mail from multiple devices and not worry
+about their own servers failing.  Similarly, some people use web
+applications such as Google spreadsheet, particularly when sharing the
+data with multiple people using multiple devices.
+
+\endinput
+
+
+on which they need to
 access their data ranging from desktop computer to laptop computers
 and mobile smartphones, they face the data management problems of
 maintaining multiple versions of a file on different devices. They
