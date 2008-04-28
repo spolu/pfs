@@ -9,7 +9,7 @@ We denote by $sd_{d}$ a storage space of capacity $S(sd_{d})$
 located on the device $d$. A group is a set of $sd$s and an
 access control list:
 \begin{center}
-$g = (\{sd^{d}\}, \text{ACL})$
+$g = (\{sd_{d}\}, \text{ACL})$
 \end{center}
 Note that a given device can have multiple $sd$s and that $sd$s are
 not shared among different groups. But a $sd$ is provided and intended
@@ -21,7 +21,7 @@ $\text{name}(sd) = \text{user}.\text{device}$.
 Moreover, Each user has a special group $me(u)$ on which he has
 exclusive access:
 \begin{center}
-$me(u) = (\{sd^{d}\}, \text{u:rw})$
+$me(u) = (\{sd_{d}\}, \text{u:rw})$
 \end{center}
 
 \subsection{Disconnected Operations}
@@ -72,7 +72,9 @@ struct pfs_vv
 \end{verbatim}
 }
 \end{center}
-\caption{In-memory data structures for directory, entries and version vectors.}
+\caption{\label{MemStruct}
+{\small In-memory data structures for directory, entries and version
+  vectors.}}
 \end{figure}
 
 \begin{table*}[t]
@@ -140,14 +142,15 @@ struct pfs_vv
     \hline
   \end{tabular}
 \end{center}
-\caption{Evolution of version vectors for a file $f$ modified from
+\caption{\label{VVEx}
+  {\small Evolution of version vectors for a file $f$ modified from
   three different $sd$s. For each $sd$ we show the main version
   vector relative to that $sd$ fisrt. We show the version vector list
   for each $sd$ only when it is modified.
   Here the maximum number of
   coexisting versions for $f$ is 2. We could have reached the worst
   case, that is 3, by modifying $f$ from the three different $sd$s
-  without any connection occuring between modifications.}
+  without any connection occuring between modifications.}}
 \end{table*}
 
 \subsection{Version Vector}
@@ -163,7 +166,7 @@ ressource is created and an incremented counter maintained on each
 $sd$. A directory is therefore a list of versionned entries mapping
 names to ids. To encompass the notion of file versioning, each time a
 file is modified, its id is regenerated and associated entry
-updated. Figure 1 shows the in-memory data structures used to
+updated. Figure \ref{MemStruct} shows the in-memory data structures used to
 represent a directory and its versionned entries.
 
 Each version of an entry is associated with a version vector as
@@ -291,16 +294,21 @@ $i=j$. Thus, $k \leq n$. \qed
 }
 
 Note that the set $vv^{(1)},..., vv^{(k)}$ can differ from one $sd$ to
-the other if all updates are not yet propagated to all $sd$s. Table 1
+the other if all updates are not yet propagated to all $sd$s. Table \ref{VVEx}
 shows the evolution of the version vectors associated with an
 entry updated from three different $sd$s.
 
 \subsection {${\tt pfs\_set\_entry}$}
 
 A nice property of this versionning system is that every classical
-file system operations can be represented as a call to a unique
-operation {\tt pfs\_set\_entry}. The declaration of the function is as
-follow:
+file system operations can be mapped as a call to a unique
+operation {\tt pfs\_set\_entry}. {\tt pfs\_set\_entry} is the atomic
+update operation that will be propagated among the $sd$s of a group.
+It has a log structure, that is, replaying sequentially a set of update
+allows to reconstruct the associated file system tree structure. When
+propagated to a $sd$, the updates are applied and can be simply appended to a
+log for future propagation to other $sd$s.  
+The declaration of the function is as follows:
 
 \begin{center}
 {\tt \small
@@ -316,45 +324,96 @@ int pfs_set_entry
 }
 \end{center}
 
-{\tt pfs\_set\_entry} adds version {\tt ver} (see Figure 1 for a declaration
-of {\tt struct pfs\_ver}) to the entry {\tt name} in the directory
-designated by {\tt dir\_id} in the group designated by {\tt grp\_id}.
-{\tt reclaim} is used to determine wether or not ressources pointed by
-versions that are dominated by {\tt ver} in entry {\tt name} should be
-reclaimed or not. It is particularly usefull for the {\tt rename}
-operation. Let us show a few examples of how file system operations
-map to {\tt pfs\_set\_entry} operations. For clarity, we ignore the
-{\tt grp\_id} and {\tt dir\_id} and only show the type of the 
-{\tt ver} used :
+{\tt pfs\_set\_entry} adds version {\tt ver} (see Figure 1 for a
+declaration of {\tt struct pfs\_ver}) to the entry {\tt name} in the
+directory designated by {\tt dir\_id} in the group designated by {\tt
+  grp\_id}. Note that the directory structure does not have a name, but
+is simply designated by its {\tt dir\_id}. The mapping from the name
+to {\tt dir\_id} being itself represented as an entry in the parent
+directory.  {\tt reclaim} is used to determine wether or not
+ressources pointed by versions that are dominated by {\tt ver} in
+entry {\tt name} should be reclaimed or not. It is particularly
+usefull for the {\tt rename} operation. Let us show a few examples of
+how file system operations map to {\tt pfs\_set\_entry}
+operations. For clarity, we ignore the {\tt grp\_id} and {\tt dir\_id}
+and only show the type of the {\tt ver} used :
 
 \begin{itemize}
-  \item \textbf{open ($f$, O\_CREATE)} : \\
+  \item \textbf{open ($f$, O\_CREAT)} : \\
     generate new back storage file and $id$ \\
-    {\tt pfs\_set\_entry ($f$, (FIL, $id$), 1)}
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,(FIL, $id$),1)}
 
   \item \textbf{close ($f$)} when $f$ is dirty : \\
     regenerate back storage $id'$ \\
-    {\tt pfs\_set\_entry ($f$, (FIL, $id'$), 1)}
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,(FIL, $id'$),1)}
     
   \item \textbf{unlink ($f$)} : \\
-    {\tt pfs\_set\_entry ($f$, (DEL, 0), 1)}
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,(DEL, 0),1)}
 
   \item \textbf{rmdir ($d$)} : \\
-    {\tt pfs\_set\_entry ($d$, (DEL, 0), 1)}
+    {\tt pfs\_set\_entry ($dir\_id$,$d$,(DEL, 0),1)}
 
   \item \textbf{rename ($f_1$, $f_2$)} : \\
-    {\tt pfs\_set\_entry ($f_1$, (DEL, 0), 0)} \\
-    {\tt pfs\_set\_entry ($f_2$, (FIL, $id$), 1)}
+    {\tt pfs\_set\_entry ($dir\_id$,$f_1$,(DEL, 0),0)} \\
+    {\tt pfs\_set\_entry ($dir\_id'$,$f_2$,(FIL, $id$),1)}
 \end{itemize}
 
-We haven't shown the version vectors used here. They are generated or
+We have not shown the version vectors used here. They are generated or
 incremented according to the semantics we defined previously. Note
-that a deleted entry version persist in the system as being of type
+that a deleted entry version persists in the system as being of type
 {\tt DEL}. Such conservative technique is needed to handle cases where
 an entry might have been deleted on one $sd$ and updated on
 another. The {\tt DEL} type has to be treated as any other type of
 entry by the versionning system.
 
+Moreover, anytime a {\tt pfs\_set\_entry} update is received from
+another $sd$ with an unknow {\tt dir\_id}, it generates a new directory
+with the unknown {\tt dir\_id} that is not inserted in the local tree, but
+will allow to complete the received update. Such situation may arise
+if the updates are not propagated according to the same order as the one they
+have been originally generated with. If all updates are subsequently
+propagated, an update relative to the directory will follow and will
+allow its insertion in the local tree. This behavior gives the 
+{\tt pfs\_set\_entry} updates a very useful property : \emph{a given set of
+updates will result in the same local tree structure regardless of the
+order in which the updates are performed.}
+
+Updates are naturally ordered by the Happen-Before relationship, and
+one can advocate to keep this order whenever a set of updates is
+propagated. Nevertheless, we rely explicitly on the order independance
+described above in one precise case : directory removal. Assume
+$sd_{1}$ and $sd_{2}$ are disconnected, $sd_{1}$ removes a
+directory $d$ and the one file contained in it $f$, while $sd_{2}$
+makes a modification to $f$. When $sd_{2}$ will receive $sd_{1}$
+updates, $f$ will first exist as two non-dominated versions, a file
+and a a deleted entry. Then an attempt will be made to remove
+directory $d$ which will fail since $d$ is not empty on $sd_{2}$. Here
+$sd_{2}$ has to replay $d$ creation with an increased version
+vector. When $sd_{2}$ updates will be propagated to $sd_{1}$, it will
+first see the creation of a file $f$ for an unknown {\tt dir\_id}, and
+will accept the update and generate a new directory with the unknown
+{\tt dir\_id}. Then, it will receive the replayed creation of $d$,
+allowing it to reinsert the mapping from name $d$ to {\tt dir\_id}, into
+the parent directory. Finally, $d$ maps on every $sd$ to two non-dominated
+versions, $(DEL,0)$ as main version for $sd_{1}$ and, $(DIR, dir\_id)$ as main version
+for $sd_{2}$.
+
+%QUID : Do you see the little consistency that exists after this
+%operation. It has no impact on the logical structure of the
+%tree...
+%Should I mention it ?
+
+Other solutions could have been provided to solve this directory
+removal problem. All other programation of updates we considered would
+have implied loosing the log structure of {\tt pfs\_set\_entry}
+updates which we believe has to be preserved for its simplicity and
+the flexibility it provides for updates propagation.
+
+Thus, {\tt pfs\_set\_entry} is the atomic update operation used by
+pFS. Any modification to the file system tree structure can be mapped
+to a {\tt pfs\_set\_entry} update. The updates are organized as a
+simple order-independent log structure, which provides a great
+flexibility and simplicity for updates propagation.
 
 % Local Variables:
 % tex-main-file: "main.ltx"
