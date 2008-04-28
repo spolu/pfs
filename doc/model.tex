@@ -17,8 +17,8 @@ such existing solutions.
   \includegraphics [scale=0.5] {img/other_model}
   \caption{\label{OthModel}
     {\small Existing models : cloud infrastructure with local
-      caches. The circles represent user high capacity devices, the
-      diamond represents the user mobile device, and the square
+      caches. The circles represent high capacity devices, the
+      diamond represents a mobile smartphone , and the square
       represents the cloud infrastructure always available, in charge
       of resolving conflicting updates. Black arrows represent the
       connection and update propagation patterns while the grey arrows
@@ -28,7 +28,7 @@ such existing solutions.
 
 Unfortunately, we believe that the need for a central server has a few
 drawbacks. The end-user has to trust the company providing the cloud
-infrastructure for storing all his data. Such models might
+infrastructure for storing \emph{all} his data. Such models might
 result into closed infratstructes tighted to the storage cloud
 they rely on, where compatibility or migration between different
 service providers might become difficult.
@@ -56,16 +56,16 @@ We think that such personnal clouds should complement the use of
 remote computing and storage clouds. Our framework is perfectly
 compatible with the use of remote servers as nodes in one's personnal
 cloud for providing services that are not available on conventional
-devices such as online availability of data. pFS also provides a
+devices, such as online availability of data. pFS also provides a
 solution to back-up since chances are low for someone to loose all of
-its devices at the same time. Even if smartphones are used as a way to
-propagate updates, their loss does not jeopardize the system since all
+its devices at the same time. Even if the smartphone is used as a way to
+propagate updates, its loss does not jeopardize the system since all
 the data is present on the last device that connected with
 it. Finally, the goal of pFS is to provide a distributed storage
-system where update happen locally at very high speed, and are
-propagated asyncrhonously between every devices participating in the
-system without relying exclusively on a centralized, potentially
-untrusted, certainly mercantile infrastructure.
+system where updates happen locally, and are propagated asyncrhonously
+between every devices participating in the system without relying
+exclusively on a centralized, potentially untrusted (doubtly free)
+infrastructure.
 
 
 % Local Variables:
