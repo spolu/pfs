@@ -91,10 +91,9 @@ The back storage is layed out as follows : \\
 {\tt /.pfs/data/} \\ 
 {\tt /.pfs/dir/} \\ 
 {\tt /.pfs/info} \\ 
-
 {\tt /.pfs/groups} \\
 
-{\tt /.pfs/info} is a file containing the user unique id, the device
+{\tt /.pfs/info} is a file containing the user's unique id, the device's
 unique id, along with the user name and the device name. {\tt
   /.pfs/groups} contains the list of the groups the device is involved
 in, with for each group the unique id of the {\tt pfs\_dir} structure
@@ -107,9 +106,7 @@ entries in {\tt pfs\_dir} are versionned and each version contains a
 type and an unique id. If the type of the version is $DIR$, the id
 refers to a file in {\tt /.pfs/dir/}. Otherwise, if the type of the
 version is $FIL$, the id refers to a file in {\tt /.pfs/data/},
-containing the actual content of the file. The list of $sd$s
-participating in a group is contained in pFS itself such that it gets
-propagated and can be handled directly by pfsd.
+containing the actual content of the file.
 
 \subsection {libpfs}
 

@@ -13,6 +13,28 @@
 % Propagation happens asynchronously
 % without the user knowing + sequentially
 
+This section presents an evaluation of libpfs performance. Our goal is
+to show that pFS provides good local performances resulting in a
+seamless user experience since the updates are propagated
+ayncrhonously. We compare the performances of pfs, ext3, Fuse only (We
+implemented a trivial Fuse based file system replicating all calls
+directly to the local file system), and NFS (Protocol v.3 over LAN)
+over a set of microbenchmarks. The machine used is ..., running Ubuntu
+Server 8.04 distribution.  The microbenchmarks we use are the ones used
+for the evaluation of LFS~\cite{rosenblum:lfs}. The small file
+benchmark (LFS\_S) consists of the creation of 100000 small (4096 bytes)
+files, the access for reading of those files, and finally the deletion
+of those files. We augmented the small file benchmark with a small file
+write benchmark, which opens for writing and append a few bytes to the
+set of files in order to expose the case where libpfs incurs the
+most overhead (mainly, an extra {\tt link} call), as described in
+section \ref{sec:impl}. The large file benchmark (LFS\_L) consists of
+writing sequentially 30000 blocks of 4096 bytes, reading them
+sequentially, re-writing them randomly and finally reading them
+randomly.
+
+
+
 
 
 \endinput
