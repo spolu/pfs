@@ -170,7 +170,7 @@ updated. Figure \ref{MemStruct} shows the in-memory data structures used to
 represent a directory and its versionned entries.
 
 Each version of an entry is associated with a version vector as
-defined by Parker \emph{et al.}~\cite{Parker1983} from which we
+defined by Parker \emph{et al.}~\cite{parker:inconsistency} from which we
 borrow the following definition replacing ``file'' by ``entry'' and
 ``sites'' by ``$sd$s'' :
 
@@ -199,7 +199,7 @@ dominate $vv^{(1)}$.
 
 When a conflict is detected, pFS does not attempt to resolve it
 automatically. It relies on concepts introduced by Gifford 
-\emph{et al.}~\cite{Gifford1988} 
+\emph{et al.}~\cite{gifford:sfs} 
 to provide feedback to users or applications by generating two
 different file names when reading the directory for the two different
 versions of the entry. When a conflict is detected for an entry $f$,

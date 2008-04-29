@@ -3,6 +3,20 @@
 \section{Evaluation}
 \label{sec:eval}
 
+%
+% Focus on the evaluation of libpfs : is it really local speed
+% Evaluation of PFSD depends on the technology that is intended to be used
+% libpfs evaluation :
+%    eval tech details / env
+%    benchmark : LFS + small Write (relinking + meta_data updt) overhead
+% Faster than NFS_local : Definitely usable. 
+% Propagation happens asynchronously
+% without the user knowing + sequentially
+
+
+
+\endinput
+
 The actual implementation of pFS does not focus on performance. The
 way pFS has been designed would be really adapted to a log-structured
 file system. We believe that it is possible drastically improve the
