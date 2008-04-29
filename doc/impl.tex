@@ -52,7 +52,7 @@
 
 
 We implemented pFS as a two level architecture based on the device
-local file system :
+local file system (Figure \ref{PfsImpl}) :
 
 \begin {itemize}
 \item \textbf{Back storage} : a directory on the local file system
@@ -61,15 +61,15 @@ local file system :
   versionning are implemented in libpfs which exports a POSIX file
   system interface along with extra functionalities specific to
   pFS.
-\item \textbf{Fuse stub} : exports pFS to the user as a file
-  system. It translates directly the calls received from
-  Fuse~\cite{henk:fuse} to the POSIX file system interface exported by
+\item \textbf{Fuse stub} : exposes pFS to the user as a file system
+  using Fuse~\cite{henk:fuse}. It translates directly the calls
+  received from Fuse to the POSIX file system interface exported by
   libpfs.
 \item \textbf{pfsd} : a daemon that is responsible for propagating
   updates using any communication channel available and apply updates
-  received from other devices. pfsd receives callbacks from libpfs
-  whenever an update is made locally, and use libpfs API to commit
-  updates received from remote devices on the local device.
+  received from other $sd$s. pfsd receives callbacks from libpfs
+  whenever an update is made locally, and uses libpfs API to commit
+  updates received from remote $sd$s on the local device.
 \end {itemize}
 
 \begin{figure}[ht]
@@ -81,31 +81,35 @@ local file system :
 \end{figure}
 
 We designed the core component of pFS as a library in order to provide
-an easy-to-use API for taking advantage of our versionning system that
-is independent of the communication channels used to propagates the
+an easy-to-use API for taking advantage of our versionning system, that
+is independent of the communication channels used to propagate the
 updates between the different $sd$s.
 
 \subsection {Back Storage}
 
-The back storage is layed out as follows : \\ {\tt /.pfs/data/}
-\\ {\tt /.pfs/dir/} \\ {\tt /.pfs/info} \\ {\tt /.pfs/groups} \\
+The back storage is layed out as follows : \\ 
+{\tt /.pfs/data/} \\ 
+{\tt /.pfs/dir/} \\ 
+{\tt /.pfs/info} \\ 
 
-{\tt /.pfs/info} is a file containing the user unique id, the storage
-device unique id, along with the user name and the device name. {\tt
+{\tt /.pfs/groups} \\
+
+{\tt /.pfs/info} is a file containing the user unique id, the device
+unique id, along with the user name and the device name. {\tt
   /.pfs/groups} contains the list of the groups the device is involved
 in, with for each group the unique id of the {\tt pfs\_dir} structure
 representing the root of the group tree. {\tt /.pfs/dir/} contains one
-file per {\tt pfs\_dir} structure existing in the system, named after the {\tt
-  pfs\_dir} unique id. It contains a serialized version of the {\tt
-  struct pfs\_dir} used by the versionning system and described in
-Figure \ref{MemStruct}. As we described in section \ref{sec:vers}
-entries in {\tt pfs\_dir} are versionned and each version contains
-a type and an unique id. If the type of the version is
-$DIR$, the id refers to a file in {\tt /.pfs/dir/}, otherwise, if the
-type of the version is $FIL$, the id refers to a file in {\tt
-  /.pfs/data/} containing the actual content of the file. The list of
-$sd$s participating in a group is contained in pFS itself such that it
-gets propagated and can be handled directly by pfsd.
+file per {\tt pfs\_dir} structure existing in the system, named after
+the {\tt pfs\_dir} unique id. It contains a serialized version of the
+{\tt pfs\_dir} structure used by the versionning system (Figure
+\ref{MemStruct}). As we described in section \ref{sec:vers}
+entries in {\tt pfs\_dir} are versionned and each version contains a
+type and an unique id. If the type of the version is $DIR$, the id
+refers to a file in {\tt /.pfs/dir/}. Otherwise, if the type of the
+version is $FIL$, the id refers to a file in {\tt /.pfs/data/},
+containing the actual content of the file. The list of $sd$s
+participating in a group is contained in pFS itself such that it gets
+propagated and can be handled directly by pfsd.
 
 \subsection {libpfs}
 
@@ -120,40 +124,40 @@ Since libpfs is structured as a library, all functions get a {\tt
 of the back storage and the list of currently opened files. libpfs
 exports a POSIX-like file system API : {\tt pfs\_open}, {\tt
   pfs\_close}, {\tt pfs\_pwrite}, {\tt pfs\_unlink}... These calls get
-absolute paths (containing the group directory) as argument for file
-or directory operations mainly in order to be compliant with Fuse API
+absolute paths (containing the group directory) as argument for files
+and directories, mainly for compliance with Fuse API
 which uses absolute paths from the root of the mounted file system.
 
 Therefore, we need to walk down the chain of {\tt pfs\_dir} structures
 anytime an operation has to be made on a file that has no associated
 file handler. Since {\tt pfs\_dir} structures are stored in files
-contained in {\tt /.pfs/dir/} we have implemented a cache in order to
-walk theses structures in memory and avoid having to open and read as
-many file as the depth of the path we are given as argument. The cache
-is a simple LRU cache implemented with a hash table mapping {\tt
-  pfs\_dir} id to the actual in-memory data structure. It does not
-need to be large since modifications made inside a directory results in
-many requests to the same {\tt pfs\_dir} structures. In our
-implementation we are caching 64 {\tt pfs\_dir} structures, a pointer
-to the cache is stored in the {\tt pfs\_instance} structure. libpfs
-provides a {\tt pfs\_sync\_cache} function for periodically writing
-back the cache to disk (every 10s in our implementation of pfsd). The
-cache has incurred an important improvement over the performances of
-libpfs since {\tt pfs\_dir} fetchs and write backs are amortized over
-a lot of operations in case of intensive workloads, or appear as
+contained in {\tt /.pfs/dir/} we have implemented a cache to walk
+theses structures in memory. This avoids the overhead of having to
+open and read as many files in {\tt /.pfs/dir/} as the depth of the
+path we are given as argument. The cache is a simple LRU cache
+implemented with a hash table mapping {\tt pfs\_dir} ids to their
+actual in-memory data structures. It does not need to be large since
+modifications made inside a directory results in many requests to the
+same {\tt pfs\_dir} structures. In our implementation we are caching
+64 {\tt pfs\_dir} structures, a pointer to the cache is stored in the
+{\tt pfs\_instance} structure. libpfs provides a {\tt
+  pfs\_sync\_cache} function for periodically writing back the cache
+to disk (every 10s in our implementation of pfsd). The cache has
+incurred an important improvement over the performances of libpfs
+since {\tt pfs\_dir} fetchs and write backs are amortized over a lot
+of operations in case of intensive workloads, or appear as
 asynchronous for less intensive workloads.
 
 \paragraph{Local file operations :}
 When a file is created, a new unique id is generated, the associated
 file is created in {\tt /.pfs/data/} and a {\tt pfs\_set\_entry} call
-is issued to insert the new {\tt pfs\_ver} into the {\tt pfs\_dir}
-associated with the directory in which the file is created. The file
-creation happens on the back storage file system while the version
-update happens in memory using the cache we described. Opening a file
-for reading does not need to update any versioning information and is
-directly mapped to an {\tt open} call on the back storage file. Therefore
-creating a file or opening a file for reading using pfslib incurs
-almost no overhead. 
+is issued to insert the new {\tt pfs\_ver} into its parent {\tt
+  pfs\_dir} structure. The file creation happens on the back storage
+file system while the version update happens in memory using the cache
+we described. Opening a file for reading does not need to update any
+versioning information and is directly mapped to an {\tt open} call on
+the back storage file. Therefore creating a file or opening a file for
+reading using libpfs incurs almost no overhead.
 
 At the contrary, opening a file for writing necessitates the
 generation of a new unique id. This new mapping is needed as soon as
@@ -161,23 +165,23 @@ the {\tt pfs\_open} call is issued since the actual id for the file
 might be revoked if an update containing a dominating version is
 received while the file is edited. The {\tt pfs\_ver} associated with
 the newly generated id is inserted in memory when the file is
-subsequently closed. Therefore opening a file for writing using libpfs
-incurs a non negligeable overhead and maps to two calls on the back
-storage : {\tt link (old\_id, new\_id)} and {\tt open (new\_id)}.
+subsequently closed. Therefore opening a file for writing incurs a non
+negligeable overhead and maps to two calls on the back storage : {\tt
+  link (old\_id, new\_id)} and {\tt open (new\_id)}.
 
 Merging a version into the local main version is translated into a
 call to {\tt pfs\_set\_entry}, and an {\tt unlink} call to the back
 storage to revoke the version that has been superseded.
 
 \paragraph{Local directory operations :}
-Directory creation are mapped to the creation of a file in {\tt
+Directory creations are mapped to the creation of a file in {\tt
   /.pfs/dir/}, the insertion of a {\tt pfs\_dir} structure in the
-cache and the update of the parent {\tt pfs\_dir} (already present in
-the cache). Directory removals are mapped to an {\tt unlink} call to
-the back storage, the removal of an entry in the cache and the update
-of the parent {\tt pfs\_dir}. Therefore, directory operations using
-libpfs incurs a slight overhead by mapping directory operations to
-back storage files operations and in memory updates.
+cache and the update of the parent {\tt pfs\_dir}. Directory removals
+are mapped to an {\tt unlink} call to the back storage, the removal of
+an entry in the cache and the update of the parent {\tt
+  pfs\_dir}. Therefore, directory operations incurs a slight overhead
+by mapping directory operations to back storage files operations and
+in-memory updates.
 
 \paragraph{}
 
@@ -211,6 +215,16 @@ struct pfs_updt
 The updates received by pfsd from the network can be applied to the
 local copy of pFS by calling {\tt pfs\_set\_entry} directly.
 
+Finally, libpfs exports a {\tt pfs\_create\_group} function for
+creating a new group. The function creates a new directory {\tt
+  /new\_group} on the root of the pFS tree, and generates a new {\tt
+  pfs\_dir} structure representing the root of {\tt
+  new\_group}. libpfs looks for the list of $sd$s participating in any
+given group in the file {\tt /new\_group/.pfs\_sd}. Adding and
+removing $sd$s is delegated to pfsd. The file {\tt .pfs\_sd} simply
+contains a mapping from $sd$s ids to $sd$s names used for naming files
+when multiple versions co-exist.
+
 \subsection {pfsd}
 
 We have implemented a simple version of pfsd using IP as a transport
@@ -226,7 +240,7 @@ would rely on the built-in mechanisms to attach devices such that they
 recognize each others when placed at proximity.
 
 There is no final design for pfsd since it is highly dependent on which
-type of device and which type communication channel it relies on. This
+type of device and which type of communication channel it relies on. This
 section is rather a survey of lessons and directives we have learnt
 from designing our prototype of pfsd. 
 
@@ -235,6 +249,7 @@ from designing our prototype of pfsd.
 \item propagate to other devices the updates generated locally.
 \item receive update from other devices and apply them to the local
   instance of libpfs.
+\item organize $sd$ addition and removal
 \end{itemize}
 
 \paragraph {Update Logging :}
@@ -263,7 +278,9 @@ similar. rsync\cite{tridgell:rsync} as well as concepts introduced in
 LBFS\cite{muthitacharoen:lbfs} should definitely be considered for
 file transmission in order to avoid wasting bandwidth.
 
-\paragraph {Choice of communication channel:}
+\paragraph {Group and sd management :}
+
+\paragraph {Choice of communication channel :}
 If different communication channels are available (IP (LAN / WAN),
 Bluetooth, Wire), it is essential to define a policy to decide which
 layer to use given the updates to be propagated. It would be

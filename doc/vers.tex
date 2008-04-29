@@ -163,11 +163,13 @@ associates with each file and directory a global unique identifiant
 generated on creation by applying a 64-bits md5 cryptographic hash
 function on the concatenation of the identifiant of the $sd$ where the
 ressource is created and an incremented counter maintained on each
-$sd$. A directory is therefore a list of versionned entries mapping
-names to ids. To encompass the notion of file versioning, each time a
-file is modified, its id is regenerated and associated entry
-updated. Figure \ref{MemStruct} shows the in-memory data structures used to
-represent a directory and its versionned entries.
+$sd$. 
+
+As shown in Figure \ref{MemStruct}, a directory is represented in pFS
+by a {\tt pfs\_dir} structure. It is a list of versionned {\tt
+  pfs\_entry} structures mapping names to ids. To encompass the notion
+of file versioning, each time a file is modified, its id is
+regenerated and associated {\tt pfs\_ver} structure updated.
 
 Each version of an entry is associated with a version vector as
 defined by Parker \emph{et al.}~\cite{parker:inconsistency} from which we
@@ -261,7 +263,7 @@ breaking the ties arbitrarly if two or more candidates are
 ``equals''). We call the associated entry version the main version for
 that $sd$.
 
-When multiple version of an entry named {\tt f} coexist, we display
+When multiple versions of an entry named {\tt f} coexist, we display
 the main version as {\tt f} and the other version as before :
 \begin{center}
   {\tt f} \\
@@ -324,19 +326,20 @@ int pfs_set_entry
 }
 \end{center}
 
-{\tt pfs\_set\_entry} adds version {\tt ver} (see Figure 1 for a
-declaration of {\tt struct pfs\_ver}) to the entry {\tt name} in the
-directory designated by {\tt dir\_id} in the group designated by {\tt
-  grp\_id}. Note that the directory structure does not have a name, but
-is simply designated by its {\tt dir\_id}. The mapping from the name
-to {\tt dir\_id} being itself represented as an entry in the parent
-directory.  {\tt reclaim} is used to determine wether or not
-ressources pointed by versions that are dominated by {\tt ver} in
-entry {\tt name} should be reclaimed or not. It is particularly
-usefull for the {\tt rename} operation. Let us show a few examples of
-how file system operations map to {\tt pfs\_set\_entry}
-operations. For clarity, we ignore the {\tt grp\_id} and {\tt dir\_id}
-and only show the type of the {\tt ver} used :
+{\tt pfs\_set\_entry} adds version {\tt ver} (see Figure
+\ref{MemStruct} for a declaration of {\tt pfs\_ver} structure) to the
+entry {\tt name} in the directory designated by {\tt dir\_id} in the
+group designated by {\tt grp\_id}. Note that the directory structure
+does not have a name, but is simply designated by its {\tt
+  dir\_id}. The mapping from the name to {\tt dir\_id} being itself
+represented as an entry in the parent directory.  {\tt reclaim} is
+used to determine wether or not ressources pointed by versions that
+are dominated by {\tt ver} in entry {\tt name} should be reclaimed or
+not. It is particularly usefull for the {\tt rename} operation. Let us
+show a few examples of how file system operations map to {\tt
+  pfs\_set\_entry} operations. For clarity, we ignore the {\tt
+  grp\_id} and {\tt dir\_id} and only show the type of the {\tt ver}
+used :
 
 \begin{itemize}
   \item \textbf{open ($f$, O\_CREAT)} : \\
@@ -367,12 +370,12 @@ another. The {\tt DEL} type has to be treated as any other type of
 entry by the versionning system.
 
 Moreover, anytime a {\tt pfs\_set\_entry} update is received from
-another $sd$ with an unknow {\tt dir\_id}, it generates a new directory
+another $sd$ with an unknow {\tt dir\_id}, it generates a new {\tt pfs\_dir}
 with the unknown {\tt dir\_id} that is not inserted in the local tree, but
 will allow to complete the received update. Such situation may arise
 if the updates are not propagated according to the same order as the one they
 have been originally generated with. If all updates are subsequently
-propagated, an update relative to the directory will follow and will
+propagated, an update relative to the new directory will follow and will
 allow its insertion in the local tree. This behavior gives the 
 {\tt pfs\_set\_entry} updates a very useful property : \emph{a given set of
 updates will result in the same local tree structure regardless of the
