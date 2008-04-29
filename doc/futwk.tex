@@ -3,12 +3,29 @@
 \section{Future Work}
 \label{sec:futwk}
 
-\endinput
+The framework we present in this paper raise new problematics : Work
+need to be done on the formalization and the acquisition of statistics
+concerning file access patterns, connectivity patterns, and
+propagations dynamics in the context of pFS. 
 
- that has to be flexible
-enough to leave control to applications and users, yet ensure
-efficient caching of updates that are not yet propagated to all
-devices in the system.
+Such statistics could be exploited to elaborate flexible yet efficient
+caching policies in the context of limited storage mobile devices as
+described in section \ref{sec:model}. By flexible, we mean that users
+and applications should be able to influence the caching policy at a
+fine grain level, based on their more complete semantic knowledge of
+the data pFS is handling. By efficient, we mean that the caching
+policy, influenced by user and applications, should still impose that
+updates are kept long enough on mobile devices to ensure their good
+propagation.
+
+As stated in section \ref{sec:impl}, such statistics could also be
+exploited to make efficient choice of the communication chanels to use
+given the environment in which the updates have to be propagated.
+
+In that context, probabilistic models have yet to be designed to
+provide answers to those two problematics that we have identified and
+not address in our actual work.
+
 
 % Local Variables:
 % tex-main-file: "main.ltx"

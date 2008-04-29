@@ -249,12 +249,12 @@ from designing our prototype of pfsd.
 \item propagate to other devices the updates generated locally.
 \item receive update from other devices and apply them to the local
   instance of libpfs.
-\item organize $sd$ addition and removal
+\item organize groups management : $sd$s addition and removal
 \end{itemize}
 
 \paragraph {Update Logging :}
 pfsd need to maintain a log of every update it sees in order to
-retransmit them to other devices. Two important points have to be
+retransmit them to other devices. Three important points have to be
 considered when implementing update logging :
 \begin{itemize}
 \item The callbacks used by libpfs to transmit local updates to pfsd are
@@ -267,29 +267,55 @@ considered when implementing update logging :
   already receive any given update.
 \item Any update that has been propagated to all devices can and
   should be removed from the log to avoid wasting local storage
-  capacity.
+  capacity. This forbids the simple retransmission of the whole update
+  log when a new $sd$ joins a group. Nevertheless, this log can easily
+  be regenerated from the state stored by libpfs on the back storage.
 \end{itemize}
 
 \paragraph {File transmission :}
 Along with the updates, back storage files stored in {\tt /.pfs/data/}
-have to be transmitted between the devices. Back storage files
-associated with different version of a same file are very likely to be
-similar. rsync\cite{tridgell:rsync} as well as concepts introduced in
-LBFS\cite{muthitacharoen:lbfs} should definitely be considered for
-file transmission in order to avoid wasting bandwidth.
+have to be transmitted between the devices. Files associated with
+different version of a same file are very likely to be
+similar. rsync\cite{tridgell:rsync} principles as well as concepts
+introduced in LBFS\cite{muthitacharoen:lbfs} should definitely be
+considered for file transmission in order to avoid wasting bandwidth.
 
-\paragraph {Group and sd management :}
+\paragraph {Group management :}
+Group management is a real challenge in pFS. libpfs preconize that the
+list of $sd$s participating in a group is stored in the pFS group tree
+itself. This allows propagation of up-to-date group information using
+the pFS mechanism itself. In our prototype, pfsd rely on the {\tt
+  .pfs\_sd} file to discover $sd$s where updates has to be
+transmitted. Any communication between two $sd$s starts by a preambule
+to check that the destination $sd$ already know the existence of the
+group to be updated. If not, a special command is issued to instruct
+the destination pfsd to create the group locally. Then, an initial
+synchronization done through the propagation of the whole log of
+update for that group has to take place. A $sd$ removal is done simply
+by updating the {\tt .pfs\_sd} file. The $sd$ removed then stops to
+receive updates from the group.
+
+Even if not needed for correctness, it would be great if the $id$ of
+the removed $sd$ was erased from any version vector existing in the
+system. This can be done by simply removing the $sd$ from versions
+where it not the last updater and moving versions where it is the last
+updater to a specific directory similar to the {\tt lost+found} directory
+for file system checking. Even if it is not the case yet, this
+functionality should be provided by libpfs and the trigger for this
+action propagated as an update by pfsd.
 
 \paragraph {Choice of communication channel :}
 If different communication channels are available (IP (LAN / WAN),
 Bluetooth, Wire), it is essential to define a policy to decide which
 layer to use given the updates to be propagated. It would be
-inefficient to propagate GB of data over WAN from a desktop computer
-at home to a desktop computer at work if this data can be quickly
-pushed to a mobile device such as a cell phone that will be able to
-rapidly deliver the data when it will be at proximity of the desktop
-computer at work. Please refer to section \ref{sec:futwk} for a more
-extensive discussion of this issue.
+inefficient to propagate GB of music over WAN from a desktop computer
+at home to a desktop computer at work if this data can be efficiently
+pushed to a mobile device such as a digital player that will be able
+to quickly retransmit it when placed at proximity of the desktop
+computer at work. There is still a lot of work to be done on the
+design of such policy as described in \ref{sec:futwk}.
+
+
 
 % Local Variables:
 % tex-main-file: "main.ltx"
