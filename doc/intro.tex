@@ -17,7 +17,7 @@
 %         (e.g., why pay Amazon S3 charges if you don't have to?)
 %  But don't really need storage provider's hardware, just management
 %    People usually have enough raw storage on devices for their data
-%          Storage growing faster than net connectivity (cite Rodriguez)
+%          Storage growing faster than net connectivity (cite Rodrigues)
 %    People lose servers, desktop machines, and cell phones,
 %          but usually not all at once
 %  Suggests an alternative:  Personal clouds
@@ -36,24 +36,44 @@ Users have an increasing number of devices with sizable data storage.
 PDAs, digital audio players, cell phones, and cameras will all soon
 provide storage capacities comparable to today's laptops.  The ability
 to carry around more storage opens up new opportunities but also
-creates several complications.  More devices mean more failures.
-People are more likely to lose or damage a cell phone or PDA than a
-desktop machine; yet when the cell phone has 60~GB of storage, it will
-be more likely to contain irreplaceable data.  Second, more devices
-mean there are more places any given file can live, so that whatever
-file a user wants is less likely to be on the device he or she is
-currently using.  Synchronizing data back and forth between devices
-creates its own management hassle.
+creates several complications.  First, more devices mean more
+failures.  People are more likely to lose or damage a cell phone or
+PDA than a desktop machine; yet when cell phones have 60~GB of
+storage, they will more likely contain data the owner cannot afford to
+use.  Second, more devices mean there are more places any given file
+may live, so that whatever file a user wants is less likely to be on
+the device he or she is currently using.  This will naturally lead to
+users synchronizing data back and forth across devices which will
+creates management hassles if just done manually.
 
-One solution people appear to be moving towards is storing all data
-``in the cloud''---i.e., keeping the primary copy of data at external
-service providers such as Amazon or Google rather than in any of a
-user's own devices.  This trend is particularly evident with web mail,
-which many people find preferable to using their own mail servers
-as it allows them to check mail from multiple devices and not worry
-about their own servers failing.  Similarly, some people use web
-applications such as Google spreadsheet, particularly when sharing the
-data with multiple people using multiple devices.
+One solution to both these problems that people appear to be moving
+towards is storing all data ``in the cloud''---i.e., keeping the
+primary copy of data at external service providers such as Amazon or
+Google rather than in any of a user's own devices.  This trend is
+particularly evident with web mail, which many people find preferable
+to using their own mail servers as it allows them to check mail from
+multiple devices and not worry about their own servers failing.
+Similarly, some people use web applications such as Google Docs,
+particularly when sharing data with multiple people using multiple
+devices.
+
+Unfortunately, the cloud model has a number of limitations.  In many
+cases, users need Internet connectivity to access their data.  Yet
+devices (even cell phones) do not always have network connectivity.
+Moreover, the cloud model unnecessarily consumes precious bandwidth to
+the outside world even in cases when two devices on the same network
+share files.  Worse yet, widespread dependence on a small number of
+storage providers presents a dangerously large central point of
+failure.  As Pakistan recently demonstrated by causing a world-wide
+blackout of youtube, many parties have the ability to take down
+Internet services.  Finally, the cloud model requires service
+providers to recover costs.  Some applications, such as email, can
+achieve this through advertising.  Others (such as those based on
+Amazon S3) require users to pay fees to the storage providers.
+Clearly an alternative that does not require fees would be preferable
+for users.
+
+
 
 \endinput
 
