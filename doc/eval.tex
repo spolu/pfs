@@ -15,7 +15,7 @@
 
 This section presents an evaluation of libpfs performance. Our goal is
 to show that pFS provides good local performances resulting in a
-seamless user experience updates begin propagated
+seamless user experience, updates begin propagated
 ayncrhonously. We compare the performances of pfs, ext3, Fuse only (We
 implemented a trivial Fuse based file system replicating all calls
 directly to the local file system), and NFS (Protocol v.3 over LAN)
@@ -30,7 +30,7 @@ set of files in order to expose the case where libpfs incurs the
 most overhead (mainly, an extra {\tt link} call), as described in
 section \ref{sec:impl}. The large file benchmark (LFS\_L) consists of
 writing sequentially 30000 blocks of 4096 bytes, reading them
-sequentially, re-writing them randomly and finally reading them
+sequentially, re-writing them randomly and finally re-reading them
 randomly.
 
 

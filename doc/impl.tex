@@ -236,28 +236,27 @@ content of a modified file is retransmitted as its id is
 regenerated. This is clearly a mechanism that can be optimized as
 stated in section \ref{subsec:depfsd}.
 
-prot\_pfsd do not provide either automated management of groups. The
-group are created using a specific command and do not allow dynamic
-addition of $sd$s after creation.
+prot\_pfsd does not provide yet automated management of groups. The
+$sd$s participating in a group are specified at creation and
+prot\_pfsd does not allow dynamic addition of $sd$ after creation.
 
 prot\_pfsd keeps a log of the updates it receives from the local
 instance of libpfs and from other devices. The log entries are {\tt
   pfs\_updt} structures augmented with a propagation vector. Updates
 to this propagation vector is retransmitted between the $sd$s until it
 is equal to 1. When it is the case, the log entry is deleted to avoid
-wasting storage capacity which can be done securely since the list of
-$sd$s participating in a group is fixed at creation.
+wasting storage capacity.
 
-We paid attention in our design to make the daemon resilient to
-brutal disconnections. Under common usage, this a very frequent case
-since the user is not necessarely aware of the asynchronous update
-propagation that may take place a long time after he updated his local
-copy. The flexibility provided by the structure of the updates helped
-a lot in this case, since updates transmissions are not dependent on
-each others in the context of libpfs.
+We paid attention in our design to make the daemon resilient to brutal
+disconnections that frequently occurs on laptop computers. The
+flexibility provided by the structure of the updates helped a lot in
+this case, since updates transmissions are not dependent on each
+others in the context of libpfs. After two instances of prot\_pfsd get
+disconnected, when connectivity is retrived, prot\_pfsd simply needs
+to continue its sequential propagation of the updates stored in the
+log.
 
-
-\subsection {Design of a pfs daemon}
+\subsection {Design of a pFS daemon}
 \label {subsec:depfsd}
 
 There is no final design for pfsd since it is highly dependent on
@@ -276,7 +275,7 @@ prot\_pfsd and directives we have to iterate on our implementation.
 \paragraph {Naming service}
 In the context of IP a naming service is necessary to enable the
 devices to discover each others' address from their unique ids. We
-used a central server, but DNS could be used as such a service. Such
+used a central server, but DNS could be used as a naming service. A
 naming service is not always needed, As an example, a daemon using
 Bluetooth would rely on the built-in mechanisms to attach devices such
 that they recognize each others when placed at proximity.
@@ -289,7 +288,7 @@ considered when implementing update logging~:
 \item The callbacks used by libpfs to transmit local updates to pfsd are
   placed on the critical execution path of any local
   operation. Therefore, when received, updates should be temporarely
-  stored in memory before being writtem back asyncrhonously to permanent
+  stored in memory before being written back asyncrhonously to permanent
   storage.
 \item Depending on the context, updates should be augmented by pfsd
   with a propagation vector to keep track of which devices have
@@ -310,28 +309,26 @@ introduced in LBFS\cite{muthitacharoen:lbfs} should definitely be
 considered for file transmission in order to avoid wasting bandwidth.
 
 \paragraph {Group management~:}
-Group management is a real challenge in pFS. libpfs preconizes that the
-list of $sd$s participating in a group is stored in the pFS group tree
-itself. This allows propagation of up-to-date group information using
-the pFS mechanism itself. In our prototype, pfsd rely on the {\tt
-  .pfs\_sd} file to discover $sd$s where updates has to be
-transmitted. Any communication between two $sd$s starts by a preambule
-to check that the destination $sd$ already know the existence of the
-group to be updated. If not, a special command is issued to instruct
-the destination pfsd to create the group locally. Then, an initial
-synchronization done through the propagation of the whole log of
-update for that group has to take place. A $sd$ removal is done simply
-by updating the {\tt .pfs\_sd} file. The $sd$ removed then stops to
-receive updates from the group.
+Group management is a real challenge in pFS. libpfs preconizes that
+the list of $sd$s participating in a group is stored in the pFS group
+tree itself. This allows propagation of up-to-date group information
+using the pFS mechanism itself. Any communication between two $sd$s
+should start by a preambule to check that the destination $sd$ already
+know the existence of the group to be updated. If not, a special
+command should be issued to instruct the destination pfsd to create the group
+locally. Then, an initial synchronization done through the propagation
+of the whole log of update for that group would  have to take place. A $sd$
+removal can be done simply by updating the {\tt .pfs\_sd} file. The $sd$
+removed would then stop receiving updates from the group.
 
 Even if not needed for correctness, it would be great if the $id$ of
 the removed $sd$ was erased from any version vector existing in the
-system. This can be done by simply removing the $sd$ from versions
-where it not the last updater and moving versions where it is the last
-updater to a specific directory similar to the {\tt lost+found} directory
-for file system checking. Even if it is not the case yet, this
-functionality should be provided by libpfs and the trigger for this
-action propagated as an update by pfsd.
+system. This can be done by removing the $sd$ from versions where it
+not the last updater and moving versions where it is the last updater
+to a specific directory similar to the {\tt lost+found} directory
+commonly used for file system checking. Even if it is not the case
+yet, this functionality should be provided by libpfs and the trigger
+for this action propagated as an update by pfsd.
 
 \paragraph {Choice of communication channel~:}
 If different communication channels are available (IP (LAN / WAN),
