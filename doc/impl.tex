@@ -180,15 +180,6 @@ an entry in the cache and the update of the parent {\tt
 by mapping directory operations to back storage files operations and
 in-memory updates.
 
-\paragraph{}
-
-libpfs also provides interfaces used for two-way communication of
-updates with pfsd. Functions can be registered to be called
-any time a {\tt pfs\_set\_entry} is issued. The argument passed to
-those callbacks is a {\tt pfs\_updt} structure that contains all the
-arguments needed to issue the same {\tt pfs\_set\_entry} on another
-device~:
-
 \begin{figure}[ht]
 \begin{center}
 {\tt \small
@@ -204,13 +195,21 @@ struct pfs_updt
 \end{verbatim}
 }
 \end{center}
-\caption{\label{MemStruct}
+\caption{\label{PfsUpdt}
 {\small {\tt pfs\_updt} structure propagated by pfsd among the
     different instances of libpfs.}}
 \end{figure}
 
-The updates received by pfsd from the network can be applied to the
-local copy of pFS by calling {\tt pfs\_set\_entry} directly.
+\paragraph{}
+
+libpfs also provides interfaces used for two-way communication of
+updates with pfsd. Functions can be registered to be called any time a
+{\tt pfs\_set\_entry} is issued. The argument passed to those
+callbacks is a {\tt pfs\_updt} structure (Figure \ref{PfsUpdt}) that
+contains all the arguments needed to issue the same {\tt
+  pfs\_set\_entry} on another device. The updates received by pfsd
+from the network can be applied to the local copy of pFS by calling
+{\tt pfs\_set\_entry} directly.
 
 Finally, libpfs exports a {\tt pfs\_create\_group} function for
 creating a new group. The function creates a new directory {\tt
@@ -231,32 +230,39 @@ files contained in {\tt /.pfs/data}. To allow the devices to discover
 each others and retrieve their respective IPs, we designed a central
 naming service to which they register when connected to the network.
 
-prot\_pfsd does not optimize back storage file transfers~: the entire
-content of a modified file is retransmitted as its id is
-regenerated. This is clearly a mechanism that can be optimized as
-stated in section \ref{subsec:depfsd}.
-
-prot\_pfsd does not provide yet automated management of groups. The
-$sd$s participating in a group are specified at creation and
-prot\_pfsd does not allow dynamic addition of $sd$ after creation.
+prot\_pfsd still lacks some functionalities : It does not optimize back
+storage file transfers~: the entire content of a modified file is
+retransmitted as its id is regenerated. This is clearly a mechanism
+that can be optimized as stated in section \ref{subsec:depfsd}. It
+does not yet provide automated management of groups. The $sd$s
+participating in a group are specified at creation and it does
+not allow dynamic addition of $sd$ after creation.
 
 prot\_pfsd keeps a log of the updates it receives from the local
 instance of libpfs and from other devices. The log entries are {\tt
   pfs\_updt} structures augmented with a propagation vector. Updates
 to this propagation vector is retransmitted between the $sd$s until it
 is equal to 1. When it is the case, the log entry is deleted to avoid
-wasting storage capacity.
+wasting storage capacity. prot\_pfsd opportunistically attempts to
+propagate any unpropagated updates between two $sd$s when the
+connection status change from \emph{disconnected} to \emph{connected}
+between those two $sd$s.
 
 We paid attention in our design to make the daemon resilient to brutal
 disconnections that frequently occurs on laptop computers. The
 flexibility provided by the structure of the updates helped a lot in
 this case, since updates transmissions are not dependent on each
 others in the context of libpfs. After two instances of prot\_pfsd get
-disconnected, when connectivity is retrived, prot\_pfsd simply needs
+disconnected, when connectivity is retrived, prot\_pfsd simply has
 to continue its sequential propagation of the updates stored in the
 log.
 
-\subsection {Design of a pFS daemon}
+Despite its lack of functionalities, prot\_pfsd successfuly showed
+the validity and ease of use of libpfs versioning system, and already 
+allowed us to experience the benefits of the personal cloud data
+management.
+
+\subsection {What's next...}
 \label {subsec:depfsd}
 
 There is no final design for pfsd since it is highly dependent on
