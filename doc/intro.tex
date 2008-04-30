@@ -83,7 +83,18 @@ desktop machines, laptops, cell phones, or PDAs, any single person is
 highly unlikely to lose all of their devices simultaneously.
 
 These trends suggest an alternative data management model, which we
-call \emph{personal clouds}.  Personal clouds are like file systems
+call \emph{personal clouds}.  A personal cloud is a file system in
+which multiple devices each store a local copy of every file.
+Modifications propagate between devices opportunistically as network
+conditions permit.  For instance, modifications made on a user's home
+machine might automatically propagate to her laptop over a local
+wireless network; at work the next day the laptop could automatically
+push the changes out to a local server.  Though changes can also
+propagate over the wide area network, personal clouds exploit the
+higher bandwidth of people physically transporting devices to
+synchronize much more data than would otherwise be practical.
+Furthermore, should any device fail, its replacement can simply
+re-initialize itself from any existing copy.
 
 
 % Local Variables:
