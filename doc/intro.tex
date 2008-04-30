@@ -39,11 +39,11 @@ to carry around more storage opens up new opportunities, but also
 creates complications.  First, more devices mean more failures.
 People are more likely to lose or damage a cell phone or PDA than a
 desktop machine; yet when cell phones have 60~GB of storage, they will
-likely contain data the owner cannot afford to use.  Second, more
+likely contain data the owner cannot afford to lose.  Second, more
 devices mean there are more places any given file may live. Whatever
 file a user wants is then less likely to be on the device he or she is
 currently using.  Users will thus somehow need to manage their data by
-transferring between devices.
+transferring files between devices.
 
 One solution to these problems is to store all data ``in the
 cloud''---i.e., to keep the primary copy of data at an external
@@ -70,11 +70,11 @@ Others (such as those based on Amazon S3) require fees to the storage
 provider.  In these cases an alternative that does not require fees
 would be preferable for users.
 
-Two trends suggest a better alternative to the cloud model for many
-users.  First, the raw storage owned by users is plentiful and growing
-faster than Internet connection speeds.  From 1990 to 2005, the time
-required to transmit a typical home user's hard disk contents over the
-wide-area network increased from 0.6 to 120
+Fortunately, two trends suggest a alternative model that may be
+preferable for many users.  First, the raw storage owned by users is
+plentiful and growing faster than Internet connection speeds.  From
+1990 to 2005, the time required to transmit a typical home user's hard
+disk contents over the wide-area network increased from 0.6 to 120
 days~\cite{rodrigues:multi-hop}.  Usable storage capacity of ``the
 cloud'' is therefore limited by bandwidth to something much smaller
 than local storage.  Second, as users get more devices, they have
@@ -82,20 +82,26 @@ access to more failure independence.  Though we often lose servers,
 desktop machines, laptops, cell phones, or PDAs, any single person is
 highly unlikely to lose all of their devices simultaneously.
 
-These trends suggest an alternative data management model, which we
-call \emph{personal clouds}.  A personal cloud is a file system in
-which multiple devices each store a local copy of every file.
-Modifications propagate between devices opportunistically as network
-conditions permit.  For instance, modifications made on a user's home
-machine might automatically propagate to her laptop over a local
-wireless network; at work the next day the laptop could automatically
-push the changes out to a local server.  Though changes can also
-propagate over the wide area network, personal clouds exploit the
-higher bandwidth of people physically transporting devices to
-synchronize much more data than would otherwise be practical.
-Furthermore, should any device fail, its replacement can simply
-re-initialize itself from any existing copy.
+These trends enable a data management model we term \emph{personal
+  clouds}.  A personal cloud is a file system in which multiple
+devices each store a local copy of every file.  Modifications
+propagate between devices opportunistically as network conditions
+permit.  For instance, modifications made on a user's home machine
+might automatically propagate to her laptop over a local wireless
+network; at work the next day the laptop could automatically push the
+changes out to a local server.  Though changes also propagate over the
+wide area network, personal clouds exploit the higher bandwidth of
+physically transported devices to synchronize far more data than would
+otherwise be practical.  Moreover, should any device fail, its
+replacement can simply re-initialize itself from any existing copy.
 
+This paper presents \emph{pFS}, a network file system that implements
+personal clouds.  pFS has several characteristics that differentiate
+it from previous file systems.  First, pFS provides \emph{less}
+consistency than previous file systems.  Though a few previous systems
+support a disconnected mode of operation, pFS is essentially always in
+disconnected mode.  All updates are made locally and propagated
+asynchronously to other devices.  Second, pFS 
 
 % Local Variables:
 % tex-main-file: "main.ltx"
