@@ -140,35 +140,32 @@ same {\tt pfs\_dir} structures. In our implementation we are caching
 {\tt pfs\_instance} structure. libpfs provides a {\tt
   pfs\_sync\_cache} function for periodically writing back the cache
 to disk (every 10s in our implementation of pfsd). The cache has
-incurred an important improvement over the performances of libpfs
-since {\tt pfs\_dir} fetchs and write backs are amortized over a lot
-of operations in case of intensive workloads, or appear as
-asynchronous for less intensive workloads.
+incurred an important improvement over the performances of libpfs.
 
 \paragraph{Local file operations~:}
 When a file is created, a new unique id is generated, the associated
 file is created in {\tt /.pfs/data/} and a {\tt pfs\_set\_entry} call
 is issued to insert the new {\tt pfs\_ver} into its parent {\tt
   pfs\_dir} structure. The file creation happens on the back storage
-file system while the version update happens in memory using the cache
-we described. Opening a file for reading does not need to update any
-versioning information and is directly mapped to an {\tt open} call on
-the back storage file. Therefore creating a file or opening a file for
-reading using libpfs incurs almost no overhead.
+file system while the version update happens in memory on the cached
+{\tt pfs\_dir} structure. Opening a file for reading does not need to
+update any versioning information and is directly mapped to an {\tt
+  open} call on the back storage file. 
 
-At the contrary, opening a file for writing necessitates the
+Opening a file for writing incurs more overhead since it necessitates the
 generation of a new unique id. This new mapping is needed as soon as
 the {\tt pfs\_open} call is issued since the actual id for the file
 might be revoked if an update containing a dominating version is
 received while the file is edited. The {\tt pfs\_ver} associated with
 the newly generated id is inserted in memory when the file is
 subsequently closed. Therefore opening a file for writing incurs a non
-negligeable overhead and maps to two calls on the back storage~: {\tt
-  link (old\_id, new\_id)} and {\tt open (new\_id)}.
+negligeable overhead and maps to two calls on the back storage~: a
+{\tt link} and an {\tt open} operation.
 
 Merging a version into the local main version is translated into a
 call to {\tt pfs\_set\_entry}, and an {\tt unlink} call to the back
-storage to revoke the version that has been superseded.
+storage to revoke the version that
+ has been superseded.
 
 \paragraph{Local directory operations~:}
 Directory creations are mapped to the creation of a file in {\tt
@@ -179,6 +176,18 @@ an entry in the cache and the update of the parent {\tt
   pfs\_dir}. Therefore, directory operations incurs a slight overhead
 by mapping directory operations to back storage files operations and
 in-memory updates.
+
+
+\paragraph{}
+
+libpfs also provides interfaces used for two-way communication of
+updates with pfsd. Functions can be registered to be called any time a
+{\tt pfs\_set\_entry} is issued. The argument passed to those
+callbacks is a {\tt pfs\_updt} structure (Figure \ref{PfsUpdt}) that
+contains all the arguments needed to issue the same {\tt
+  pfs\_set\_entry} on another device. The updates received by pfsd
+from the network can be applied to the local copy of pFS by calling
+{\tt pfs\_set\_entry} directly.
 
 \begin{figure}[ht]
 \begin{center}
@@ -200,17 +209,6 @@ struct pfs_updt
     different instances of libpfs.}}
 \end{figure}
 
-\paragraph{}
-
-libpfs also provides interfaces used for two-way communication of
-updates with pfsd. Functions can be registered to be called any time a
-{\tt pfs\_set\_entry} is issued. The argument passed to those
-callbacks is a {\tt pfs\_updt} structure (Figure \ref{PfsUpdt}) that
-contains all the arguments needed to issue the same {\tt
-  pfs\_set\_entry} on another device. The updates received by pfsd
-from the network can be applied to the local copy of pFS by calling
-{\tt pfs\_set\_entry} directly.
-
 Finally, libpfs exports a {\tt pfs\_create\_group} function for
 creating a new group. The function creates a new directory {\tt
   /new\_group} on the root of the pFS tree, and generates a new {\tt
@@ -218,7 +216,7 @@ creating a new group. The function creates a new directory {\tt
   new\_group}. libpfs looks for the list of $sd$s participating in any
 given group in the file {\tt /new\_group/.pfs\_sd}. Adding and
 removing $sd$s is delegated to pfsd. The file {\tt .pfs\_sd} simply
-contains a mapping from $sd$s ids to $sd$s names used for naming files
+has to contain a mapping from $sd$s ids to $sd$s names used for naming files
 when multiple versions co-exist.
 
 \subsection {pfsd}
@@ -234,9 +232,9 @@ prot\_pfsd still lacks some functionalities : It does not optimize back
 storage file transfers~: the entire content of a modified file is
 retransmitted as its id is regenerated. This is clearly a mechanism
 that can be optimized as stated in section \ref{subsec:depfsd}. It
-does not yet provide automated management of groups. The $sd$s
-participating in a group are specified at creation and it does
-not allow dynamic addition of $sd$ after creation.
+does not provide automated management of groups. The $sd$s
+participating in a group are specified at creation 
+dynamic addition of $sd$ is not yet supported.
 
 prot\_pfsd keeps a log of the updates it receives from the local
 instance of libpfs and from other devices. The log entries are {\tt
@@ -259,8 +257,8 @@ log.
 
 Despite its lack of functionalities, prot\_pfsd successfuly showed
 the validity and ease of use of libpfs versioning system, and already 
-allowed us to experience the benefits of the personal cloud data
-management.
+allowed us to experience the benefits of the personal cloud model we
+advocate.
 
 \subsection {What's next...}
 \label {subsec:depfsd}
@@ -282,7 +280,7 @@ prot\_pfsd and directives we have to iterate on our implementation.
 In the context of IP a naming service is necessary to enable the
 devices to discover each others' address from their unique ids. We
 used a central server, but DNS could be used as a naming service. A
-naming service is not always needed, As an example, a daemon using
+naming service is not always needed. As an example, a daemon using
 Bluetooth would rely on the built-in mechanisms to attach devices such
 that they recognize each others when placed at proximity.
 
