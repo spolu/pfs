@@ -68,12 +68,12 @@ randomly (LFS\_LRW) and finally re-reading them randomly (LFS\_LRR).
 The benchmarks are synthetic, and do not represent realistic
 workloads. The goal is to show the strengths and weakness of
 libpfs. Figure \ref{LfsL} shows, as expected, that versioning
-maintenance does not incur any overhead compared to Fuse. pFS is
-substantially faster than NFS on every benchmark except the small
-write benchmark (Figure \ref{LfsS}). This benchmark emphasize the
-operation that incurs the most overhead due to versionning maintenance
-: pFS performs comparatively to NFS on this benchmark where it is
-three times slower than native ext3.
+maintenance does not incur any overhead compared to Fuse for large
+files. pFS is substantially faster than NFS on every benchmark except
+the small write benchmark (Figure \ref{LfsS}). This benchmark
+emphasize the operation that incurs the most overhead due to
+versionning maintenance : pFS performs comparatively to NFS on this
+benchmark where it is three times slower than native ext3.
 
 \subsection{pfsd}
 
@@ -104,8 +104,8 @@ Second, libpfs keeps track of deleted files to avoid ambiguity
 in face of resources creation and removal. Such deleted entries are
 only kept for directories that are still accessible in a group
 filesystem which limits their number. Nevertheless, such entries can
-be garbage collected. A solution as already been provided
-in~\cite{page:ficus} under the ``Insert/Delete ambiguity'' section.
+be garbage collected. A solution has already been provided
+in~\cite{page:ficus} under the section : ``Insert/Delete ambiguity''.
 
 \endinput
 
