@@ -33,10 +33,11 @@ participating in the system. Such versioning allows update propagation
 between any couple of devices as network conditions permit.
 
 Our intent with pFS is to provide a distributed storage system where
-data is cached locally and seamlessly propagated asynchronously. Such
-``personnal cloud'' can provide the location independent layer needed
-to overcome the management hassle incurred by the growing number of
-devices a user has to deal with on a daily basis.
+data is stored locally on every devices and seamlessly propagated
+asynchronously. Such ``personnal cloud'' can provide the location
+independent layer needed to overcome the management hassle incurred by
+the growing number of devices a user has to deal with on a daily
+basis.
 
 \subsection{Usage Case}
 
@@ -95,6 +96,15 @@ ubiquitous access to up-to-date versions of any ressource without
 relying fully on a centralized, potentially untrusted (doubtly
 free) infrastructure.
 
+\subsection {Mobile Devices}
+\label{sec:model_mob}
+
+In the following sections, we assume that mobile devices as
+smartphones and digital players have enough storage capacity for
+holding all of a user's data. This might become true in a near future
+but is certainly not today. We acknowledge this fact and leave as
+future work the design of a special policies for mobile devices with
+limited storage capacity as described in section \ref{sec:futwk}.
 
 \endinput
 
@@ -150,14 +160,6 @@ devices by the system, become a very common relay for updates. Figure
 
 
 
-\subsection {Mobile Devices}
-
-In the following sections, we assume that mobile devices as smartphones and
-digital players have enough storage capacity for holding all of a
-user's data. This might become true in a near future but is certainly
-not today. We acknowledge this fact and leave as future work the
-design of a caching policy for the mobile devices as described in section 
-\ref{sec:futwk}.
 
 
 % Local Variables:
