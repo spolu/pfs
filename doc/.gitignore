@@ -6,5 +6,9 @@
 *.dvi
 *.bak
 .xpdf-running
+pfs_struct.tex
+lfs_l.pdf
+lfs_s.pdf
+pfs_struct.pdf
 main.ps
 main.pdf

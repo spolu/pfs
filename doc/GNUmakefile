@@ -1,9 +1,19 @@
 MAIN = main.ltx
+#
+# Note: specialfigs are ones for which you don't want a .tex file,
+# just a .pdf file (so that you can scale it with includegraphics).
+#
+# Any .fig files not listed under SPECIALFIGS will generate a .tex and
+# a .pdf file, and if you don't include the .tex file you may miss
+# some text.
+#
+SPECIALFIGS = lfs_l.fig lfs_s.fig
 
 BASE := $(basename $(MAIN))
-XFIGS := $(wildcard *.fig)
+ALLXFIGS := $(wildcard *.fig)
+XFIGS := $(filter-out $(SPECIALFIGS), $(ALLXFIGS))
 TEXFIGS := $(XFIGS:.fig=.tex)
-PDFFIGS := $(XFIGS:.fig=.pdf)
+PDFFIGS := $(ALLXFIGS:.fig=.pdf)
 TEXFILES := $(sort $(MAIN) $(wildcard *.tex) $(TEXFIGS))
 BIBFILES := $(wildcard *.bib)
 STYFILES := $(wildcard *.sty)
@@ -29,6 +39,8 @@ graph/%.pdf: graph/%.eps
 %.pdf %.tex: %.fig
 	fig2dev -L pdftex -p1 $< > $*.pdf
 	fig2dev -L pstex_t -p $*.pdf $< > $*.tex
+$(SPECIALFIGS:.fig=.pdf): %.pdf: %.fig
+	fig2dev -L pdf -p1 $< > $*.pdf
 
 RERUN = egrep -q '(^LaTeX Warning:|\(natbib\)).* Rerun'
 UNDEFINED = egrep -q '^(LaTeX|Package natbib) Warning:.* undefined'
