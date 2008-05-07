@@ -42,8 +42,8 @@
 \end{center}
 \end{figure}
 
-This section presents an evaluation of libpfs performances. Our goal is
-to show that pFS provides good local performances resulting in a
+This section presents an evaluation of libpfs performances. Our goal
+is to show that pFS provides good local performances resulting in a
 seamless user experience, updates begin propagated ayncrhonously. We
 compare the performances of pFS, ext3, Fuse only (We implemented a
 trivial Fuse based file system replicating all calls directly to the
@@ -57,13 +57,15 @@ LFS~\cite{rosenblum:lfs}. The small file benchmark (LFS\_S, Figure
 files (LFS\_SC) in 100 different directories, the access for reading
 of those files (LFS\_SR), and finally their deletion (LFS\_SD). We
 augmented the small file benchmark with a small file write benchmark
-(LFS\_SW), which opens for writing and append a few bytes to the set
-of files in order to expose the case where libpfs incurs the most
-overhead (mainly, an extra {\tt link} call), as described in section
-\ref{sec:impl}. The large file benchmark (LFS\_L, Firgure \ref{LfsL})
-consists of writing sequentially 30000 blocks of 4096 bytes
-(LFS\_LSW), reading them sequentially (LFS\_LSR), re-writing them
-randomly (LFS\_LRW) and finally re-reading them randomly (LFS\_LRR).
+(LFS\_SW), which opens the files for writing, append a few bytes and
+call {\tt fsync}.  We added this benchmark to illustrate the case where
+libpfs incurs the most overhead (an extra {\tt link} operation for
+versioning, and the cache flushing when syncing to disk), as described in
+section \ref{sec:impl}. The large file benchmark (LFS\_L, Firgure
+\ref{LfsL}) consists of writing sequentially 30000 blocks of 4096
+bytes (LFS\_LSW), reading them sequentially (LFS\_LSR), re-writing
+them randomly (LFS\_LRW) and finally re-reading them randomly
+(LFS\_LRR).
 
 The benchmarks are synthetic, and do not represent realistic
 workloads. The goal is to show the strengths and weakness of

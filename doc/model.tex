@@ -28,11 +28,11 @@ of physically transported devices.
 
 Based on this observation, our main contribution, is the design of a
 flexible versioning system that does not rely on the existence of a
-central server, where conflicts are resolved on every devices
+central server, where conflicts are resolved on every device
 participating in the system. Such versioning allows update propagation
 between any couple of devices as network conditions permit.
 
-Our intend with pFS is to provide a distributed storage system where
+Our intent with pFS is to provide a distributed storage system where
 data is cached locally and seamlessly propagated asynchronously. Such
 ``personnal cloud'' can provide the location independent layer needed
 to overcome the management hassle incurred by the growing number of
@@ -40,41 +40,48 @@ devices a user has to deal with on a daily basis.
 
 \subsection{Usage Case}
 
-Let's walk through a typical usage case of the ``personal cloud''
-infrastructure we propose. User \emph{X} finishes editing his holiday
-video at home. The video is stored on his desktop computer, but also
-pushed to his digital player via USB. The next day, in the train to
-work, without connectivity, he makes a few change on his laptop to his
-quarterly report. The update is propagated via bluetooth to his cell
-phone. Arriving at work, he plugs in his media player, and enjoy the
-video on a widescreen with his colleagues, while the updates
-he made on the train are seamlessly uploaded via bluetooth from his
-cell phone to his computer at work. He can then work locally on the
-latest copy of his report without even booting his laptop. While
-his son is using the desktop computer at home to play a game after
-school, the updates he made during the day are automatically
-fetched. When \emph{X} get back home, he is able to keep working on an
-up-to-date copy of its data even in the case he forgot his laptop.
+Our actual implementation runs on Unix-like OSes and only relies on IP
+to propagate updates. Nevertheless, our goal is to extend the use of
+our versioning system to a broader range of devices and communication
+channels.
 
-As described above, the ``personal cloud'' infrastructure allows to
+Even if not yet fully implemented, let's walk through a typical usage
+case of the ``personal cloud'' infrastructure as we envison it. User
+\emph{X} finishes editing his holiday video at home. The video is
+stored on his desktop computer, but also pushed to his digital player
+via USB. The next day, in the train to work, without connectivity, he
+makes a few change on his laptop to his quarterly report. The update
+is propagated via bluetooth to his cell phone. Arriving at work, he
+plugs in his media player, and enjoys the video on a widescreen with
+his colleagues, while the updates he made on the train are seamlessly
+uploaded via bluetooth from his cell phone to his computer at work. He
+can then work locally on the latest copy of his report without even
+booting his laptop. While his son is using the desktop computer at
+home to play a game after school, the updates he made during the day
+are automatically fetched from his computer at work. When \emph{X}
+gets back home, he is able to keep working on an up-to-date copy of
+his data even if he forgot his laptop.
+
+As described above, the ``personal cloud'' infrastructure allows us to
 take advantage of every devices to propagate data. The cell phone can
 be used when connectivity is lacking, and there is no other way to
 communicate directly with another device. Any device can be used as a
-mean of propagation when the benefit of physically transported devices
-overcome the time needed to transmit large sets of data on WAN.
+means of propagation when the benefit of physically transported devices
+overcomes the time needed to transmit large sets of data on the WAN.
 
 \subsection{Extended Usage}
 
 We believe that such personnal clouds should complement the use of
-remote computing and storage clouds. The principles we expose are
+remote computing and storage clouds. The principles we espouse are
 compatible with the integration of remote servers as nodes in one's
 personnal cloud for providing services that are not available on
 conventional devices, such as web-based access and modification of
 data.
 
-Our model of ``personnal cloud'' can also be used to spawn devices
-owned by different users to ease the collaboration process on files that
-otherwise need to be sent back and forth between the participants.
+Our model of ``personnal cloud'' can also be used to synchronize
+devices owned by different users in order to ease the collaboration
+process on files that otherwise need to be sent back and forth between
+the participants.
 
 Moreover, pFS represents a solution to back-up since chances are low
 for someone to loose all of its devices at the same time. Even if the
@@ -83,9 +90,9 @@ jeopardize the system since all the data is present on the last device
 that connected with it.
 
 Finally, the goal of pFS is to provide a distributed storage system
-where the user data is available on all his devices. It should provide
+where the user's data is available on all his devices. It should provide
 ubiquitous access to up-to-date versions of any ressource without
-relying exclusively on a centralized, potentially untrusted (doubtly
+relying fully on a centralized, potentially untrusted (doubtly
 free) infrastructure.
 
 
@@ -94,7 +101,7 @@ free) infrastructure.
 \subsection {Existing Models}
 
 As we are writing, new services are being introduced to the
-market : they are distributed storage systems, with support for
+market: they are distributed storage systems, with support for
 disconnected operations. A local copy of the files is kept on every
 device participating in the system. These products results in a user
 experience close to what we are aiming at with pFS. Nevertheless, these
@@ -106,7 +113,7 @@ such existing solutions.
 \begin{center}
   \includegraphics [scale=0.4] {img/other_model}
   \caption{\label{OthModel}
-    {\small Existing models : cloud infrastructure with local
+    {\small Existing models: cloud infrastructure with local
       caches. The circles represent high capacity devices, the diamond
       represents a mobile devices as smartphones or digital players,
       and the square represents the cloud infrastructure always
@@ -133,7 +140,7 @@ devices by the system, become a very common relay for updates. Figure
 \begin{figure}[ht]
 \begin{center}
   \includegraphics [scale=0.4] {img/pfs_model}
-  \caption{\label{PfsModel} {\small pFS model : personnal
+  \caption{\label{PfsModel} {\small pFS model: personnal
       cloud. Updates are propagated between any couple of
       devices. The mobile devices appear as efficient relays 
       for updates.}}
