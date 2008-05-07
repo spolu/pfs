@@ -6,7 +6,9 @@
 *.dvi
 *.bak
 .xpdf-running
+impl_overw.tex
 pfs_struct.tex
+impl_overw.pdf
 lfs_l.pdf
 lfs_s.pdf
 pfs_struct.pdf
