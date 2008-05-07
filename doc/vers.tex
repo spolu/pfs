@@ -3,6 +3,9 @@
 \section{Versioning}
 \label{sec:vers}
 
+This section describes pFS's model for reconciling different versions
+of files when receiving updates asynchronously.
+
 \begin{figure*}
 \centerline{\input{pfs_struct}}
 \caption{PFS data structures}
@@ -10,6 +13,28 @@
 \end{figure*}
 
 \subsection{Terminology}
+
+We use the term \emph{device} to mean any hardware running the pFS
+software.  Though pFS currently only runs on Unix machines, we
+envision porting it to other types of hardware such as PDAs, cell
+phones, and digital audio players.
+
+A pFS \emph{file system} is a directory tree replicated on one or more
+devices.  Each file system has a unique ID generated at creation time.
+We use the term \emph{replica} to denote a copy of a particular file
+system stored by a device.  Note that one device may store replicas of
+multiple file systems.
+
+Each replica is also owned by a particular \emph{user}.  (Usually all
+replicas on the same device have the same user, but this need not be
+the case.)  Each replica has a unique name, usually given by the
+tuple $\langle \mathrm{file\ system}, \mathrm{device}, \mathrm{user}\rangle$.
+
+Each file system has associated metadata consisting of an access
+control list (list of users allowed read or read-write access), and a
+set of replicas currently storing the file system.  File systems can
+thus be shared between users, but each user has a special private file
+system
 
 We denote by $sd_{d}$ a storage space of capacity $S(sd_{d})$
 located on the device $d$. A group is a set of $sd$s and an
