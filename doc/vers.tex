@@ -6,12 +6,6 @@
 This section describes pFS's model for reconciling different versions
 of files when receiving updates asynchronously.
 
-\begin{figure*}
-\centerline{\input{pfs_struct}}
-\caption{PFS data structures}
-\label{fig:struct}
-\end{figure*}
-
 \subsection{Terminology}
 
 We use the term \emph{device} to mean any hardware running the pFS
@@ -32,7 +26,7 @@ replicas on a portable device would typically be owned by the same
 user, this need not be the case on a Unix machine where multiple users
 each have accounts they use to access different pFS file systems.
 Every replica has a unique name, given by the tuple $\langle
-\mathrm{file\ system ID}, \mathrm{device}, \mathrm{user}\rangle$.
+\mathrm{file\ system\ ID}, \mathrm{device}, \mathrm{user}\rangle$.
 
 Each file system has metadata consisting of an access control list and
 a set of replicas known to be storing the file system.  The access
@@ -58,156 +52,49 @@ connections.
 %connection between $sd_{1}$ and $sd_{2}$ concerning ressource $f$ as
 %$c(sd_{1}, sd_{2}, f)$.
 
-\begin{figure}[t]
-\begin{center}
-{\tt \small
-\begin{verbatim}
-struct pfs_dir
-{
-  char id [PFS_ID_LEN];
-  uint32_t entry_cnt;
-  struct pfs_entry ** entry;
-};
-struct pfs_entry
-{
-  char name [PFS_NAME_LEN];
-  uint32_t main_idx;
-  uint32_t ver_cnt; 
-  struct pfs_ver ** ver;
-};
-enum pfs_entry_type {
-  PFS_DEL = 0,
-  PFS_FIL = 1,
-  PFS_DIR = 2,
-  PFS_SML = 3 
-};
-struct pfs_ver
-{
-  uint8_t type;
-  char dst_id [PFS_ID_LEN];
-  struct pfs_vv * vv;
-};
-struct pfs_vv
-{ 
-  char last_updt [PFS_ID_LEN];
-  uint32_t len;
-  char ** sd_id;
-  uint32_t * value;
-};
-\end{verbatim}
-}
-\end{center}
-\caption{\label{MemStruct}
-{\small In-memory data structures for directory, entries and version
-  vectors.}}
-\end{figure}
-
-\begin{table*}[t]
-\begin{center}
-  \begin{tabular}[t]{|l||cc|cc|cc|}
-    \hline
-    \emph{ops} & $sd_{1}$ & & $sd_{2}$ & & $sd_{3}$ & \\
-    \hline
-
-    $sd_{1} : f_{\text{create}}$ & 
-    $\langle 1,0,0\rangle$ & &
-     & &
-     & \\
-
-    $c(sd_{1},sd_{2},f)$ &
-    $\langle 1,0,0 \rangle$ & &
-    $\langle 1,0,0 \rangle$ & &
-     & \\
-
-    $sd_{2} : f_{\text{modif}}$ & 
-    & &
-    $\langle 1,1,0 \rangle$ & &
-     & \\
-
-    $sd_{1} : f_{\text{modif}}$ &
-    $\langle 2,0,0 \rangle$ & &
-    & &
-     & \\
-
-    $c(sd_{2},sd_{3},f)$ &
-    & & 
-    $\langle 1,1,0 \rangle$ & &
-    $\langle 1,1,0 \rangle$ & \\
-
-    $c(sd_{1},sd_{3},f)$ &
-    $\langle 2,0,0 \rangle$ & $\langle 1,1,0 \rangle$ &
-    & &
-    $\langle 1,1,0 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $sd_{3} : f_{\text{modif}}$ &
-    & &
-    & & 
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $c(sd_{2},sd_{3},f)$ &
-    & &
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ & 
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $sd_{2} : f_{\langle 1,1,1 \rangle \leftarrow \langle 2,0,0 \rangle}$ &
-    & &
-    $\langle 2,2,1 \rangle$ & &
-    & \\
-
-    $c(sd_{1},sd_{2},f)$ &
-    $\langle 2,2,1 \rangle$ & &
-    $\langle 2,2,1 \rangle$ & & 
-    & \\
-
-    $c(sd_{1},sd_{3})$ &
-    $\langle 2,2,1 \rangle$ & &
-    & &
-    $\langle 2,2,1 \rangle$ & \\
-
-    \hline
-  \end{tabular}
-\end{center}
-\caption{\label{VVEx}
-  {\small Evolution of version vectors for a file $f$ modified from
-  three different $sd$s. For each $sd$ we show the main version
-  vector relative to that $sd$ fisrt. We show the version vector list
-  for each $sd$ only when it is modified.
-  Here the maximum number of
-  coexisting versions for $f$ is 2. We could have reached the worst
-  case, that is 3, by modifying $f$ from the three different $sd$s
-  without any connection occuring between modifications.}}
-\end{table*}
-
-\subsection{Reconciliation}
-
 Because pFS is essentially permanently in disconnected operation mode,
 it must detect and resolve conflicts when multiple replicas of the
 same file system are modified between synchronization events.  As with
 previous file systems, pFS enforces the ``no lost updates''
 guarantee~\cite{page:ficus}---in other words, when reconciling
-replicas it is only permissible to discard the contents of a file if
-its modification history is a prefix of another.
+replicas, pFS will only discard a version of a file if that version's
+modification history is a prefix of another version it is not
+discarding.
+
+\begin{figure*}
+\centerline{\input{pfs_struct}}
+\caption{PFS data structures}
+\label{fig:struct}
+\end{figure*}
 
 Rather than version files and directories, pFS versions directory
 entries.  This has two benefits.  First, it simplifies the handling of
-cases where the same pathname has been used for a file on one replica
-and a directory on another.  Second, it allowed us to simplify the
-implementation, so that at its core pFS only really has one complex
-function, \texttt{pfs\_set\_entry} (discussed in
+cases where the same file name has been concurrently used for a file
+on one replica and a directory on another.  Second, it allowed us to
+simplify the implementation, so that at its core pFS only really has
+one complex function, \texttt{pfs\_set\_entry} (discussed in
 Subsection~\ref{sec:pfssetentry}), and the rest of the system simply
 involves translating file system calls into \texttt{pfs\_set\_entry}
 calls.
 
-pFS assigns each file and directory a
-globally unique ID generated upon creation by hashing the device ID
-and 
+\subsection{Data structures}
 
-by
-applying a 64-bits md5 cryptographic hash function on the
-concatenation of the identifiant of the $sd$ where the ressource is
-created and an incremented counter maintained on each $sd$.
+pFS assigns each file and directory a globally unique ID generated,
+upon creation by hashing the device ID and a counter.  File IDs change
+whenever a file changes.  Essentially a file ID identifies an
+immutable file version.  By contrast, directories keep the same ID
+even when modified.  (Intuitively, this is because pFS versions
+directory entries individually and can reconcile concurrent updates to
+different files in the same directory, while concurrent updates to the
+same file are always considered a conflict.)
 
-As shown in Figure \ref{MemStruct}, a directory is represented in pFS
+Figure~\ref{fig:struct} shows the basic data structures making up a
+directory tree.  Each directory is represented by a \texttt{pfs\_dir}
+data structure, containing the directory's unique ID and a set of
+\texttt{pfs\_entry} structures.  Each \texttt{pfs\_entry} maps a file
+name onto a set of \texttt{pfs\_ver} structures.  
+
+, a directory is represented in pFS
 by a {\tt pfs\_dir} structure. It is a list of versionned {\tt
   pfs\_entry} structures mapping names to ids. To encompass the notion
 of file versioning, each time a file is modified, its id is
@@ -460,6 +347,126 @@ pFS. Any modification to the file system tree structure can be mapped
 to a {\tt pfs\_set\_entry} update. The updates are organized as a
 simple order-independent log structure, which provides a great deal of
 flexibility and simplicity for updates propagation.
+
+\begin{figure}[t]
+\begin{center}
+{\tt \small
+\begin{verbatim}
+struct pfs_dir
+{
+  char id [PFS_ID_LEN];
+  uint32_t entry_cnt;
+  struct pfs_entry ** entry;
+};
+struct pfs_entry
+{
+  char name [PFS_NAME_LEN];
+  uint32_t main_idx;
+  uint32_t ver_cnt; 
+  struct pfs_ver ** ver;
+};
+enum pfs_entry_type {
+  PFS_DEL = 0,
+  PFS_FIL = 1,
+  PFS_DIR = 2,
+  PFS_SML = 3 
+};
+struct pfs_ver
+{
+  uint8_t type;
+  char dst_id [PFS_ID_LEN];
+  struct pfs_vv * vv;
+};
+struct pfs_vv
+{ 
+  char last_updt [PFS_ID_LEN];
+  uint32_t len;
+  char ** sd_id;
+  uint32_t * value;
+};
+\end{verbatim}
+}
+\end{center}
+\caption{\label{MemStruct}
+{\small In-memory data structures for directory, entries and version
+  vectors.}}
+\end{figure}
+
+\begin{table*}[t]
+\begin{center}
+  \begin{tabular}[t]{|l||cc|cc|cc|}
+    \hline
+    \emph{ops} & $sd_{1}$ & & $sd_{2}$ & & $sd_{3}$ & \\
+    \hline
+
+    $sd_{1} : f_{\text{create}}$ & 
+    $\langle 1,0,0\rangle$ & &
+     & &
+     & \\
+
+    $c(sd_{1},sd_{2},f)$ &
+    $\langle 1,0,0 \rangle$ & &
+    $\langle 1,0,0 \rangle$ & &
+     & \\
+
+    $sd_{2} : f_{\text{modif}}$ & 
+    & &
+    $\langle 1,1,0 \rangle$ & &
+     & \\
+
+    $sd_{1} : f_{\text{modif}}$ &
+    $\langle 2,0,0 \rangle$ & &
+    & &
+     & \\
+
+    $c(sd_{2},sd_{3},f)$ &
+    & & 
+    $\langle 1,1,0 \rangle$ & &
+    $\langle 1,1,0 \rangle$ & \\
+
+    $c(sd_{1},sd_{3},f)$ &
+    $\langle 2,0,0 \rangle$ & $\langle 1,1,0 \rangle$ &
+    & &
+    $\langle 1,1,0 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    $sd_{3} : f_{\text{modif}}$ &
+    & &
+    & & 
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    $c(sd_{2},sd_{3},f)$ &
+    & &
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ & 
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    $sd_{2} : f_{\langle 1,1,1 \rangle \leftarrow \langle 2,0,0 \rangle}$ &
+    & &
+    $\langle 2,2,1 \rangle$ & &
+    & \\
+
+    $c(sd_{1},sd_{2},f)$ &
+    $\langle 2,2,1 \rangle$ & &
+    $\langle 2,2,1 \rangle$ & & 
+    & \\
+
+    $c(sd_{1},sd_{3})$ &
+    $\langle 2,2,1 \rangle$ & &
+    & &
+    $\langle 2,2,1 \rangle$ & \\
+
+    \hline
+  \end{tabular}
+\end{center}
+\caption{\label{VVEx}
+  {\small Evolution of version vectors for a file $f$ modified from
+  three different $sd$s. For each $sd$ we show the main version
+  vector relative to that $sd$ fisrt. We show the version vector list
+  for each $sd$ only when it is modified.
+  Here the maximum number of
+  coexisting versions for $f$ is 2. We could have reached the worst
+  case, that is 3, by modifying $f$ from the three different $sd$s
+  without any connection occuring between modifications.}}
+\end{table*}
 
 % Local Variables:
 % tex-main-file: "main.ltx"
