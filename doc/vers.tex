@@ -70,7 +70,7 @@ discarding.
 Rather than version files and directories, pFS versions directory
 entries.  This has two benefits.  First, it simplifies the handling of
 cases where the same file name has been concurrently used for a file
-on one replica and a directory on another.  Second, it allowed us to
+on one replica and a directory on another.  Second, it allows us to
 simplify the implementation, so that at its core pFS only really has
 one complex function, \texttt{pfs\_set\_entry} (discussed in
 Subsection~\ref{sec:pfssetentry}), and the rest of the system simply
@@ -79,70 +79,81 @@ calls.
 
 \subsection{Data structures}
 
-pFS assigns each file and directory a globally unique ID generated,
+pFS assigns each file and directory a globally unique ID generated
 upon creation by hashing the device ID and a counter.  File IDs change
 whenever a file changes.  Essentially a file ID identifies an
 immutable file version.  By contrast, directories keep the same ID
-even when modified.  (Intuitively, this is because pFS versions
-directory entries individually and can reconcile concurrent updates to
-different files in the same directory, while concurrent updates to the
-same file are always considered a conflict.)
+even when modified.  Otherwise, modifying any file would require
+changing all directories up to the root.  Intuitively, the choice of
+mutable directory entries also makes sense because pFS reconciles the
+meaning of individual file names with a directories, whereas
+concurrent updates to the same file are always considered a conflict.
 
 Figure~\ref{fig:struct} shows the basic data structures making up a
 directory tree.  Each directory is represented by a \texttt{pfs\_dir}
 data structure, containing the directory's unique ID and a set of
 \texttt{pfs\_entry} structures.  Each \texttt{pfs\_entry} maps a file
-name onto a set of \texttt{pfs\_ver} structures.  
+name onto a set of \texttt{pfs\_ver} structures.  When no conflicting
+updates have been made to a file, the directory entry has only one
+\texttt{pfs\_ver} structure.  However, when reconciling two replicas
+with different versions of the file, if one does not supersede
+(i.e., reflect the entire modification history of) the other, the
+\texttt{pfs\_entry} structure includes a list of all versions required
+to preserve the ``no lost update'' guarantee.
 
-, a directory is represented in pFS
-by a {\tt pfs\_dir} structure. It is a list of versionned {\tt
-  pfs\_entry} structures mapping names to ids. To encompass the notion
-of file versioning, each time a file is modified, its id is
-regenerated and associated {\tt pfs\_ver} structure updated.
+Each \texttt{pfs\_ver} contains the file type (regular, directory, or
+symbolic link), the ``destination'' ID of the file contents, and
+finally a version vector~\cite{parker:inconsistency}.  When the entry
+type is a regular file or symbolic link, the destination ID points to
+an immutable blob of data.  When the entry type is a directory, the
+destination is the ID of another \texttt{pfs\_dir} structure.  A
+version vector contains a monotonically increasing version number for
+each replica that has modified the directory entry.
 
-Each version of an entry is associated with a version vector as
-defined by Parker \emph{et al.}~\cite{parker:inconsistency} from which we
-borrow the following definition replacing ``file'' by ``entry'' and
-``sites'' by ``$sd$s'' :
-
-\begin{definition}
-A version vector for an entry $e$ is a sequence of $n$ pairs, where
-$n$ is the number of $sd$s at which $e$ is stored. The $i$th pair
-$(sd_{i}, v_{i})$ gives the index of the latest version of $e$ made at
-$sd_{i}$. In other words, the $i$th vector entry counts the number
-$v_{i}$ of updates to $e$ made at $sd_{i}$.
-\end{definition}
-
-When the $sd$s and their order are known or implied, we will represent a
-version vector as $\langle v_{1}, ..., v_{n} \rangle$. From now on, we
-will designate a versionned entry $e$ by the name it associates with
-ids. When talking about entry $f$, we refer to the versionned id that
-associates name $f$ with a set of ids pointing to different
-ressources.
-
-We say that a version vector $vv^{(1)}$ dominates $vv^{(2)}$ if
-$\forall sd_{i}, v_{i}^{(1)} \geq v_{i}^{(2)}$. Conflicts are reliably
-detected when it exists two version vectors $vv^{(1)}, vv^{(2)}$ such
-that $vv^{(1)}$ does not dominate $vv^{(2)}$ and $vv^{(2)}$ does not
-dominate $vv^{(1)}$. 
+If $v$ is a version vector and $r$ is a replica, we write $v[r]$ to
+designate the version number assigned by $r$ the last time $r$
+modified the resource pointed to by this directory entry.  We say that
+a version vector $v_1$ dominates $v_2$ (written $v_1\ge v_2$) iff
+$\forall r, v_1[r]\ge v_2[r]$.  Update conflicts are detected when an
+entry contains two versions with unordered version vectors---i.e.,
+$v_1\not\ge v_2$ and $v_2\not\ge v_1$.  Conversely, when one version's
+vector dominates another, it is safe to discard the one whose version
+vector is dominated.  These rules are fairly standard for systems
+employing version vectors.  However, we note that some file systems,
+such as Coda, require more complex version vectors because of the
+distinction between replicas and clients~\cite{satyanarayanan:coda}.
 
 \subsubsection{Conflicts}
 
 When a conflict is detected, pFS does not attempt to resolve it
-automatically. It relies on concepts introduced by Gifford 
-\emph{et al.}~\cite{gifford:sfs} 
-to provide feedback to users or applications by generating two
-different file names when reading the directory for the two different
-versions of the entry. When a conflict is detected for an entry $f$,
-two names pointing to two different ressources are listed : 
+automatically.  Rather, it attempts to expose the conflict to users or
+applications by generating two different file names for the two
+different versions of the entry. When a conflict is detected for an
+entry \texttt{filename}, two (or more) names pointing to two different
+ressources are listed:
 \begin{center}
-{\tt name($sd_{i}$):f} \\
-{\tt name($sd_{j}$):f}
+{\tt $\mathrm{replica}_1\texttt{:filename}$} \\
+{\tt $\mathrm{replica}_2\texttt{:filename}$} \\
 \end{center}
-Where $sd_{i}$ and $sd_{j}$ are the $sd$s where
-the last update happened for each version of the entry.
+Where $\mathrm{replica}_1$ and $\mathrm{replica}_2$ are the names of
+the two replicas that created the conflicting directory entries.  pFS
+currently reserves the character ``\texttt{:}'' to avoid confusion
+between normal and conflicted files.
 
-\subsubsection{Merge}
+There has been much work on automatically merging concurrent changes
+to the same file.  For instance, Coda has a notion of
+application-specific resolvers (ASRs)~\cite{kumar:conflict} that are
+fired off automatically based on configuration files and the types of
+files with conflicts.  ASRs require support from the file system in
+part because conflicts may be detected at servers, yet must be
+resolved at clients, and in part because ASRs run with a special view
+of the file system allowing them to see conflicted files as
+directories containing multiple versions.  Both of these problems are
+alleviated in pFS by eliminating the distinction between clients and
+servers, and exposing all versions of conflicted files to all users
+(by reserving a special character for file names).
+
+
 
 Merging is achieved by using the {\tt rename} system call. Once all
 information from the two different versions has been inserted by the
