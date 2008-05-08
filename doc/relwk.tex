@@ -2,7 +2,33 @@
 
 \section{Related Work}
 
-Ficus, Coda, P2P filesystems, Bayou, CVS, Git,
+%% Ficus, Coda, P2P filesystems, Bayou, CVS, Git,
+
+pFS relies on well-known concepts in distributed file systems. Our
+goal was to take advantage of evolution in hardware to design a simple
+system yet providing benefits comparable to more complex system
+relying on highly available central infrastructures. pFS weaker
+consistency and its simplicity makes it also portable to a very wide
+type of devices relying on any type of communication channel.
+
+Lately, the idea of storing every file locally has appeared in
+commercial products. DropBox~\cite{houston:dropbox} creates a remote
+file system stored on Amazon S3 and keeps a copy of it locally on
+every devices involved. Disconnected operations are therefore
+permitted, but conflicts detection happens on their servers, and
+update propagation have to go through their central infrastructure and
+thus cannot leverage on devices locality or other communication links
+such as Bluetooth or USB. The same infrastructure is used by
+.Mac~\cite{apple:mac}. Unfortunately, we don't have enough details on
+Live Mesh~\cite{microsoft:livemesh}, but the limit imposed to the space
+available on a ``mesh'' tends to show that its central storage
+infrastructure has been given a critical role in the devices
+synchronization process. pFS design has been inspired by these
+products, and aims at providing the same user experience, relying on
+the user's devices storage capacity instead of a central
+infrastructure, and therefore allowing more flexible connection
+patterns.
+
 
 % Local Variables:
 % tex-main-file: "main.ltx"
