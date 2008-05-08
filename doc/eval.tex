@@ -22,6 +22,31 @@
 
 \subsection{libpfs}
 
+This section presents an evaluation of pFS local performance. Our goal
+is to show that, locally, pFS provides a seamless user experience,
+updates being propagated ayncrhonously. We compare the performances of
+pFS, ext3, Fuse only (We implemented a trivial Fuse based file system
+replicating all calls directly to the local file system), and NFS
+(Protocol v.3 over LAN with default settings) over a set of
+microbenchmarks. The machine used is a 2.4 GHz Dual-Core Intel Xeon,
+with 2GB of RAM and a Gibabit ethernet controller, running Ubuntu
+Server 8.04 distribution. The microbenchmarks we used are the ones
+used for the evaluation of LFS~\cite{rosenblum:lfs}. The small file
+benchmark (LFS\_S, Figure \ref{LfsS}) consists of the creation of
+10.000 small (4096 bytes) files (LFS\_SC) in 100 different
+directories, the access for reading of those files (LFS\_SR), and
+finally their deletion (LFS\_SD). We augmented the small file
+benchmark with a small file write benchmark (LFS\_SW), which opens
+every file for writing, truncates it, rewrites the 4096 bytes and
+calls {\tt fsync}.  We added this benchmark to illustrate the case
+where libpfs incurs the most overhead (an extra {\tt link} operation
+for versioning, and the cache flushing when syncing to disk), as
+described in section \ref{sec:impl}. The large file benchmark (LFS\_L,
+Firgure \ref{LfsL}) consists of writing sequentially 30000 blocks of
+4096 bytes (LFS\_LSW), reading them sequentially (LFS\_LSR),
+re-writing them randomly (LFS\_LRW) and finally re-reading them
+randomly (LFS\_LRR).
+
 \begin{figure}[ht]
 \begin{center}
   \includegraphics [scale=0.55] {lfs_s}
@@ -31,6 +56,17 @@
       in 100 directories. All values are in ms.}}
 \end{center}
 \end{figure}
+
+
+The benchmarks are synthetic, and do not represent realistic
+workloads. The goal is to show the strengths and weaknesses of
+libpfs. Figure \ref{LfsL} shows, as expected, that versioning
+maintenance does not incur any overhead compared to Fuse for large
+files. pFS is substantially faster than NFS on every benchmark except
+the small write benchmark (Figure \ref{LfsS}). This benchmark
+emphasizes the operation that incurs the most overhead due to
+versionning maintenance: pFS performs comparatively to NFS on this
+benchmark where it is three times slower than native ext3.
 
 \begin{figure}[ht]
 \begin{center}
@@ -42,47 +78,45 @@
 \end{center}
 \end{figure}
 
-This section presents an evaluation of libpfs performances. Our goal
-is to show that pFS provides good local performances resulting in a
-seamless user experience, updates begin propagated ayncrhonously. We
-compare the performances of pFS, ext3, Fuse only (We implemented a
-trivial Fuse based file system replicating all calls directly to the
-local file system), and NFS (Protocol v.3 over LAN with default
-settings) over a set of microbenchmarks. The machine used is an 2.4
-GHz Dual-Core Intel Xeon, with 2GB of RAM and a Gibabit ethernet
-controller, running Ubuntu Server 8.04 distribution. The
-microbenchmarks we used are the ones used for the evaluation of
-LFS~\cite{rosenblum:lfs}. The small file benchmark (LFS\_S, Figure
-\ref{LfsS}) consists of the creation of 100000 small (4096 bytes)
-files (LFS\_SC) in 100 different directories, the access for reading
-of those files (LFS\_SR), and finally their deletion (LFS\_SD). We
-augmented the small file benchmark with a small file write benchmark
-(LFS\_SW), which opens the files for writing, append a few bytes and
-call {\tt fsync}.  We added this benchmark to illustrate the case where
-libpfs incurs the most overhead (an extra {\tt link} operation for
-versioning, and the cache flushing when syncing to disk), as described in
-section \ref{sec:impl}. The large file benchmark (LFS\_L, Firgure
-\ref{LfsL}) consists of writing sequentially 30000 blocks of 4096
-bytes (LFS\_LSW), reading them sequentially (LFS\_LSR), re-writing
-them randomly (LFS\_LRW) and finally re-reading them randomly
-(LFS\_LRR).
-
-The benchmarks are synthetic, and do not represent realistic
-workloads. The goal is to show the strengths and weakness of
-libpfs. Figure \ref{LfsL} shows, as expected, that versioning
-maintenance does not incur any overhead compared to Fuse for large
-files. pFS is substantially faster than NFS on every benchmark except
-the small write benchmark (Figure \ref{LfsS}). This benchmark
-emphasize the operation that incurs the most overhead due to
-versionning maintenance : pFS performs comparatively to NFS on this
-benchmark where it is three times slower than native ext3.
-
 On the Modified Andrew Benchmark, in the same conditions, pFS incurs a
 6\% overhead over ext3 (while NFS incurs a 182\% overhead) which shows
 that pFS versioning system introduces an acceptable overhead for
 day-to-day computing.
 
 \subsection{pfsd}
+
+In this section we evaluate the bandwidth consumption of pFS and the
+overhead due to the propagation of the versioning information. We
+sequentially runned the LFS\_SC, LFS\_SR, LFS\_SW, and LFS\_SD
+microbenchmarks and mesured the bandwidth usage they incurred on
+an NFS client, and a pFS \emph{replica} participating in a \emph{file
+  system} with only one other device.
+\footnote{Disclaimer : we used the kernel driver byte count to
+  evaluate the bandwidth consumption. The results may contain noise
+  that we tried to limit as much as possible (results issued from a
+  more controlled experiment will be available in a near future).}
+
+\begin{figure}[ht]
+\begin{center}
+  \includegraphics [scale=0.77] {bandw}
+  \caption{\label{Bandw}
+    {\small Bandwidth usage.}}
+\end{center}
+\end{figure}
+
+Figure \ref{Bandw} shows that the simplicity of prot\_pfsd's protocol
+incurs a limited overhead to the actual size of the 10.000 files
+(cumulating a total 39 MB). prot\_pfsd retransmits the whole content of
+the every file during the LFS\_SW benchmark, which could be drastically
+optimized, especially since LFS\_SW rewrites the same content as
+LFS\_SC. The total bandwidth usage is slightly higher for the LFS\_SC
+benchmark, due to the 100 directories creation wich totalizes
+aproximatively 50 KB of bandwidth consumption. Obviously, if the
+updates where to be propagated to more than one device, those number
+would be accordinlgy demultiplied. This experiment illustrates the
+fact that the versioning information generated by pFS does not incur a
+large overhead compared to NFS, even when updating a large number of
+small files.
 
 Even if our prototype of pfsd is not yet optimized for bandwitdth
 consumption, it already allowed us to experience the benefits of our
@@ -94,9 +128,12 @@ any maintenance once the devices are configured, and conflicts rarely
 occur on a relatively well connected set of devices. We believe that
 it would be really difficult to create conflicts if cell phones and
 media player were to be used, even with a small capacity and a simple
-LRU cache for updates. In the context of other types of communication
-links, such as bluetooth on mobile devices, power consumption would
-have to be considered to avoid wasting batteries.
+LRU cache for updates. 
+
+%In the context of other types of communication
+%links, such as bluetooth on mobile devices, power consumption would
+%have to be considered to avoid wasting batteries.
+
 
 \subsection{Hidden Costs}
 
