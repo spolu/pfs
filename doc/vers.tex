@@ -393,31 +393,54 @@ tracking deleted files.
 \subsection{Directory conflicts}
 \label{sec:dirconflict}
 
-One tricky scenario arises when a conflict arises between a directory
-and an entry of a different type (either \texttt{DEL} or
-\texttt{REG}).  Consider the case in which a file system exists with
-the file \texttt{d/f}.  Suppose replica $r_1$ deletes file
-\texttt{d/f}, then deletes directory \texttt{d}, while replica $r_2$
-simultaneously modifies file \texttt{d/f}.  When the two sync, what
-the user will see is that the deleted directory will re-appear on
-$r_1$ under the name \texttt{$r_2$:d}, at which point the user can
-re-delete \texttt{$r_2$:d/f} and resolve the directory.  How this
-happens internally is a bit more subtle, and relies on two behaviors
-we have not yet explained.
+One tricky scenario arises when a directory entry of type directory
+conflicts with another entry (which can be of any type---\texttt{DEL},
+\texttt{REG}, or even \texttt{DIR} if a directory has been deleted and
+re-created).  Consider the case in which a file system exists with the
+file \texttt{d/f}.  Suppose replica $r_1$ deletes file \texttt{d/f},
+then deletes directory \texttt{d}, while replica $r_2$ simultaneously
+modifies file \texttt{d/f}.  When the two sync, what the user will see
+is that the deleted directory will re-appear on $r_1$ under the name
+\texttt{$r_2$:d}, at which point the user can re-delete
+\texttt{$r_2$:d/f} and resolve the directory.  How this happens
+internally is a bit more subtle, and relies on two behaviors we have
+not yet explained.
 
-Suppose a replica $r_2$ is receiving updates from another replica,
-$r_1$.  If $r_1$ sends an update that deletes a directory that is not
-empty on $r_2$, then $r_2$ immediately re-creates the directory, using
-the same directory ID and using a version vector that supersedes the
-delete operation.
+Suppose a replica is receiving updates from another replica.  If the
+sender provides an update that deletes a directory that is not empty
+on the receiver, then the receiver immediately re-creates the
+directory, with the same directory ID and using a version vector that
+supersedes the delete operation.  If, conversely, the receiver gets a
+{\tt pfs\_set\_entry} update whose {\tt dir\_id} it does not know, it
+immediately generates a new, dangling {\tt pfs\_dir} structure which
+is not reachable from the local root directory, but at least allows
+the synchronization operation to continue.
+
+Revisiting the previous example, when $r_1$ sends its updates to
+$r_2$, upon receiving the \texttt{pfs\_set\_entry} that removes
+directory \texttt{d}, $r_2$ will re-create the directory by appending
+a new \texttt{pfs\_set\_entry} to its own log.  When $r_2$ pushes its
+updates to $r_1$, $r_1$ will receive an update to file \texttt{f} in
+directory \texttt{d}, but will not know that this is directory
+\texttt{d} because it will not recognize the \texttt{dir\_id}.
+Therefore $r_1$ simply creates a dangling directory into which to
+place the new version of \texttt{f}.  Later on, $r_2$ will push the
+directory re-creation to $r_1$, and $r_1$ will attach the dangling
+directory back into the appropriate parent directory under the name
+\texttt{d}.
+
+After deleting \texttt{d} and before synchronizing with $r_2$, $r_1$
+might instead have created a regular file, symbolic link, or new
+directory with the same name but a different \texttt{dir\_id}.  All
+these cases are handled the same, and will result in a directory
+\texttt{$r_2$:d} appearing on $r_1$.
+
+We note that a directory must be empty to be resolved.  Thus, the user
+on $r_1$ must delete all the files within \texttt{$r_2$:d} or move
+them to a new directory before \texttt{$r_2$:d} can be superseded and
+garbage-collected.
 
 \endinput
-
-Whenever a {\tt pfs\_set\_entry} update is received from another
-replica and the {\tt dir\_id} is unknown to the receiver, the receiver
-generates a new, dangling {\tt pfs\_dir} structure which is not
-reachable from the local root directory, but at least allows the
-synchronization operation to complete.
 
 Such situation may arise if the updates are not propagated according
 to the same order as the one they have been originally generated
