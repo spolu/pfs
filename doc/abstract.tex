@@ -11,7 +11,7 @@ mail ``in the cloud'' using services such as Gmail can get an
 up-to-date consistent view of their mailbox from any PC with Internet
 connectivity.
 
-However, the cloud model has a dark size.  Large storage providers
+However, the cloud model has a dark side.  Large storage providers
 present a massively central point of failure:  if everyone depended on
 a handful of services such as Amazon S3, then an outage could cause
 untold damage.  Furthermore, storage providers must monetize their
@@ -19,17 +19,17 @@ services, which potentially drives them to act against users'
 interests by charging fees or, in the case of unencrypted services
 such as email, inserting advertising or even violating privacy.
 
-We advocate a different model called ``personal clouds,'' in which
-users store data in a reliable cloud, but clouds are built out of each
-user's own storage devices.  We present a network file system, pFS,
-that realizes this personal cloud model.  pFS exploits the fact that
-with the proliferation of devices, users have more and more storage
-capacity and redundancy.  pFS is designed to keep a loosely consistent
-file system replicated across a sufficient number of devices that data
-loss due to hardware failure is highly improbable.  Because of its
-week consistency model, pFS achieves good performance by updating
-files locally and propagating the changes to other replicas
-asynchronously.
+We advocate a different model called ``personal clouds,'' in which a
+user stores data in a reliable cloud of sorts, but the user's cloud is
+built entirely out that user's own storage devices.  We present a
+network file system, pFS, that realizes this personal cloud model.
+pFS exploits the fact that with the proliferation of devices, users
+have more and more storage capacity and redundancy.  pFS is designed
+to keep a loosely consistent file system replicated across a
+sufficient number of devices that data loss due to hardware failure is
+highly improbable.  Because of its weak consistency model, pFS
+achieves good performance by updating files locally and propagating
+the changes to other replicas asynchronously.
 
 \end{abstract}
 

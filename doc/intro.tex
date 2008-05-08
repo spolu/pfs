@@ -50,10 +50,10 @@ cloud''---i.e., to keep the primary copy of data at an external
 service provider such as Amazon or Google, rather than in a user's own
 devices.  This trend is particularly evident with web mail, which many
 find preferable to running their own mail servers.  Web mail solves
-the synchronization problem of checking mail from multiple clients.
-It also saves end users from dealing with server failures.  Web sites
-such as Google Docs promise a similar experience for a broader range
-of applications.
+the problem of synchronizing saved mail accessed from multiple
+clients.  It also saves end users from dealing with server failures.
+Web sites such as Google Docs promise a similar experience for a
+broader range of applications.
 
 Unfortunately, the cloud model has a number of limitations.  In many
 cases, users need Internet connectivity to access their data.  Yet
@@ -80,7 +80,7 @@ cloud'' is therefore limited by bandwidth to something much smaller
 than local storage.  Second, as users get more devices, they have
 access to more failure independence.  Though we often lose servers,
 desktop machines, laptops, cell phones, or PDAs, any single person is
-highly unlikely to lose all of their devices simultaneously.
+unlikely to lose all of their devices simultaneously.
 
 These trends enable a data management model we term \emph{personal
   clouds}.  A personal cloud is a file system in which multiple
@@ -93,7 +93,7 @@ to a local server.  Though changes also propagate over the wide area
 network, personal clouds exploit the higher bandwidth of physically
 transported devices to synchronize far more data than would otherwise
 be practical.  Moreover, should any device fail, its replacement can
-simply re-initialize itself from any existing copy.
+re-initialize itself from any existing copy.
 
 This paper presents \emph{pFS}, a network file system that implements
 personal clouds.  Unlike traditional file systems, pFS makes all
@@ -119,19 +119,21 @@ publicly routable IP address.
 
 Second, pFS capitalizes on hardware trends to gain a large amount of
 simplicity.  The fact that storage is becoming plentiful allows
-devices to replicate file systems rather than cache parts of them.
-Thus, server replication and disconnected operation are one and the
-same mechanism with pFS, and there is no need for complex server-side
-logic for such tasks as backup and volume migration.  pFS furthermore
-handles reconciliation in terms of directory entries, which allows the
-core functionality to boil down to a single function,
-\texttt{pfs\_set\_entry}, in terms of which all the file system
-modifications can be straight-forwardly implemented.  Thus, while
-previous file systems required a large amount of engineering effort,
-pFS is only 10,000 lines of C code and was implemented by a single
-masters student in just over three months.  Nonetheless, pFS is a
+devices to \emph{replicate} file systems rather than \emph{cache}
+parts of them.  Thus, server replication and disconnected operation
+are one and the same mechanism with pFS, and there is no need for
+complex server-side logic for such tasks as backup and volume
+migration.  Unlike some previous file systems, pFS handles
+reconciliation in terms of directory entries, rather than files, which
+at least in pFS's context seems reduce the number of reconciliation
+corner cases.  pFS is also structured around a single internal
+function, \texttt{pfs\_set\_entry}, in terms of which all the file
+system modifications can be straight-forwardly implemented.  Thus,
+while previous file systems required a large amount of engineering
+effort, pFS is only 10,000 lines of C code and was implemented by a
+single student in just over three months.  Nonetheless, pFS is a
 useful system providing better performance than NFS (though of course
-also providing weaker consistency).
+it also provides weaker consistency than NFS).
 
 The next section discusses related work.  Section~\ref{sec:model}
 further motivates the ``personal cloud'' paradigm.
