@@ -21,12 +21,12 @@ such as email, inserting advertising or even violating privacy.
 
 We advocate a different model called ``personal clouds,'' in which
 users store data in a reliable cloud, but clouds are built out of each
-user's own storage device.  We present a network file system, pFS,
+user's own storage devices.  We present a network file system, pFS,
 that realizes this personal cloud model.  pFS exploits the fact that
 with the proliferation of devices, users have more and more storage
-capacity and redundancy.  pFS designed to keep a loosely consistent
+capacity and redundancy.  pFS is designed to keep a loosely consistent
 file system replicated across a sufficient number of devices that data
-loss due to hardware failure is highly improbable.  Because of it's
+loss due to hardware failure is highly improbable.  Because of its
 week consistency model, pFS achieves good performance by updating
 files locally and propagating the changes to other replicas
 asynchronously.

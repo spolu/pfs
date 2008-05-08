@@ -87,13 +87,13 @@ These trends enable a data management model we term \emph{personal
 devices each store a local copy of every file.  Modifications
 propagate between devices opportunistically as network conditions
 permit.  For instance, modifications made on a user's home machine
-might automatically propagate to her laptop over a local wireless
-network; at work the next day the laptop could automatically push the
-changes out to a local server.  Though changes also propagate over the
-wide area network, personal clouds exploit the higher bandwidth of
-physically transported devices to synchronize far more data than would
-otherwise be practical.  Moreover, should any device fail, its
-replacement can simply re-initialize itself from any existing copy.
+might automatically propagate to her laptop over the local network; at
+work the next day the laptop could automatically push the changes out
+to a local server.  Though changes also propagate over the wide area
+network, personal clouds exploit the higher bandwidth of physically
+transported devices to synchronize far more data than would otherwise
+be practical.  Moreover, should any device fail, its replacement can
+simply re-initialize itself from any existing copy.
 
 This paper presents \emph{pFS}, a network file system that implements
 personal clouds.  Unlike traditional file systems, pFS makes all
@@ -125,13 +125,13 @@ same mechanism with pFS, and there is no need for complex server-side
 logic for such tasks as backup and volume migration.  pFS furthermore
 handles reconciliation in terms of directory entries, which allows the
 core functionality to boil down to a single function,
-\texttt{pfs\_set\_entry}, in terms of which all the file system calls
-can be straight-forwardly implemented.  Thus, while previous file
-systems required a large amount of engineering effort, pFS is only
-10,000 lines of C code and was implemented by a single masters student
-in just over three months.  Nonetheless, pFS is a useful system
-providing far better performance than NFS (though of course also
-providing weaker consistency).
+\texttt{pfs\_set\_entry}, in terms of which all the file system
+modifications can be straight-forwardly implemented.  Thus, while
+previous file systems required a large amount of engineering effort,
+pFS is only 10,000 lines of C code and was implemented by a single
+masters student in just over three months.  Nonetheless, pFS is a
+useful system providing better performance than NFS (though of course
+also providing weaker consistency).
 
 The next section discusses related work.  Section~\ref{sec:model}
 further motivates the ``personal cloud'' paradigm.

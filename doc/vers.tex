@@ -192,13 +192,13 @@ $$\mathbf{foreach}\>r:v_f[r]\gets\max(v_f[r],v_o[r])$$
 
 
 The mechanism for requesting that pFS update a version vector is
-simply to make the {\tt rename} system call on file names containing
-the special reserved ``\texttt{:}'' character.  The actual merging of
-data into \emph{file} is also done with ordinary file system
-calls---namely reading \emph{old-version} and overwriting \emph{file}.
-Thus, no special interfaces are required to resolve conflicts.  In
-fact, \texttt{resolve} is nothing but a tiny shell script calling
-\texttt{mv}.  This also means that applications aware of pFS can do
+simply to make the {\tt link} system call on file names containing the
+special reserved ``\texttt{:}'' character.  The actual merging of data
+into \emph{file} is also done with ordinary file system calls---namely
+reading \emph{old-version} and overwriting \emph{file}.  Thus, no
+special interfaces are required to resolve conflicts.  In fact,
+\texttt{resolve} is nothing but a tiny shell script calling
+\texttt{ln}.  This also means that applications aware of pFS can do
 their own conflict resolution.  In fact, a mechanism similar to Coda's
 ASRs could be implemented entirely outside of the file system (except
 users would have to launched it manually on a directory tree after a
@@ -213,58 +213,75 @@ synchronization event).
 
 \subsubsection{Main Version}
 
-To avoid the proliferation of entry versions, we introduce the notion
-of \emph{main version}. We define an order $<_{sd_{i}}$ relative to
-$sd_{i}$ over the versions of a given entry :
+When multiple conflicting versions of a file exist, pFS running on any
+given replica must choose one as the \emph{main version} to show under
+the regular file name, while all other versions appear with a
+``$\mathrm{replica}\texttt{:}$'' prefix.  The replica included in the
+file name is the one that last updated the file version, as determined
+by the \texttt{last\_updt} field in the version vector.  Note that
+only the main version of a file is writable; all other versions are
+read only.
 
-\begin{definition}
-We say that $vv^{(1)} >_{sd_{i}} vv^{(2)}$ if the update count
-relative to $sd_{i}$ is greater in $vv^{(1)}$ than it is in
-$vv^{(2)}$. Or if those quantities are equals, if the total number
-of updates is greater in $vv^{(1)}$ than it is in $vv^{(2)}$.
-\end{definition}
- 
-We can always determine for each $sd$ a maximum version verctor (by
-breaking the ties arbitrarly if two or more candidates are
-``equals''). We call the associated entry version the main version for
-that $sd$.
+pFS chooses the main entry by defining a total order on version
+vectors, $>_r$, which is specific to each replica~$r$.  The main
+version of a file is the one whose version vector is maximal under
+$>_r$.  We say $v_1>_rv_2$ iff:
+\begin{enumerate}
+\item $v_1\ge v_2$, or
+\item $v_1[r]>v_2[r]$, or
+\item $v_1\not\ge v_2$ and $v_2\not\ge v_1$ and $v_1[r]=v_2[r]$ and
+  the sum of all entries in $v_1$ is greater than the sum of all
+  entries in $v_2$, or the sums are equal but when $v_1$ and $v_2$ are
+  normalized, $v_1$ is lexicographically greater than~$v_2$.
+\end{enumerate}
 
-When multiple versions of an entry named {\tt f} coexist, we display
-the main version as {\tt f} and the other version as before :
-\begin{center}
-  {\tt f} \\
-  {\tt name($sd_{i}$):f} \\
-  {\tt ...}
-\end{center}
-Moreover pFS enforces that only the main version of an entry is
-writable, the other ones being accessible read-only.
-Therefore, merging process is achieved by inserting into the main
-version of an entry all the information contained in another version,
-and then calling :
-\begin{center}
-{\tt rename (name($sd_{j}$):f, f)}.
-\end{center}
-Under such restrictions, a $sd$ can only be the last updater of its
-main version, and the total number of versions seen by a $sd$ for any
-given entry is bounded by the number of $sd$s participating in the group.
-{\proof
-Suppose we have $k$ version vectors, $vv^{(1)},..., vv^{(k)}$ for an
-entry $f$ at a given $sd$, and $n$ $sd$s, $sd_{1}, ..., sd_{n}$
-participating in the group. A new version vector can only be generated
-by updating an entry or merging two entry versions, and the resutling
-version vector is necessarely the main version vector of the $sd$
-where the update occured. Therefore, for each version vector
-$vv^{(i)}$, it exists $l$ such that $sd_{l}$ has $vv^{(i)}$ as main
-version vector relatively to the set $vv^{(1)},..., vv^{(k)}$. If it
-exists $vv^{(i)},vv^{(j)}$ such that $sd_{l}$ has $vv^{(i)}$ and
-$vv^{(j)}$ as main version vector, then one dominates the other and
-$i=j$. Thus, $k \leq n$. \qed
-}
+Consider two versions of a directory entry, $f_1$ and $f_2$, with
+associated version vectors $v_1$ and $v_2$, respectively.  Condition~1
+simply states that if $f_1$ supersedes $f_2$ (as evidenced by the fact
+that $v_1$ dominates $v_2$ in the partial order), then $f_1$ will be
+preferred as the main version.  In fact, $f_2$ can safely be garbage
+collected without violating the ``no lost updates'' rule.
 
-Note that the set $vv^{(1)},..., vv^{(k)}$ can differ from one $sd$ to
-the other if all updates are not yet propagated to all $sd$s. Table \ref{VVEx}
-shows the evolution of the version vectors associated with an
-entry updated from three different $sd$s.
+Condition~2 says that $f_1$ contains at least one modification made by
+replica $r$ that is not reflected in the update history of $f_2$.  The
+goal in choosing $f_1$ is to ensure that the main version of a file
+seen on replica $r$ always reflects all modifications made by $r$.
+This guarantee also rests on the fact that only the main version of a
+file is ever writable, so that a replica can never create a version of
+a file that does not include all of its own previous updates to that
+file.  Condition~3 is simply arbitrary to make $>_r$ a total order.
+
+Since only the main version of a file is writable, users must
+reconcile conflicting updates pairwise between individual divergent
+versions (containing ``\texttt{:}'') and the main version.  Once users
+have incorporated changes from a ``\texttt{:}'' file, they call
+\texttt{resolve} on the old version, which issues the system call
+$$\mathbf{link}\; (\mathrm{replica}_j\texttt{:}f, f).$$
+As previously discussed, this updates the version vector of the main
+version to supersede that of $\mathrm{replica}_j$'s last version, so
+the ``\texttt{:}'' file can be garbage collected.
+
+%% Under such restrictions, a $sd$ can only be the last updater of its
+%% main version, and the total number of versions seen by a $sd$ for any
+%% given entry is bounded by the number of $sd$s participating in the group.
+%% {\proof
+%% Suppose we have $k$ version vectors, $vv^{(1)},..., vv^{(k)}$ for an
+%% entry $f$ at a given $sd$, and $n$ $sd$s, $sd_{1}, ..., sd_{n}$
+%% participating in the group. A new version vector can only be generated
+%% by updating an entry or merging two entry versions, and the resutling
+%% version vector is necessarely the main version vector of the $sd$
+%% where the update occured. Therefore, for each version vector
+%% $vv^{(i)}$, it exists $l$ such that $sd_{l}$ has $vv^{(i)}$ as main
+%% version vector relatively to the set $vv^{(1)},..., vv^{(k)}$. If it
+%% exists $vv^{(i)},vv^{(j)}$ such that $sd_{l}$ has $vv^{(i)}$ and
+%% $vv^{(j)}$ as main version vector, then one dominates the other and
+%% $i=j$. Thus, $k \leq n$. \qed
+%% }
+
+%% Note that the set $vv^{(1)},..., vv^{(k)}$ can differ from one $sd$ to
+%% the other if all updates are not yet propagated to all $sd$s. Table \ref{VVEx}
+%% shows the evolution of the version vectors associated with an
+%% entry updated from three different $sd$s.
 
 \subsection {${\tt pfs\_set\_entry}$}
 \label{sec:pfssetentry}
