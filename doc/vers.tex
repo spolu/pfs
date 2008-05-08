@@ -36,6 +36,12 @@ or read-write access to the file system.  Though currently users are
 named by opaque random IDs, eventually we envision naming users by
 public keys so as to simplify authentication of device owners.
 
+\begin{figure*}
+\centerline{\input{pfs_struct}}
+\caption{Schematic view of PFS data structures}
+\label{fig:struct}
+\end{figure*}
+
 \subsection{Disconnected Operation}
 
 pFS makes no assumption concerning network partitioning and
@@ -61,12 +67,6 @@ replicas, pFS will only discard a version of a file if that version's
 modification history is a prefix of another version it is not
 discarding.
 
-\begin{figure*}
-\centerline{\input{pfs_struct}}
-\caption{PFS data structures}
-\label{fig:struct}
-\end{figure*}
-
 Rather than version files and directories, pFS versions directory
 entries.  This has two benefits.  First, it simplifies the handling of
 cases where the same file name has been concurrently used for a file
@@ -89,15 +89,18 @@ mutable directory entries also makes sense because pFS reconciles the
 meaning of individual file names with a directories, whereas
 concurrent updates to the same file are always considered a conflict.
 
+\input{memstruct}
+
 Figure~\ref{fig:struct} shows the basic data structures making up a
-directory tree.  Each directory is represented by a \texttt{pfs\_dir}
+directory tree, and Figure~ref{fig:memstruct} shows the corresponding
+data structures.  Each directory is represented by a \texttt{pfs\_dir}
 data structure, containing the directory's unique ID and a set of
 \texttt{pfs\_entry} structures.  Each \texttt{pfs\_entry} maps a file
 name onto a set of \texttt{pfs\_ver} structures.  When no conflicting
 updates have been made to a file, the directory entry has only one
 \texttt{pfs\_ver} structure.  However, when reconciling two replicas
-with different versions of the file, if one does not supersede
-(i.e., reflect the entire modification history of) the other, the
+with different versions of the file, if one does not supersede (i.e.,
+reflect the entire modification history of) the other, the
 \texttt{pfs\_entry} structure includes a list of all versions required
 to preserve the ``no lost update'' guarantee.
 
@@ -315,13 +318,13 @@ int pfs_set_entry
 \end{center}
 
 {\tt pfs\_set\_entry} adds version {\tt ver} (see
-Figure~\ref{MemStruct} for a declaration of {\tt pfs\_ver} structure)
-to the entry {\tt name} in the directory designated by {\tt dir\_id}
-in the file system designated by {\tt file\_system}.  Note that the
-directory structure does not have a name, but is simply designated by
-its {\tt dir\_id}.  (The directory's name is mapped to {\tt dir\_id}
-in the parent directory, and the root directory ID is stored in the
-file system metadata.)
+Figure~\ref{fig:memstruct} for a declaration of {\tt pfs\_ver}
+structure) to the entry {\tt name} in the directory designated by {\tt
+  dir\_id} in the file system designated by {\tt file\_system}.  Note
+that the directory structure does not have a name, but is simply
+designated by its {\tt dir\_id}.  (The directory's name is mapped to
+{\tt dir\_id} in the parent directory, and the root directory ID is
+stored in the file system metadata.)
 
 Recall that a \texttt{pfs\_ver} structure has a \texttt{dst\_id} field
 that references a blob of data (for regular files and symbolic links),
@@ -422,50 +425,6 @@ pFS. Any modification to the file system tree structure can be mapped
 to a {\tt pfs\_set\_entry} update. The updates are organized as a
 simple order-independent log structure, which provides a great deal of
 flexibility and simplicity for updates propagation.
-
-\begin{figure}[t]
-\begin{center}
-{\tt \small
-\begin{verbatim}
-struct pfs_dir
-{
-  char id [PFS_ID_LEN];
-  uint32_t entry_cnt;
-  struct pfs_entry ** entry;
-};
-struct pfs_entry
-{
-  char name [PFS_NAME_LEN];
-  uint32_t main_idx;
-  uint32_t ver_cnt; 
-  struct pfs_ver ** ver;
-};
-enum pfs_entry_type {
-  PFS_DEL = 0,
-  PFS_FIL = 1,
-  PFS_DIR = 2,
-  PFS_SML = 3 
-};
-struct pfs_ver
-{
-  uint8_t type;
-  char dst_id [PFS_ID_LEN];
-  struct pfs_vv * vv;
-};
-struct pfs_vv
-{ 
-  char last_updt [PFS_ID_LEN];
-  uint32_t len;
-  char ** sd_id;
-  uint32_t * value;
-};
-\end{verbatim}
-}
-\end{center}
-\caption{\label{MemStruct}
-{\small In-memory data structures for directory, entries and version
-  vectors.}}
-\end{figure}
 
 \begin{table*}[t]
 \begin{center}

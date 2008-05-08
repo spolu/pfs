@@ -1,0 +1,52 @@
+% -*-LaTeX-*-
+
+\begin{figure}[t]
+\begin{center}
+{\tt \small
+\begin{verbatim}
+struct pfs_dir
+{
+  char id [PFS_ID_LEN];
+  uint32_t entry_cnt;
+  struct pfs_entry ** entry;
+};
+struct pfs_entry
+{
+  char name [PFS_NAME_LEN];
+  uint32_t main_idx;
+  uint32_t ver_cnt; 
+  struct pfs_ver ** ver;
+};
+enum pfs_entry_type {
+  PFS_DEL = 0,
+  PFS_FIL = 1,
+  PFS_DIR = 2,
+  PFS_SML = 3 
+};
+struct pfs_ver
+{
+  uint8_t type;
+  char dst_id [PFS_ID_LEN];
+  struct pfs_vv * vv;
+};
+struct pfs_vv
+{ 
+  char last_updt [PFS_ID_LEN];
+  uint32_t len;
+  char ** sd_id;
+  uint32_t * value;
+};
+\end{verbatim}
+}
+\end{center}
+\caption{In-memory data structures for directories, directory entries,
+  and version vectors.}
+\label{fig:memstruct}
+\end{figure}
+
+
+% Local Variables:
+% tex-main-file: "main.ltx"
+% tex-command: "make;:"
+% tex-dvi-view-command: "make preview;:"
+% End:
