@@ -153,37 +153,63 @@ alleviated in pFS by eliminating the distinction between clients and
 servers, and exposing all versions of conflicted files to all users
 (by reserving a special character for file names).
 
+When a user (or an application) has resolved a conflict, it must
+signal to pFS that a new version of the file now supersedes one of the
+other \texttt{pfs\_ver} structures corresponding to that directory
+entry.  Users can do this with a utility:
+$$\mbox{\texttt{resolve} \emph{old-version} \emph{file}}$$
+\texttt{resolve} tells pFS that \emph{file} now contains all the
+information needed from \emph{old-version}, so that it is possible to
+garbage collect \emph{old-version} without violating the ``no lost
+updates'' guarantee.  pFS handles this request internally by setting
+the version vector of file $v_f$ to the element-wise maximum of its
+old value and \emph{old-file}'s version vector, $v_o$:
+$$\mathbf{foreach}\>r:v_f[r]\gets\max(v_f[r],v_o[r])$$
+
+%% information from the two different
+%% versions has been inserted by the user or an application into one of
+%% the versions of the entry,
+
+%% invoking:
+%% \begin{center} 
+%% {\tt rename (name($sd_{j}$):f,name($sd_{i}$):f)}
+%% \end{center}
+%%  deletes entry version {\tt name($sd_{j}$):f} along with the
+%%  underlying ressource and updates 
+%% {\tt name($sd_{i}$):f}'s version vector. The underlying content of 
+%% {\tt name($sd_{i}$):f} stay unchanged, since the actual merging
+%% operation has to be done before calling {\tt rename}.
+%% If the two initial version vectors where
+%% $vv^{(i)}=(sd_{k},v_{k}^{(i)})_{k}$ and
+%%   $vv^{(j)}=(sd_{k},v_{k}^{(j)})_{k}$, The resulting version
+%% vector is 
+%% \begin{center}
+%% $vv^{(i \leftarrow j)}=(sd_{k},
+%% max(v_{k}^{(i)},v_{k}^{(j)}) + \delta _{i}^{k})_{k}$
+%% \end{center}
+%% The resulting version vector dominates both original version vectors
+%% and count one update for this merging operation for $sd_{i}$.
 
 
-Merging is achieved by using the {\tt rename} system call. Once all
-information from the two different versions has been inserted by the
-user or an application into one of the versions of the entry,
-invoking:
-\begin{center} 
-{\tt rename (name($sd_{j}$):f,name($sd_{i}$):f)}
-\end{center}
- deletes entry version {\tt name($sd_{j}$):f} along with the
- underlying ressource and updates 
-{\tt name($sd_{i}$):f}'s version vector. The underlying content of 
-{\tt name($sd_{i}$):f} stay unchanged, since the actual merging
-operation has to be done before calling {\tt rename}.
-If the two initial version vectors where
-$vv^{(i)}=(sd_{k},v_{k}^{(i)})_{k}$ and
-  $vv^{(j)}=(sd_{k},v_{k}^{(j)})_{k}$, The resulting version
-vector is 
-\begin{center}
-$vv^{(i \leftarrow j)}=(sd_{k},
-max(v_{k}^{(i)},v_{k}^{(j)}) + \delta _{i}^{k})_{k}$
-\end{center}
-The resulting version vector dominates both original version vectors
-and count one update for this merging operation for $sd_{i}$.
+The mechanism for requesting that pFS update a version vector is
+simply to make the {\tt rename} system call on file names containing
+the special reserved ``\texttt{:}'' character.  The actual merging of
+data into \emph{file} is also done with ordinary file system
+calls---namely reading \emph{old-version} and overwriting \emph{file}.
+Thus, no special interfaces are required to resolve conflicts.  In
+fact, \texttt{resolve} is nothing but a tiny shell script calling
+\texttt{mv}.  This also means that applications aware of pFS can do
+their own conflict resolution.  In fact, a mechanism similar to Coda's
+ASRs could be implemented entirely outside of the file system (except
+users would have to launched it manually on a directory tree after a
+synchronization event).
 
-Hence, users are able to detect conflicts, resolve them manually or
-automatically using third-party application, and merge the two
-versions into a final version that supersedes them. All those
-operations can be expressed through the classical file
-system interface and therefore require absolutely no change to
-existing terminals and utilities.
+%Hence, users are able to detect conflicts, resolve them manually or
+%automatically using third-party application, and merge the two
+%versions into a final version that supersedes them. All those
+%operations can be expressed through the classical file
+%system interface and therefore require absolutely no change to
+%existing terminals and utilities.
 
 \subsubsection{Main Version}
 
