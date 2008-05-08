@@ -126,7 +126,7 @@ employing version vectors.  However, we note that some file systems,
 such as Coda, require more complex version vectors because of the
 distinction between replicas and clients~\cite{satyanarayanan:coda}.
 
-\subsubsection{Conflicts}
+\subsection{Conflicts}
 
 When a conflict is detected, pFS does not attempt to resolve it
 automatically.  Rather, it attempts to expose the conflict to users or
@@ -214,7 +214,9 @@ synchronization event).
 %system interface and therefore require absolutely no change to
 %existing terminals and utilities.
 
-\subsubsection{Main Version}
+\input{vvex}
+
+\subsection{Main Version}
 
 When multiple conflicting versions of a file exist, pFS running on any
 given replica must choose one as the \emph{main version} to show under
@@ -234,8 +236,9 @@ $>_r$.  We say $v_1>_rv_2$ iff:
 \item $v_1[r]>v_2[r]$, or
 \item $v_1\not\ge v_2$ and $v_2\not\ge v_1$ and $v_1[r]=v_2[r]$ and
   the sum of all entries in $v_1$ is greater than the sum of all
-  entries in $v_2$, or the sums are equal but when $v_1$ and $v_2$ are
-  normalized, $v_1$ is lexicographically greater than~$v_2$.
+  entries in $v_2$, or the sums are equal but $h(v_1)>h(v_2)$ for some
+  function $h$ that normalizes the version vectors and outputs an
+  integer.
 \end{enumerate}
 
 Consider two versions of a directory entry, $f_1$ and $f_2$, with
@@ -263,6 +266,23 @@ $$\mathbf{link}\; (\mathrm{replica}_j\texttt{:}f, f).$$
 As previously discussed, this updates the version vector of the main
 version to supersede that of $\mathrm{replica}_j$'s last version, so
 the ``\texttt{:}'' file can be garbage collected.
+
+Note that even though only the main version of a file is writable,
+``\texttt{:}'' directories are always writable.  This stems from the
+fact that directories do not change ID when modified.
+Section~\ref{sec:dirconflict} discusses directory conflicts in more
+detail.
+
+Figure~\ref{fig:vvex} illustrates the evolution and ordering of
+version vectors with an example.  In step~6, $r_3$ has two conflicting
+version of file $f$.  Since $r_3$ has made no modifications to either
+version, it arbitrarily (with $h$) picks $\langle 1,1,0\rangle$ as the
+primary version.  The user on $r_3$ then writes to this version, but
+without resolving it, so that both versions still exist when it syncs
+with $r_2$.  The user on $r_2$ then invokes \texttt{resolve} to
+indicate its main version $\langle 1, 1, 1\rangle$ should supersede
+the other version in step 9.  When this propagates to the other two
+replicas the delete the superseded versions of $f$.
 
 %% Under such restrictions, a $sd$ can only be the last updater of its
 %% main version, and the total number of versions seen by a $sd$ for any
@@ -306,13 +326,13 @@ The function's prototype is as follows:
 \begin{center}
 {\tt \small
 \begin{verbatim}
-int pfs_set_entry 
-  (struct pfs_instance *pfs,
-   const char *file_system,
-   const char *dir_id,
-   const char *name,
-   const struct pfs_ver *ver,
-   const bool_t reclaim);
+  int pfs_set_entry 
+          (struct pfs_instance *pfs,
+           const char *file_system,
+           const char *dir_id,
+           const char *name,
+           const struct pfs_ver *ver,
+           const bool_t reclaim);
 \end{verbatim}
 }
 \end{center}
@@ -361,18 +381,37 @@ within braces, and omit the version vector.
 \end{itemize}
 
 We have not shown the version vectors used here. They are generated or
-incremented according to the semantics we defined previously. Note
-that a deleted entry persists in the system with a \texttt{pfs\_ver}
-of type {\tt DEL}\@.  This conservative technique is needed to handle
-cases where an entry might have been deleted on one replica and
-updated on another. The {\tt DEL} type has to be treated as any other
-type of entry by the versionning system.
+incremented according to the rules we defined previously. Note that a
+deleted entry persists in the system with a \texttt{pfs\_ver}
+structure of type {\tt DEL}\@.  This conservative technique is needed
+to handle cases where an entry might have been deleted on one replica
+and updated on another. The {\tt DEL} type has to be treated as any
+other type of entry by the versionning system.  In the future, we may
+consider vector time pairs~\cite{cox:tra} to alleviate the need for
+tracking deleted files.
 
-% --- XXX needs work below
+\subsection{Directory conflicts}
+\label{sec:dirconflict}
 
-In the future, we may use
-vector time pairs~\cite{cox:tra} to alleviate the need to track
-deleted files.
+One tricky scenario arises when a conflict arises between a directory
+and an entry of a different type (either \texttt{DEL} or
+\texttt{REG}).  Consider the case in which a file system exists with
+the file \texttt{d/f}.  Suppose replica $r_1$ deletes file
+\texttt{d/f}, then deletes directory \texttt{d}, while replica $r_2$
+simultaneously modifies file \texttt{d/f}.  When the two sync, what
+the user will see is that the deleted directory will re-appear on
+$r_1$ under the name \texttt{$r_2$:d}, at which point the user can
+re-delete \texttt{$r_2$:d/f} and resolve the directory.  How this
+happens internally is a bit more subtle, and relies on two behaviors
+we have not yet explained.
+
+Suppose a replica $r_2$ is receiving updates from another replica,
+$r_1$.  If $r_1$ sends an update that deletes a directory that is not
+empty on $r_2$, then $r_2$ immediately re-creates the directory, using
+the same directory ID and using a version vector that supersedes the
+delete operation.
+
+\endinput
 
 Whenever a {\tt pfs\_set\_entry} update is received from another
 replica and the {\tt dir\_id} is unknown to the receiver, the receiver
@@ -425,82 +464,6 @@ pFS. Any modification to the file system tree structure can be mapped
 to a {\tt pfs\_set\_entry} update. The updates are organized as a
 simple order-independent log structure, which provides a great deal of
 flexibility and simplicity for updates propagation.
-
-\begin{table*}[t]
-\begin{center}
-  \begin{tabular}[t]{|l||cc|cc|cc|}
-    \hline
-    \emph{ops} & $sd_{1}$ & & $sd_{2}$ & & $sd_{3}$ & \\
-    \hline
-
-    $sd_{1} : f_{\text{create}}$ & 
-    $\langle 1,0,0\rangle$ & &
-     & &
-     & \\
-
-    $c(sd_{1},sd_{2},f)$ &
-    $\langle 1,0,0 \rangle$ & &
-    $\langle 1,0,0 \rangle$ & &
-     & \\
-
-    $sd_{2} : f_{\text{modif}}$ & 
-    & &
-    $\langle 1,1,0 \rangle$ & &
-     & \\
-
-    $sd_{1} : f_{\text{modif}}$ &
-    $\langle 2,0,0 \rangle$ & &
-    & &
-     & \\
-
-    $c(sd_{2},sd_{3},f)$ &
-    & & 
-    $\langle 1,1,0 \rangle$ & &
-    $\langle 1,1,0 \rangle$ & \\
-
-    $c(sd_{1},sd_{3},f)$ &
-    $\langle 2,0,0 \rangle$ & $\langle 1,1,0 \rangle$ &
-    & &
-    $\langle 1,1,0 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $sd_{3} : f_{\text{modif}}$ &
-    & &
-    & & 
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $c(sd_{2},sd_{3},f)$ &
-    & &
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ & 
-    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
-
-    $sd_{2} : f_{\langle 1,1,1 \rangle \leftarrow \langle 2,0,0 \rangle}$ &
-    & &
-    $\langle 2,2,1 \rangle$ & &
-    & \\
-
-    $c(sd_{1},sd_{2},f)$ &
-    $\langle 2,2,1 \rangle$ & &
-    $\langle 2,2,1 \rangle$ & & 
-    & \\
-
-    $c(sd_{1},sd_{3})$ &
-    $\langle 2,2,1 \rangle$ & &
-    & &
-    $\langle 2,2,1 \rangle$ & \\
-
-    \hline
-  \end{tabular}
-\end{center}
-\caption{\label{VVEx}
-  {\small Evolution of version vectors for a file $f$ modified from
-  three different $sd$s. For each $sd$ we show the main version
-  vector relative to that $sd$ fisrt. We show the version vector list
-  for each $sd$ only when it is modified.
-  Here the maximum number of
-  coexisting versions for $f$ is 2. We could have reached the worst
-  case, that is 3, by modifying $f$ from the three different $sd$s
-  without any connection occuring between modifications.}}
-\end{table*}
 
 % Local Variables:
 % tex-main-file: "main.ltx"

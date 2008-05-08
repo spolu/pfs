@@ -1,0 +1,92 @@
+% -*-LaTeX-*-
+
+\begin{figure*}[t]
+\begin{center}
+  \begin{tabular}[t]{|r|r@{\quad}l||cc|cc|cc|}
+    \hline
+    \emph{op\#} & \emph{replica} & \emph{operation}
+           & $r_{1}$ & & $r_{2}$ & & $r_{3}$ & \\
+    \hline
+
+    \textbf{1} & $r_{1}$ & \textbf{create} $f$ & 
+    $\langle 1,0,0\rangle$ & &
+     & &
+     & \\
+
+    \textbf{2} & $r_1\leftrightarrow r_2$ & \textbf{sync} &
+    $\langle 1,0,0 \rangle$ & &
+    $\langle 1,0,0 \rangle$ & &
+     & \\
+
+    \textbf{3} & $r_{2}$ & \textbf{write} $f$ & 
+    & &
+    $\langle 1,1,0 \rangle$ & &
+     & \\
+
+    \textbf{4} & $r_{1}$ & \textbf{write} $f$ &
+    $\langle 2,0,0 \rangle$ & &
+    & &
+     & \\
+
+    \textbf{5} & $r_{2}\leftrightarrow r_{3}$ & \textbf{sync} &
+    & & 
+    $\langle 1,1,0 \rangle$ & &
+    $\langle 1,1,0 \rangle$ & \\
+
+    \textbf{6} & $r_{1}\leftrightarrow r_{3}$ & \textbf{sync} &
+    $\langle 2,0,0 \rangle$ & $\langle 1,1,0 \rangle$ &
+    & &
+    $\langle 1,1,0 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    \textbf{7} & $r_{3}$ &  \textbf{write} $f$ &
+    & &
+    & & 
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    \textbf{8} & $r_{2}\leftrightarrow r_{3}$ & \textbf{sync} &
+    & &
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ & 
+    $\langle 1,1,1 \rangle$ & $\langle 2,0,0 \rangle$ \\
+
+    \textbf{9} & $r_{2}$ & \textbf{resolve} $f_{\langle 2,0,0\rangle} \to f$ &
+    & &
+    $\langle 2,2,1 \rangle$ & &
+    & \\
+
+    \textbf{10} & $r_{1}\leftrightarrow r_{2}$ & \textbf{sync} &
+    $\langle 2,2,1 \rangle$ & &
+    $\langle 2,2,1 \rangle$ & & 
+    & \\
+
+    \textbf{11} & $r_{1}\leftrightarrow r_{3}$ & \textbf{sync} &
+    $\langle 2,2,1 \rangle$ & &
+    & &
+    $\langle 2,2,1 \rangle$ & \\
+
+    \hline
+  \end{tabular}
+\end{center}
+\caption{ Evolution of version vectors for a file $f$ modified at
+  three different replicas.  When a replica has multiple versions of
+  the file, we list the main version first.  Any versions not listed
+  can be garbage collected.  Note that $h$ arbitrarily orders
+  $h(\langle 1,1,0\rangle)>h(\langle 2,0,0\rangle)$, which determines
+  the main version chosen by $r_3$ n step 6.
+%
+%For each replica we show the main version
+%vector relative to that $r$ fisrt. We show the version vector list
+%for each $r$ only when it is modified.
+%Here the maximum number of coexisting versions for $f$ is 2. We
+%could have reached the worst case, that is 3, by modifying $f$ from
+%the three different $r$s without any synchronization between
+%modifications.
+}
+\label{fig:vvex}
+\end{figure*}
+
+
+% Local Variables:
+% tex-main-file: "main.ltx"
+% tex-command: "make;:"
+% tex-dvi-view-command: "make preview;:"
+% End:
