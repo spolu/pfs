@@ -178,10 +178,19 @@ struct pfs_vv
   without any connection occuring between modifications.}}
 \end{table*}
 
-\subsection{Version Vector}
+\subsection{Reconciliation}
+
+Because pFS is essentially permanently in disconnected operation mode,
+it must detect and resolve conflicts when multiple replicas of the
+same file system are modified between synchronization events.  As with
+previous file systems, pFS enforces the ``no lost updates''
+guarantee~\cite{page:ficus}---in other words, when reconciling
+replicas it is only permissible to discard the contents of a file if
+its modification history is a prefix of another.
+
 
 pFS does not maintain a versioning of the files and directories but a
-versionning of the directory entries. It allows much more flexibility
+versioning of the directory entries. It allows much more flexibility
 to handle cases where two different ressources (e.g: a file and a
 directory) have been given the same name on two different $sd$s.  pFS
 associates with each file and directory a global unique identifiant
