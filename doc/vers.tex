@@ -188,16 +188,24 @@ guarantee~\cite{page:ficus}---in other words, when reconciling
 replicas it is only permissible to discard the contents of a file if
 its modification history is a prefix of another.
 
+Rather than version files and directories, pFS versions directory
+entries.  This has two benefits.  First, it simplifies the handling of
+cases where the same pathname has been used for a file on one replica
+and a directory on another.  Second, it allowed us to simplify the
+implementation, so that at its core pFS only really has one complex
+function, \texttt{pfs\_set\_entry} (discussed in
+Subsection~\ref{sec:pfssetentry}), and the rest of the system simply
+involves translating file system calls into \texttt{pfs\_set\_entry}
+calls.
 
-pFS does not maintain a versioning of the files and directories but a
-versioning of the directory entries. It allows much more flexibility
-to handle cases where two different ressources (e.g: a file and a
-directory) have been given the same name on two different $sd$s.  pFS
-associates with each file and directory a global unique identifiant
-generated on creation by applying a 64-bits md5 cryptographic hash
-function on the concatenation of the identifiant of the $sd$ where the
-ressource is created and an incremented counter maintained on each
-$sd$. 
+pFS assigns each file and directory a
+globally unique ID generated upon creation by hashing the device ID
+and 
+
+by
+applying a 64-bits md5 cryptographic hash function on the
+concatenation of the identifiant of the $sd$ where the ressource is
+created and an incremented counter maintained on each $sd$.
 
 As shown in Figure \ref{MemStruct}, a directory is represented in pFS
 by a {\tt pfs\_dir} structure. It is a list of versionned {\tt
@@ -335,6 +343,7 @@ shows the evolution of the version vectors associated with an
 entry updated from three different $sd$s.
 
 \subsection {${\tt pfs\_set\_entry}$}
+\label{sec:pfssetentry}
 
 A nice property of this versionning system is that every classical
 file system operations can be mapped as a call to a unique
