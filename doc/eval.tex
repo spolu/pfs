@@ -39,10 +39,10 @@ finally their deletion (LFS\_SD). We augmented the small file
 benchmark with a small file write benchmark (LFS\_SW), which opens
 every file for writing, truncates it, rewrites the 4096 bytes and
 calls {\tt fsync}.  We added this benchmark to illustrate the case
-where libpfs incurs the most overhead (an extra {\tt link} operation
-for versioning, and the cache flushing when syncing to disk), as
+where libpfs incurs the most overhead (extra {\tt link} operation
+for versioning, and cache flushing when syncing to disk), as
 described in section \ref{sec:impl}. The large file benchmark (LFS\_L,
-Firgure \ref{LfsL}) consists of writing sequentially 30000 blocks of
+Firgure \ref{LfsL}) consists of writing sequentially 30.000 blocks of
 4096 bytes (LFS\_LSW), reading them sequentially (LFS\_LSR),
 re-writing them randomly (LFS\_LRW) and finally re-reading them
 randomly (LFS\_LRR).
@@ -61,9 +61,9 @@ randomly (LFS\_LRR).
 The benchmarks are synthetic, and do not represent realistic
 workloads. The goal is to show the strengths and weaknesses of
 libpfs. Figure \ref{LfsL} shows, as expected, that versioning
-maintenance does not incur any overhead compared to Fuse for large
-files. pFS is substantially faster than NFS on every benchmark except
-the small write benchmark (Figure \ref{LfsS}). This benchmark
+maintenance does not incur any visible overhead compared to Fuse for
+large files. pFS is substantially faster than NFS on every benchmark
+except the small write benchmark (Figure \ref{LfsS}). This benchmark
 emphasizes the operation that incurs the most overhead due to
 versionning maintenance: pFS performs comparatively to NFS on this
 benchmark where it is three times slower than native ext3.
@@ -104,10 +104,10 @@ an NFS client, and a pFS \emph{replica} participating in a \emph{file
 \end{center}
 \end{figure}
 
-Figure \ref{Bandw} shows that the simplicity of prot\_pfsd's protocol
+Figure \ref{Bandw} shows that the simplicity of our prototype's protocol
 incurs a limited overhead to the actual size of the 10.000 files
-(cumulating a total 39 MB). prot\_pfsd retransmits the whole content of
-the every file during the LFS\_SW benchmark, which could be drastically
+(cumulating a total 39 MB). pfsd retransmits the whole content of
+every file during the LFS\_SW benchmark, which could be drastically
 optimized, especially since LFS\_SW rewrites the same content as
 LFS\_SC. The total bandwidth usage is slightly higher for the LFS\_SC
 benchmark, due to the 100 directories creation wich totalizes
@@ -121,14 +121,14 @@ small files.
 Even if our prototype of pfsd is not yet optimized for bandwitdth
 consumption, it already allowed us to experience the benefits of our
 serverless personal cloud model. WAN and LAN communications over IP
-being achieved at virtually no cost, prot\_pfsd opportunistically
+being achieved at virtually no cost, pfsd opportunistically
 communicates updates resulting in an efficient propagation of the
 state among the devices. pFS is transparent to use, does not require
 any maintenance once the devices are configured, and conflicts rarely
 occur on a relatively well connected set of devices. We believe that
 it would be really difficult to create conflicts if cell phones and
-media player were to be used, even with a small capacity and a simple
-LRU cache for updates. 
+media players were to be used as simple relays, even with a small
+capacity and a simple LRU cache for updates.
 
 %In the context of other types of communication
 %links, such as bluetooth on mobile devices, power consumption would
@@ -139,17 +139,17 @@ LRU cache for updates.
 
 There is a few hidden costs associated with the use of pFS. First, the
 update log used by pfsd : even if they are deleted once propagated to
-every devices, this log may grow considerably should a device remain
-unused for a long period of time without being removed of the
-system. ``Rumor Mongering'' technique as described
+every devices or superseded, this log may grow considerably should a
+device remain unused for a long period of time without being removed
+from the system. ``Rumor Mongering'' technique as described
 in~\cite{demers:epidemic} could be used to alleviate this issue.
 
-Second, libpfs keeps track of deleted files to avoid ambiguity
-in face of resources creation and removal. Such deleted entries are
-only kept for directories that are still accessible in a group
-filesystem which limits their number. Nevertheless, such entries can
-be garbage collected. A solution has already been provided
-in~\cite{page:ficus} under the section : ``Insert/Delete ambiguity''.
+Second, libpfs keeps track of deleted files to avoid ambiguity in face
+of resources creation and removal. Such deleted entries are only kept
+for directories that are still accessible on a replica which limits
+their number. Nevertheless, such entries can be garbage collected. A
+solution has already been provided in~\cite{page:ficus} under the
+section : ``Insert/Delete ambiguity''.
 
 \endinput
 
