@@ -17,52 +17,46 @@ of files when receiving updates asynchronously.
 We use the term \emph{device} to mean any hardware running the pFS
 software.  Though pFS currently only runs on Unix machines, we
 envision porting it to other types of hardware such as PDAs, cell
-phones, and digital audio players.
+phones, and digital audio players.  Users must supply a unique
+symbolic name for each device on which they use pFS (e.g.,
+\texttt{market.scs.stanford.edu}, or \texttt{stan-cell-phone}).
 
 A pFS \emph{file system} is a directory tree replicated on one or more
-devices.  Each file system has a unique ID generated at creation time.
-We use the term \emph{replica} to denote a copy of a particular file
-system stored by a device.  Note that one device may store replicas of
-multiple file systems.
+devices.  Each file system has a unique ID, generated randomly at
+creation time.  We use the term \emph{replica} to denote a copy of a
+particular file system stored by a device.  Note that one device may
+store replicas of multiple file systems.
 
-Each replica is also owned by a particular \emph{user}.  (Usually all
-replicas on the same device have the same user, but this need not be
-the case.)  Each replica has a unique name, usually given by the
-tuple $\langle \mathrm{file\ system}, \mathrm{device}, \mathrm{user}\rangle$.
+Each replica is also owned by a particular \emph{user}.  Though all
+replicas on a portable device would typically be owned by the same
+user, this need not be the case on a Unix machine where multiple users
+each have accounts they use to access different pFS file systems.
+Every replica has a unique name, given by the tuple $\langle
+\mathrm{file\ system ID}, \mathrm{device}, \mathrm{user}\rangle$.
 
-Each file system has associated metadata consisting of an access
-control list (list of users allowed read or read-write access), and a
-set of replicas currently storing the file system.  File systems can
-thus be shared between users, but each user has a special private file
-system
+Each file system has metadata consisting of an access control list and
+a set of replicas known to be storing the file system.  The access
+control list specifies the users allowed to create and synchronize
+replicas of the file system.  Each user specified can have read-only
+or read-write access to the file system.  Though currently users are
+named by opaque random IDs, eventually we envision naming users by
+public keys so as to simplify authentication of device owners.
 
-We denote by $sd_{d}$ a storage space of capacity $S(sd_{d})$
-located on the device $d$. A group is a set of $sd$s and an
-access control list:
-\begin{center}
-$g = (\{sd_{d}\}, \text{ACL})$
-\end{center}
-Note that a given device can have multiple $sd$s and that $sd$s are
-not shared among different groups. But a $sd$ is provided and intended
-to be used by a given user $u$. Therefore each $sd$ is given a
-readable name :
-\begin{center}
-$\text{name}(sd) = \text{user}.\text{device}$. 
-\end{center}
-Moreover, Each user has a special group $me(u)$ on which he has
-exclusive access:
-\begin{center}
-$me(u) = (\{sd_{d}\}, \text{u:rw})$
-\end{center}
-
-\subsection{Disconnected Operations}
+\subsection{Disconnected Operation}
 
 pFS makes no assumption concerning network partitioning and
-connectivity. We model connectivity as connections happening between
-two $sd$s belonging to the same group and allowing all data and
-metadata concerning a given ressources to be exchanged. We denote such
-connection between $sd_{1}$ and $sd_{2}$ concerning ressource $f$ as
-$c(sd_{1}, sd_{2}, f)$.
+connectivity.  We model connectivity as connections happening
+opportunistically between two replicas of the same file system.  When
+such connections occur, the two replicas send each other all data and
+metadata necessary to synchronize their replicas of the file system.
+With the current prototype, connections occur when two nodes can reach
+each other over the Internet, but the software is structured such that
+we can easily add other types of connection, such as USB and Bluetooth
+connections.
+
+%concerning a given ressources to be exchanged. We denote such
+%connection between $sd_{1}$ and $sd_{2}$ concerning ressource $f$ as
+%$c(sd_{1}, sd_{2}, f)$.
 
 \begin{figure}[t]
 \begin{center}
