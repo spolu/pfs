@@ -269,84 +269,105 @@ entry updated from three different $sd$s.
 \subsection {${\tt pfs\_set\_entry}$}
 \label{sec:pfssetentry}
 
-A nice property of this versionning system is that every classical
-file system operations can be mapped as a call to a unique
-operation {\tt pfs\_set\_entry}. {\tt pfs\_set\_entry} is the atomic
-update operation that will be propagated among the $sd$s of a group.
-It has a log structure, that is, replaying sequentially a set of update
-allows to reconstruct the associated file system tree structure. When
-propagated to a $sd$, the updates are applied and can be simply appended to a
-log for future propagation to other $sd$s.  
-The declaration of the function is as follows:
+A nice property of this versionning system is that all modifications
+made through the traditional Unix file system interface can be
+straight-forwardly translated into invocations of a single function,
+{\tt pfs\_set\_entry}.  {\tt pfs\_set\_entry} is the atomic update
+operation that will be propagated among the replicas of a file system.
+pFS logs these operations, and replaying them sequentially
+reconstructs the associated file system structures.  When
+synchronizing with another replica, the updates are applied and can be
+simply appended to a log for further propagation to other replicas.
+However, entries with whose version vectors are dominated by other
+(later) versions never need to be propagated to other replicas.
+
+The function's prototype is as follows:
 
 \begin{center}
 {\tt \small
 \begin{verbatim}
 int pfs_set_entry 
-  (struct pfs_instance * pfs,
-   const char * grp_id,
-   const char * dir_id,
-   const char * name,
-   const uint8_t reclaim,
-   const struct pfs_ver * ver);
+  (struct pfs_instance *pfs,
+   const char *file_system,
+   const char *dir_id,
+   const char *name,
+   const struct pfs_ver *ver,
+   const bool_t reclaim);
 \end{verbatim}
 }
 \end{center}
 
-{\tt pfs\_set\_entry} adds version {\tt ver} (see Figure
-\ref{MemStruct} for a declaration of {\tt pfs\_ver} structure) to the
-entry {\tt name} in the directory designated by {\tt dir\_id} in the
-group designated by {\tt grp\_id}. Note that the directory structure
-does not have a name, but is simply designated by its {\tt
-  dir\_id}. The mapping from the name to {\tt dir\_id} being itself
-represented as an entry in the parent directory.  {\tt reclaim} is
-used to determine wether or not ressources pointed by versions that
-are dominated by {\tt ver} in entry {\tt name} should be reclaimed or
-not. It is particularly usefull for the {\tt rename} operation. Let us
-show a few examples of how file system operations map to {\tt
-  pfs\_set\_entry} operations. For clarity, we ignore the {\tt
-  grp\_id} and {\tt dir\_id} and only show the type of the {\tt ver}
-used :
+{\tt pfs\_set\_entry} adds version {\tt ver} (see
+Figure~\ref{MemStruct} for a declaration of {\tt pfs\_ver} structure)
+to the entry {\tt name} in the directory designated by {\tt dir\_id}
+in the file system designated by {\tt file\_system}.  Note that the
+directory structure does not have a name, but is simply designated by
+its {\tt dir\_id}.  (The directory's name is mapped to {\tt dir\_id}
+in the parent directory, and the root directory ID is stored in the
+file system metadata.)
+
+Recall that a \texttt{pfs\_ver} structure has a \texttt{dst\_id} field
+that references a blob of data (for regular files and symbolic links),
+or another directory.  The {\tt reclaim} argument simply specifies
+whether or not the object referenced by the previous value of
+\texttt{dst\_id} can be garbage collected (which it usually can,
+except with rename where the same \texttt{dst\_id} field will be
+inserted into the destination directory entry).
+
+Let us show a few examples of how file system operations map to {\tt
+pfs\_set\_entry} operations.  For simplicity, we ignore the {\tt pfs}
+and {\tt file\_system} arguments, which are identical for all calls
+within a file system.  We also show \texttt{pfs\_ver} structures
+within braces, and omit the version vector.
 
 \begin{itemize}
-  \item \textbf{open ($f$, O\_CREAT)} : \\
-    generate new back storage file and $id$ \\
-    {\tt pfs\_set\_entry ($dir\_id$,$f$,(FIL, $id$),1)}
+  \item \textbf{open ($f$, O\_CREAT, 0666)}: \\
+    generate a new back-end storage file (blob) and $id$ \\
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,$\{$REG, $id$$\}$,1)}
 
-  \item \textbf{close ($f$)} when $f$ is dirty : \\
-    regenerate back storage $id'$ \\
-    {\tt pfs\_set\_entry ($dir\_id$,$f$,(FIL, $id'$),1)}
+  \item \textbf{close ($f$)} when $f$ is dirty: \\
+    regenerate back-end storage $id'$ \\
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,$\{$REG, $id'$$\}$,1)}
     
-  \item \textbf{unlink ($f$)} : \\
-    {\tt pfs\_set\_entry ($dir\_id$,$f$,(DEL, 0),1)}
+  \item \textbf{unlink ($f$)}: \\
+    {\tt pfs\_set\_entry ($dir\_id$,$f$,$\{$DEL, 0$\}$,1)}
 
-  \item \textbf{rmdir ($d$)} : \\
-    {\tt pfs\_set\_entry ($dir\_id$,$d$,(DEL, 0),1)}
+  \item \textbf{rmdir ($d$)}: \\
+    {\tt pfs\_set\_entry ($dir\_id$,$d$,$\{$DEL, 0$\}$,1)}
 
-  \item \textbf{rename ($f_1$, $f_2$)} : \\
-    {\tt pfs\_set\_entry ($dir\_id$,$f_1$,(DEL, 0),0)} \\
-    {\tt pfs\_set\_entry ($dir\_id'$,$f_2$,(FIL, $id$),1)}
+  \item \textbf{rename ($f_1$, $f_2$)}: \\
+    {\tt pfs\_set\_entry ($dir\_id_2$,$f_2$,$\{$REG, $id$$\}$,1)} \\
+    {\tt pfs\_set\_entry ($dir\_id_1$,$f_1$,$\{$DEL, 0$\}$,0)}
 \end{itemize}
 
 We have not shown the version vectors used here. They are generated or
 incremented according to the semantics we defined previously. Note
-that a deleted entry version persists in the system as being of type
-{\tt DEL}. Such conservative technique is needed to handle cases where
-an entry might have been deleted on one $sd$ and updated on
-another. The {\tt DEL} type has to be treated as any other type of
-entry by the versionning system.
+that a deleted entry persists in the system with a \texttt{pfs\_ver}
+of type {\tt DEL}\@.  This conservative technique is needed to handle
+cases where an entry might have been deleted on one replica and
+updated on another. The {\tt DEL} type has to be treated as any other
+type of entry by the versionning system.
 
-Moreover, anytime a {\tt pfs\_set\_entry} update is received from
-another $sd$ with an unknow {\tt dir\_id}, it generates a new {\tt pfs\_dir}
-with the unknown {\tt dir\_id} that is not inserted in the local tree, but
-will allow to complete the received update. Such situation may arise
-if the updates are not propagated according to the same order as the one they
-have been originally generated with. If all updates are subsequently
-propagated, an update relative to the new directory will follow and will
-allow its insertion in the local tree. This behavior gives the 
-{\tt pfs\_set\_entry} updates a very useful property : \emph{a given set of
-updates will result in the same local tree structure regardless of the
-order in which the updates are performed.}
+% --- XXX needs work below
+
+In the future, we may use
+vector time pairs~\cite{cox:tra} to alleviate the need to track
+deleted files.
+
+Whenever a {\tt pfs\_set\_entry} update is received from another
+replica and the {\tt dir\_id} is unknown to the receiver, the receiver
+generates a new, dangling {\tt pfs\_dir} structure which is not
+reachable from the local root directory, but at least allows the
+synchronization operation to complete.
+
+Such situation may arise if the updates are not propagated according
+to the same order as the one they have been originally generated
+with. If all updates are subsequently propagated, an update relative
+to the new directory will follow and will allow its insertion in the
+local tree. This behavior gives the {\tt pfs\_set\_entry} updates a
+very useful property : \emph{a given set of updates will result in the
+same local tree structure regardless of the order in which the updates
+are performed.}
 
 Updates are naturally ordered by the Happen-Before relationship, and
 one can advocate to keep this order whenever a set of updates is
