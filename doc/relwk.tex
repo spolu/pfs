@@ -18,16 +18,17 @@ Mesh~\cite{microsoft:livemesh} also appears to have a similar
 architecture to these other products, though unfortunately we don't
 have enough details on its implementation.  However, the fact that it
 limits the space available on a ``mesh'' suggests that Microsoft's
-central storage infrastructure may be a limiting factor.
+central storage infrastructure or client network bandwidth may be a
+limiting factor.
 
 The goal of pFS is to provide a similar user experience to these
 services, yet without relying on a centralized infrastructure.  Thus,
 users can make full use of the storage capacity and network bandwidth
 supported by their devices, without paying any fees, viewing any
 advertising, losing any privacy, or unnecessarily subjecting
-themselves to storage quotas.  Our thesis is that not can many of the
+themselves to storage quotas.  Our thesis is that not only can many of the
 well-known concepts in distributed file systems be readily adapted to
-disintermediate these central services, but that hardware trends and
+disintermediate these central services, but also that hardware trends and
 the specific usage model allow for significant design simplifications
 compared to previous work.
 
@@ -42,10 +43,9 @@ exposing conflicts in such a way that they can be resolved by software
 entirely outside of the file system, and assuming that reconciliation
 can happen over high-bandwidth links by transporting devices (thereby
 eliminating the need for techniques such as trickle reintegration).
-pFS also uses organizes its representation of the file system around
+pFS also organizes its representation of the file system around
 directory entries rather than files, which avoids the need to handle
-update/update conflicts and name conflicts separately, as in previous
-systems~\cite{reiher:resolving}.
+update/update conflicts and name conflicts separately~\cite{reiher:resolving}.
 
 BlueFS~\cite{nightingale:bluefs} and a follow-on project
 EnsemBlue~\cite{nightingale:bluefs} are both file systems targeted at
@@ -54,9 +54,10 @@ power management, performance optimization in the face of different
 storage media, and namespace management, none of which pFS
 specifically addresses.  Like pFS, BlueFS takes advantage of users
 transporting storage devices to move data directly between pairs of
-clients.  Unlike pFS, BlueFS still requires a centralized server.  The
-authors seem to view servers as providing backup for mobile devices
-more than vice versa.
+clients.  Unlike pFS, BlueFS still requires a centralized server.
+%The
+%authors seem to view servers as providing backup for mobile devices
+%more than vice versa.
 
 Other peer-to-peer file systems have been proposed with no central
 server, notably Ivy~\cite{muthitacharoen:ivy}.  However, a big
@@ -74,7 +75,10 @@ store complete modification histories, pFS only retains enough recent
 versions of each file to ensure the ``no lost updates'' property.  In
 this sense, pFS is closer to directory mirroring tools such as
 Unison~\cite{balasubramanian:unison}, Rumor~\cite{guy:rumor}, and
-Tra~\cite{cox:tra}.
+Tra~\cite{cox:tra}.  However, as a file system, pFS has the advantage
+of knowing exactly what files are being are being modified, and can
+queue changes up for transmission immediately rather than needing to
+scan the whole file system periodically.
 
 pFS is related to several other distributed systems that are not file
 systems.  Bayou~\cite{petersen:flexible-update} was designed to handle
