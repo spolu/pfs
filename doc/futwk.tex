@@ -3,28 +3,85 @@
 \section{Future Work}
 \label{sec:futwk}
 
-The framework we present in this paper raises new problematics : There
-is a need for the formalization and the automatic acquisition of
+There is no final design for pfsd since it is highly dependent on
+which type of device and which type of communication channel it relies
+on. This section is a survey of lessons we have learned from designing
+pfsd and directives we have identified to iterate on our implementation.
+
+\paragraph {Naming service}
+In the context of IP a naming service is necessary to enable the
+devices to discover each others' address from their unique names. We
+used a central server, but DNS could also be used as a naming service
+if public IPs are available. A naming service is not always needed. As
+an example, a daemon using Bluetooth would rely on the built-in
+mechanisms to attach devices such that they recognize each other when
+placed at proximity.
+
+\paragraph {Update Logging:}
+pfsd needs to maintain a log of every update it sees in order to
+retransmit them to other devices. Depending on the context, updates
+should be augmented by pfsd with a propagation vector to keep track of
+which devices have already receive any given update. Updates whose
+version is dominated by more recent updates have to be
+elided. Moreover, any update that has been propagated to all devices
+can and should be removed from the log to avoid wasting local storage
+capacity. This prevents simple retransmission of the whole update
+log when a new device joins a \emph{file system}. Nevertheless such
+initial synchronization can be achieved by transmitting a back-end
+storage archive from any other \emph{replica}.
+
+\paragraph {File transmission:}
+Along with the updates, back-end storage files containing the
+immutable content of file verisons handled by pFS have to be
+transmitted between the \emph{replicas}. Files associated with
+different versions of a same file are very likely to have
+similarities. rsync\cite{tridgell:rsync} principles as well as concepts
+introduced in LBFS\cite{muthitacharoen:lbfs} should definitely be
+considered for file transmission in order to avoid wasting bandwidth.
+
+\paragraph {File System management:}
+\emph{file system} management is a real challenge in pFS. libpfs
+assumes that the list of \emph{replicas} participating in a \emph{file
+  system} is stored in the \emph{file system} tree itself. This allows
+propagation of up-to-date \emph{replica} information using the pFS
+mechanisms. Any communication between two devices should check that
+the destination device already knows the existence of the \emph{file
+  system} to be updated. If not, a special command should be issued to
+instruct the destination pfsd to initiate a \emph{replica}
+locally. 
+
+A \emph{replica} removal can be done simply by updating the {\tt
+  .pfs\_replica} file. The device removed would then stop receiving
+updates from that \emph{file system}. Even if not needed for
+correctness, it would be valuable for the ID of the removed
+\emph{replica} was erased from any version vector existing in the
+system. This functionality should be provided by libpfs and the
+trigger for this action propagated as an update by pfsd.
+
+\paragraph {Choice of communication channel:}
+If different communication channels are available (IP (LAN / WAN),
+Bluetooth, USB), it is essential to define a policy to decide which
+one to use given the updates to be propagated. It would be inefficient
+to propagate GB of music over WAN from a desktop computer at home to a
+desktop computer at work if this data can be efficiently pushed to a
+mobile device such as a digital player that will be able to quickly
+retransmit it when connected to the desktop computer at work. 
+
+There is a need for the formalization and the automatic acquisition of
 statistics concerning file access patterns, connectivity patterns, and
-propagations dynamics in the context of pFS.
-
-Such statistics could be exploited to elaborate flexible yet efficient
-caching policies in the context of limited storage capacity on mobile
-devices as described in section \ref{sec:model_mob}. By flexible, we mean
-that users and applications should be able to specify the caching
-policy at a fine grain level, based on their more complete semantic
-knowledge of the data pFS is handling. By efficient, we mean that the
-caching policy, influenced by user and applications, should still
-impose that updates are kept long enough on mobile devices to ensure
-their propagation.
-
-As stated in section \ref{sec:impl}, such statistics could also be
+propagations dynamics in the context of pFS. such statistics could be
 exploited to make efficient choice of the communication chanels to
 use given the context in which the updates have to be propagated.
 
-Probabilistic models have yet to be designed to provide answers to
-those two problematics that we have identified and not addressed in
-our actual work.
+\paragraph {Limited storage capacity}
+Such statistics could be exploited to elaborate flexible yet efficient
+caching policies in the context of limited storage capacity on mobile
+devices. By flexible, we mean that users and applications should be
+able to specify the caching policy at a fine grain level, based on
+their more complete semantic knowledge of the data pFS is handling. By
+efficient, we mean that the caching policy, influenced by user and
+applications, should still impose that updates are kept long enough on
+mobile devices to ensure their propagation.
 
 
 % Local Variables:
