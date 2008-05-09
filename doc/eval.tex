@@ -58,16 +58,6 @@ randomly (LFS\_LRR).
 \end{figure}
 
 
-The benchmarks are synthetic, and do not represent realistic
-workloads. The goal is to show the strengths and weaknesses of
-libpfs. Figure \ref{LfsL} shows, as expected, that versioning
-maintenance does not incur any visible overhead compared to Fuse for
-large files. pFS is substantially faster than NFS on every benchmark
-except the small write benchmark (Figure \ref{LfsS}). This benchmark
-emphasizes the operation that incurs the most overhead due to
-versionning maintenance: pFS performs comparatively to NFS on this
-benchmark where it is three times slower than native ext3.
-
 \begin{figure}[ht]
 \begin{center}
   \includegraphics [scale=0.55] {lfs_l}
@@ -78,9 +68,7 @@ benchmark where it is three times slower than native ext3.
 \end{center}
 \end{figure}
 
-
-
-\begin{figure*}[t]
+\begin{figure*}[ht]
 \begin{center}
   \begin{tabular}[t]{|r|c|c|c|c|c|}
     \hline
@@ -98,6 +86,19 @@ benchmark where it is three times slower than native ext3.
   gzip-1.2.4. All values are in ms.}
 \label{fig:macrobench}
 \end{figure*}
+
+The benchmarks are synthetic, and do not represent realistic
+workloads. The goal is to show the strengths and weaknesses of
+libpfs. Figure \ref{LfsL} shows, as expected, that versioning
+maintenance does not incur any visible overhead compared to Fuse for
+large files. pFS is substantially faster than NFS on every benchmark
+except the small write benchmark (Figure \ref{LfsS}). This benchmark
+emphasizes the operation that incurs the most overhead due to
+versionning maintenance: pFS performs comparatively to NFS on this
+benchmark where it is three times slower than native ext3.
+
+
+
 
 Figure \ref{fig:macrobench} shows the performance of pFS (in the same
 conditions as previously) on a macrobenchmark consisting of untaring,
