@@ -114,10 +114,12 @@ means of propagation when the benefit of physically transported devices
 overcomes the time needed to transmit large sets of data on the WAN.
 \fi
 
+\if 0
 \subsection{Extended Usage}
 
-We believe that such personal clouds should complement the use of
-remote computing and storage clouds. The principles we espouse are
+
+As regards remote computing, 
+personal clouds \emph{complement} this function. The principles we espouse are
 compatible with the integration of remote servers as nodes in one's
 personal cloud for providing services that are not available on
 conventional devices, such as web-based access and modification of
@@ -134,11 +136,31 @@ mobile devices are used as a way to propagate updates, their loss does not
 jeopardize the system since all the data is present on the last device
 that connected with it.
 
+\if 0
 Finally, the goal of pFS is to provide a distributed storage system
 where the user's data is available on all his devices. It should provide
 ubiquitous access to up-to-date versions of any resource without
 relying fully on a centralized, potentially untrusted (doubtly
 free) infrastructure. \mw{I don't understand this paragraph.}
+\fi
+\fi
+
+\subsection{Caveats to this Vision}
+
+First, as regards remote computing, personal clouds \emph{complement} this
+function. The principles we espouse are compatible with the integration
+of remote servers as nodes in one's personal cloud for providing
+services that are not available on conventional devices, such as
+web-based access and modification of data.
+
+Second, we must attend to confidentiality. The reason is that, under
+pFS, a user's data is not only more available (by definition, people
+carry around mobile devices), it also more likely to fall into someone
+else's hands (people drop and lose their mobile devices). Thus, any
+``production use'' of pFS should apply existing mechanisms for
+preserving privacy. \mw{David, please revisit this paragraph, especially
+the last sentence, and talk about encrypted file systems and such. the
+paragraph currently ends on a whimper.}
 
 \subsection {Model}
 \label{sec:model_mob}
@@ -149,15 +171,6 @@ holding all of a user's data. This might become true in a near future
 but is certainly not today. We acknowledge this fact and leave as
 future work the design of special policies for mobile devices with
 limited storage capacity as described in section \ref{sec:futwk}.
-
-\subsection{Caveats to this Vision}
-
-\mw{This subsection is optional. It might be a good place to mention the
-fact that for the exact same reason that the cell phone provides more
-availability (people carry them around), the cell phone is also more
-likely to be lost (people drop them and leave them on trains and buses).
-Result: confidentiality becomes more of a problem. Can address that with
-plenty of well-known techniques, but it might be worth mentioning it.}
 
 \endinput
 
