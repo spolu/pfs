@@ -42,8 +42,10 @@ exposing conflicts in such a way that they can be resolved by software
 entirely outside of the file system, and assuming that reconciliation
 can happen over high-bandwidth links by transporting devices (thereby
 eliminating the need for techniques such as trickle reintegration).
-
-\cite{reiher:resolving}
+pFS also uses organizes its representation of the file system around
+directory entries rather than files, which avoids the need to handle
+update/update conflicts and name conflicts separately, as in previous
+systems~\cite{reiher:resolving}.
 
 BlueFS~\cite{nightingale:bluefs}
 EnsemBlue~\cite{nightingale:bluefs}
