@@ -24,18 +24,22 @@ The goal of pFS is to provide a similar user experience to these
 services, yet without relying on a centralized infrastructure.  Thus,
 users can make full use of the storage capacity and network bandwidth
 supported by their devices, without paying any fees, viewing any
-advertising, or losing any privacy.  Our thesis is that not can many
-of the well-known concepts in distributed file systems be readily
-adapted to disintermediate these central services, but that hardware
-trends
+advertising, losing any privacy, or unnecessarily subjecting
+themselves to storage quotas.  Our thesis is that not can many of the
+well-known concepts in distributed file systems be readily adapted to
+disintermediate these central services, but that hardware trends and
+the specific usage model allow for significant design simplifications
+compared to previous work.
 
+The most relevant previous file systems are Ficus~\cite{page:ficus}
+and CODA~\cite{kistler:coda}, both of which support replication of
+servers and disconnected operation.  Compared to these systems, pFS
+achieves simplicity by eliminating the distinction between clients and
+servers, assuming only a modest number of clients (on the order of a
+dozen), eliminating a synchronous/consistent mode of operation
 
-. Our
-goal was to take advantage of evolution in hardware to design a simple
-system yet providing benefits comparable to more complex system
-relying on highly available central infrastructures. pFS weaker
-consistency and its simplicity makes it also portable to a very wide
-type of devices relying on any type of communication channel.
+BlueFS~\cite{peek:bluefs}
+
 
 
 Unison~\cite{balasubramanian:unison}
