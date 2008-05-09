@@ -25,11 +25,13 @@ devices, particularly her mobile devices, than there is \emph{between} a
 user and any plausible central infrastructure. This connectivity is both
 in terms of frequency (many users are often out of reach of the ``global
 Internet'' but are not often out of reach of their cell phone) and in
-terms of magnitude (bluetooth offers higher bandwidth than
-``broadband''). \mw{DM, SP, double-check that last sentence.} As mentioned in
-Section~\ref{s:related}, other authors have made related observations
-in different contexts. \mw{DM, double-check last sentence against the 
-``positioning'' in S2.} 
+terms of magnitude by taking advantage of the higher bandwidth of
+physically transported devices.
+%(bluetooth offers higher bandwidth than
+%``broadband''). \mw{DM, SP, double-check that last sentence.} As mentioned in
+%Section~\ref{s:related}, other authors have made related observations
+%in different contexts. \mw{DM, double-check last sentence against the 
+%``positioning'' in S2.} 
 %The connection patterns
 %between users' devices, including their mobile devices, appear to be more
 %frequent than the ones offered by a central infrastructure. They are
@@ -47,18 +49,18 @@ device.
 %participating in the system. Such versioning allows update propagation
 %between any two of devices as network conditions permit.
 
-We then use this versioning system to built pFS, a distributed file
+We then use this versioning system to build pFS, a distributed file
 system in which data is stored on every device and propagated
 asynchronously and seamlessly. pFS yields two benefits. First, as with
 other systems, it addresses the ``synchronization problem'': it provides
 a user a consistent view of her data, which she can modify from any of her
-devices. \mw{double-check that last sentence.} Second, because of the sheer multiplicity of personal devices,
+devices. Second, because of the sheer multiplicity of personal devices,
 pFS can provide many of the benefits of ``cloud computing'' (including
 durability and availability, both achievable through replication on
-multiple personal devices), \mw{add benefits?} without involving a
-central server. \mw{DM, double-check this para, particularly the part
-about the two benefits, against the intro.}
+multiple personal devices),  without involving a central server. 
 
+%\mw{DM, double-check this para, particularly the part
+%about the two benefits, against the intro.}
 %
 %Our intent with pFS is to provide a distributed storage system where
 %data is stored locally on every device and seamlessly propagated
@@ -77,11 +79,13 @@ our versioning system to a broader range of devices and communication
 channels.
 \fi
 
+\if 0
 \mw{I'm commenting out the bit where you apologize for what you haven't
 implemented. The place to mention what you have implemented is in the
 implementation section, not in the ``vision'' section. Please
 do make sure that you are up front with the reader, but make sure it's
 in the implementation section.}
+\fi
 
 %Even if not yet fully implemented, let's walk through a typical usage
 We now walk through a typical 
@@ -99,13 +103,14 @@ booting his laptop. While his son is using the desktop computer at
 home to play a game after school, the updates he made during the day
 are automatically fetched from his computer at work. When \emph{X}
 gets back home, he is able to keep working on an up-to-date copy of
-his data even if he forgot his laptop. \mw{By now, you need to have
+his data even if he forgot his laptop. 
+\mw{By now, you need to have
 cited Bryan Ford, Russ Cox, and unison.}
 
+\if 0
 \mw{I commented out the paragraph that was here because it felt
 repetitive with the rest of the text. If that was a mistake, I'm sorry.
 Feel free to bring it back.}
-\if 0
 As described above, the ``personal cloud'' infrastructure uses pFS to 
 take advantage of every devices to propagate data. The cell phone can
 be used when connectivity is lacking, and there is no other way to
@@ -173,59 +178,6 @@ future work the design of special policies for mobile devices with
 limited storage capacity as described in section \ref{sec:futwk}.
 
 \endinput
-
-\subsection {Existing Models}
-
-As we are writing, new services are being introduced to the
-market: they are distributed storage systems, with support for
-disconnected operations. A local copy of the files is kept on every
-device participating in the system. These products results in a user
-experience close to what we are aiming at with pFS. Nevertheless, these
-systems rely on the existence of a central server, always available,
-where conflicts are detected. Figure \ref{OthModel} shows a diagram of
-such existing solutions.
-
-\begin{figure}[ht]
-\begin{center}
-  \includegraphics [scale=0.4] {img/other_model}
-  \caption{\label{OthModel}
-    {\small Existing models: cloud infrastructure with local
-      caches. The circles represent high capacity devices, the diamond
-      represents a mobile devices as smartphones or digital players,
-      and the square represents the cloud infrastructure always
-      available, in charge of resolving conflicting updates. Black
-      arrows represent the connection and update propagation patterns
-      while the grey arrows represent updates made to the user data.}}
-\end{center}
-\end{figure}
-
-Unfortunately, we believe that the need for a central server has a few
-drawbacks. The end-user has to trust the company providing the cloud
-infrastructure for storing \emph{all} his data. Such models might
-result into closed infratstructes tighted to the storage cloud
-they rely on, where compatibility or migration between different
-service providers might become difficult.
-
-\subsection {pFS Personal Cloud Model}
-
-In such
-framework, users' mobile devices, even if considered as any other
-devices by the system, become a very common relay for updates. Figure
-\ref{PfsModel} shows a diagram of pFS model.
-
-\begin{figure}[ht]
-\begin{center}
-  \includegraphics [scale=0.4] {img/pfs_model}
-  \caption{\label{PfsModel} {\small pFS model: personal
-      cloud. Updates are propagated between any couple of
-      devices. The mobile devices appear as efficient relays 
-      for updates.}}
-\end{center}
-\end{figure}
-
-
-
-
 
 
 % Local Variables:
