@@ -78,10 +78,33 @@ benchmark where it is three times slower than native ext3.
 \end{center}
 \end{figure}
 
-On the Modified Andrew Benchmark, in the same conditions, pFS incurs a
-6\% overhead over ext3 (while NFS incurs a 182\% overhead) which shows
-that pFS versioning system introduces an acceptable overhead for
-day-to-day computing.
+
+
+\begin{figure*}[t]
+\begin{center}
+  \begin{tabular}[t]{|r|c|c|c|c|c|}
+    \hline
+    & \emph{untar} & \emph{configure} & \emph{compile} 
+    & \emph{clean} & \emph{end-to-end} \\
+    \hline
+
+    \textbf{ext3} & 11.0  & 333.5 & 562.8 & 4.6  & 911.8  \\
+    \textbf{pFS}  & 33.2  & 351.9 & 581.1 & 10.6 & 976.9  \\
+    \textbf{NFS}  & 167.8 & 662.1 & 826.0 & 66.1 & 1722.1 \\
+    \hline
+  \end{tabular}
+\end{center}
+\caption{Macrobenchmarks. untar, configure, compile and clean of
+  gzip-1.2.4. All values are in ms.}
+\label{fig:macrobench}
+\end{figure*}
+
+Figure \ref{fig:macrobench} shows the performance of pFS (in the same
+conditions as previously) on a macrobenchmark consisting of untaring,
+configuring, compiling and cleaning gzip-1.2.4. pFS incurs a 7\%
+overhead over ext3 (while NFS incurs a 88\% overhead) on the
+end-to-end execution which shows that pFS local performances are
+perfectly acceptable for day-to-day computing.
 
 \subsection{pfsd}
 
