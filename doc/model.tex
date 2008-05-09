@@ -166,11 +166,16 @@ web-based access and modification of data.
 Second, we must attend to confidentiality. The reason is that, under
 pFS, a user's data is not only more available (by definition, people
 carry around mobile devices), it also more likely to fall into someone
-else's hands (people drop and lose their mobile devices). Thus, any
-``production use'' of pFS should apply existing mechanisms for
-preserving privacy. \mw{David, please revisit this paragraph, especially
-the last sentence, and talk about encrypted file systems and such. the
-paragraph currently ends on a whimper.}
+else's hands (people drop and lose their mobile devices).  If pFS is
+used to transport highly sensitive data on cell phones, the cell phone
+should really stored the data in encrypted format, which we have not
+yet implemented and could complicate synchronization.
+%Thus, any
+%``production use'' of pFS should apply existing mechanisms for
+%preserving privacy.
+%\mw{David, please revisit this paragraph, especially
+%the last sentence, and talk about encrypted file systems and such. the
+%paragraph currently ends on a whimper.}
 
 \subsection {Model}
 \label{sec:model_mob}
@@ -178,9 +183,15 @@ paragraph currently ends on a whimper.}
 In the following sections, we assume that mobile devices as
 smartphones and digital players have enough storage capacity for
 holding all of a user's data. This might become true in a near future
-but is certainly not today. We acknowledge this fact and leave as
-future work the design of special policies for mobile devices with
-limited storage capacity as described in section \ref{sec:futwk}.
+but is certainly not today.  In the mean time, the software easily
+supports creating multiple file systems.  Thus, one might create a
+large file system that is replicated on a home machine, work machine,
+and laptop, and a smaller file system that is replicated on a user's
+cell phone as well as these three machines.
+
+%We acknowledge this fact and leave as
+%future work the design of special policies for mobile devices with
+%limited storage capacity as described in Section \ref{sec:futwk}.
 
 \endinput
 
