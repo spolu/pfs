@@ -47,19 +47,47 @@ directory entries rather than files, which avoids the need to handle
 update/update conflicts and name conflicts separately, as in previous
 systems~\cite{reiher:resolving}.
 
-BlueFS~\cite{nightingale:bluefs}
-EnsemBlue~\cite{nightingale:bluefs}
+BlueFS~\cite{nightingale:bluefs} and a follow-on project
+EnsemBlue~\cite{nightingale:bluefs} are both file systems targeted at
+mobile devices.  These projects also address the problems of cache and
+power management, performance optimization in the face of different
+storage media, and namespace management, none of which pFS
+specifically addresses.  Like pFS, BlueFS takes advantage of users
+transporting storage devices to move data directly between pairs of
+clients.  Unlike pFS, BlueFS still requires a centralized server.  The
+authors seem to view servers as providing backup for mobile devices
+more than vice versa.
 
+Other peer-to-peer file systems have been proposed with no central
+server, notably Ivy~\cite{muthitacharoen:ivy}.  However, a big
+difference between pFS and Ivy is that pFS replicates a file system
+only on devices belonging to a particular user, whereas Ivy spreads
+the data over potentially huge numbers of machines owned by different
+people.
 
+A closer analog to pFS's peer-to-peer architecture is distributed
+revision control systems such as BitKeeper and git~\cite{git}.  These
+systems have an egalitarian structure that eliminates the concept of a
+``master'' repository---all repositories are equal, and can
+synchronize with each other pairwise.  However, while repositories
+store complete modification histories, pFS only retains enough recent
+versions of each file to ensure the ``no lost updates'' property.  In
+this sense, pFS is closer to directory mirroring tools such as
+Unison~\cite{balasubramanian:unison}, Rumor~\cite{guy:rumor}, and
+Tra~\cite{cox:tra}.
 
-Unison~\cite{balasubramanian:unison}
-Rumor~\cite{guy:rumor}
-Tra~\cite{cox:tra}
+pFS is related to several other distributed systems that are not file
+systems.  Bayou~\cite{petersen:flexible-update} was designed to handle
+concurrent updates to objects in a disconnected fashion, but was
+explicitly intended not to be a file system so as to force
+applications to provide conflict resolution code.
+PRACTI~\cite{belaramani:practi} provides topology independence like
+pFS, but also has such features as partial replication which pFS
+doesn't need.  Finally peer-to-peer backup systems such as
+Pastiche~\cite{cox:pastiche} \cite{nguyen:friendstore} address the
+backup problem in a different way from pFS, by allowing people to use
+each others' spare disk space for backup.
 
-Bayou~\cite{petersen:flexible-update}
-PRACTI~\cite{belaramani:practi}
-
-Pastiche~\cite{cox:pastiche,nguyen:friendstore}
 
 
 % Local Variables:
