@@ -97,14 +97,20 @@ emphasizes the operation that incurs the most overhead due to
 versionning maintenance: pFS performs comparatively to NFS on this
 benchmark where it is three times slower than native ext3.
 
-We stress that pFS does not provide the same semantics as NFS.
+We stress that pFS does not provide the same semantics as NFS, since
+NFS has close-to-open consistency.  pFS is not intended as replacement
+for NFS, which solves a very different need, and these results should
+not be interpreted as claiming that pFS is ``better'' than NFS\@.
+However, NFS is a popular file system in daily use by many people, and
+pFS's ability to beat NFS's performance indicates that performance
+should not present a barrier to pFS's adoption.
 
 Figure \ref{fig:macrobench} shows the performance of pFS (in the same
 conditions as previously) on a macrobenchmark consisting of untaring,
 configuring, compiling and cleaning gzip-1.2.4. pFS incurs a 7\%
-overhead over ext3 (while NFS incurs a 88\% overhead) on the
-end-to-end execution which shows that pFS local performances are
-perfectly acceptable for day-to-day computing.
+overhead over ext3 (while NFS incurs a 88\% overhead).  This suggests
+that end-to-end application performance on pFS should be perfectly
+acceptable for day-to-day computing.
 
 \subsection{pfsd}
 
