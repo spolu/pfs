@@ -37,7 +37,7 @@
 
 int pfs_open (struct pfs_instance * pfs,
 	      const char * path,
-	      int flags)
+	      int flags, mode_t mode)
 {
   struct pfs_open_file * open_file = NULL;  
   struct pfs_path_info pi;
@@ -91,7 +91,6 @@ int pfs_open (struct pfs_instance * pfs,
       }
       
       /* We create the entry. */
-      
       open_file->ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
       open_file->ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
       strncpy (open_file->ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
@@ -101,12 +100,14 @@ int pfs_open (struct pfs_instance * pfs,
       strncpy (open_file->ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
       open_file->ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
       open_file->ver->vv->value[0] = 1;
-      open_file->ver->type = PFS_FIL_INCH;
+      open_file->ver->type = PFS_FIL;
       
       if ((open_file->fd = pfs_file_create (pfs, open_file->ver->dst_id, flags)) < 0) {
 	retval = -EIO;
 	goto error;
       }
+      
+      open_file->ver->st_mode = mode | S_IFREG;
 
       strncpy (open_file->id, open_file->ver->dst_id, PFS_ID_LEN);
       strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
@@ -114,9 +115,9 @@ int pfs_open (struct pfs_instance * pfs,
       strncpy (open_file->file_name, file_name, PFS_NAME_LEN);
       open_file->dirty = 2;
       pi.is_main = 1;
+      pi.st_mode = open_file->ver->st_mode;
 
-      /* We call pfs_set_entry here to make the newly created file visible.
-	 The entry will change on close. */
+      /* We call pfs_set_entry here to make the newly created file visible. */
       if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id,
 			 open_file->file_name, 1, open_file->ver) != 0) {
 	retval = -EIO;
@@ -151,21 +152,22 @@ int pfs_open (struct pfs_instance * pfs,
       pfs_free_entry (entry);
       entry = NULL;
 
-      open_file->ver->type = PFS_FIL_INCH;
+      open_file->ver->type = PFS_FIL;
       if ((open_file->fd = pfs_file_create (pfs, open_file->ver->dst_id, flags)) <= 0 ||
 	  pfs_vv_incr (pfs, open_file->ver->vv) != 0) {
 	retval = -EIO;
 	goto error;
       }
       
+      open_file->ver->st_mode = mode | S_IFREG;
+
       strncpy (open_file->id, open_file->ver->dst_id, PFS_ID_LEN);
       strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
       strncpy (open_file->dir_id, pi.dir_id, PFS_ID_LEN);
       strncpy (open_file->file_name, pi.name, PFS_NAME_LEN);
       open_file->dirty = 2;
 
-      /* We call pfs_set_entry here to make the newly created file visible.
-	 The entry will change on close. */
+      /* We call pfs_set_entry here to make the newly created file visible. */
       if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id,
 			 open_file->file_name, 1, open_file->ver) != 0) {
 	retval = -EIO;
@@ -178,14 +180,6 @@ int pfs_open (struct pfs_instance * pfs,
     goto error;
   }
 
-  else if (pi.type == PFS_FIL_EVCT) {
-    /*
-     * TODO EVICTION
-     */
-    retval = -EACCES;
-    goto error;
-  }
-  
   /* The file exist we try to open it. */
   else
     {
@@ -195,9 +189,8 @@ int pfs_open (struct pfs_instance * pfs,
       }
 
       /* Check "Permissions". */
-      if ((pi.type != PFS_FIL_PRST &&
-	   pi.type != PFS_FIL_INCH) ||
-	  (pi.is_main == 0 &&
+      if ((pi.type != PFS_FIL) ||
+	  ((pi.is_main == 0 || (pi.st_mode & S_IWUSR) == 0) &&
 	   ((flags & O_WRONLY) || (flags & O_RDWR) || (flags & O_TRUNC)))) {
 	retval = -EACCES;
 	goto error;
@@ -282,6 +275,10 @@ int pfs_open (struct pfs_instance * pfs,
       pfs_free_ver (open_file->ver);
     free (open_file);
   }
+
+  printf ("PFS_LOG : PFS_OPEN\n");
+  printf ("ERROR : retval %d\n", retval);
+
   return retval;
 }
 
@@ -440,7 +437,6 @@ int pfs_close (struct pfs_instance * pfs,
      */
   }
   else if (open_file->dirty == 1) {
-    open_file->ver->type = PFS_FIL_INCH;
     pfs_vv_incr (pfs, open_file->ver->vv);
     if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
 		       open_file->file_name, 1, open_file->ver) != 0) {
@@ -469,7 +465,6 @@ int pfs_close (struct pfs_instance * pfs,
  * Scope: Global Public
  *
  * For now using underlying storage stat except for permission.
- * TODO : Add to file.c times and indirect here
  *
  *---------------------------------------------------------------------*/
 
@@ -478,9 +473,7 @@ int pfs_stat (struct pfs_instance * pfs,
 	      struct stat * stbuf)
 {
   struct pfs_path_info pi;
-  struct pfs_entry * entry = NULL;
-  struct pfs_ver * ver = NULL;
-  int i, retval;
+  int retval;
   char * file_path = NULL;
 
   memset (stbuf, 0, sizeof (struct stat));
@@ -507,41 +500,26 @@ int pfs_stat (struct pfs_instance * pfs,
       }
       free (file_path);
       file_path = NULL;
-      stbuf->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
-	| S_IXGRP | S_IROTH | S_IXGRP | S_IFDIR;
+      stbuf->st_mode = pi.st_mode;
       return 0;
     }
 
-  if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
-    retval = -ENOENT;
-    goto error;
-  }
-
-  for (i = 0; i < entry->ver_cnt; i ++) {
-    if (memcmp (entry->ver[i]->dst_id, pi.dst_id, PFS_ID_LEN) == 0) {
-      ver = pfs_cpy_ver (entry->ver[i]);
-    }
-  }
-  pfs_free_entry (entry);
-  entry = NULL;
-  if (ver == NULL) {
-    retval = -ENOENT;
-    goto error;
-  }
-  
-  if (ver->type != PFS_FIL_INCH && 
-      ver->type != PFS_FIL_PRST && 
-      ver->type != PFS_DIR) {
+  if (pi.type == PFS_SML) {
     /*
-     * TODO : EVICT
+     * TODO : SML
      */
     retval = -ENOENT;
     goto error;
   }
 
-  if (ver->type == PFS_FIL_INCH || ver->type == PFS_FIL_PRST)
+  if (pi.type == PFS_DEL) {
+    retval = -ENOENT;
+    goto error;
+  }
+
+  if (pi.type == PFS_FIL)
     file_path = pfs_mk_file_path (pfs, pi.dst_id);
-  if (ver->type == PFS_DIR)
+  if (pi.type == PFS_DIR)
     file_path = pfs_mk_dir_path (pfs, pi.dst_id);
 
   if (file_path == NULL) {
@@ -556,26 +534,22 @@ int pfs_stat (struct pfs_instance * pfs,
   free (file_path);
   file_path = NULL;
 
-  stbuf->st_mode = S_IRUSR | S_IRGRP | S_IROTH;
-  if (pi.is_main)
-    stbuf->st_mode |= S_IWUSR | S_IWGRP;
-  if (ver->type == PFS_DIR)
-    stbuf->st_mode |= S_IXUSR | S_IXGRP | S_IXOTH | S_IFDIR;
-  if (ver->type == PFS_FIL_INCH || ver->type == PFS_FIL_PRST)
-    stbuf->st_mode |= S_IFREG;
-
-  pfs_free_ver (ver);
-  ver = NULL;
+  stbuf->st_mode = pi.st_mode;
+  if (!pi.is_main) {
+    stbuf->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+  }
 
   return 0;
 
  error:
   if (file_path != NULL)
     free (file_path);
-  if (entry != NULL)
-    pfs_free_entry (entry);
-  if (ver != NULL)
-    pfs_free_ver (ver);
+
+  if (retval != -ENOENT) {
+    printf ("PFS_LOG : PFS_STAT\n");
+    printf ("ERROR : retval %d\n", retval);
+  }
+
   return retval;
 }
 
@@ -633,7 +607,7 @@ int pfs_truncate (struct pfs_instance * pfs,
    * TODO : optimize
    */
 
-  if ((fd = pfs_open (pfs, path, O_WRONLY)) < 0)
+  if ((fd = pfs_open (pfs, path, O_WRONLY, 0)) < 0)
     return -errno;
   
   if (pfs_ftruncate (pfs, fd, 0) < 0)
@@ -765,6 +739,10 @@ char ** pfs_readdir (struct pfs_instance * pfs,
     }
     free (entry_list);
   }
+
+  printf ("PFS_LOG : PFS_READDIR\n");
+  printf ("ERROR\n");
+
   return NULL;
 }
 
@@ -779,7 +757,8 @@ char ** pfs_readdir (struct pfs_instance * pfs,
  *---------------------------------------------------------------------*/
 
 int pfs_mkdir (struct pfs_instance * pfs,
-	       const char * path)
+	       const char * path,
+	       mode_t mode)
 {
   struct pfs_path_info pi;
 
@@ -824,9 +803,10 @@ int pfs_mkdir (struct pfs_instance * pfs,
       entry = NULL;
 
       ver->type = PFS_DIR;
+      ver->st_mode = mode | S_IFDIR;
       pfs_vv_incr (pfs, ver->vv);
       
-      if (pfs_create_dir (pfs, ver->dst_id, 1) != 0 ||
+      if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
 	  pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
 			 pi.name, 1, ver) != 0) {
 	pfs_dir_rmdir (pfs, ver->dst_id);
@@ -871,6 +851,8 @@ int pfs_mkdir (struct pfs_instance * pfs,
       
       ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
       ver->type = PFS_DIR;
+      ver->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
+	| S_IXGRP | S_IROTH | S_IXGRP | S_IFDIR;
       ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
       memcpy (ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
       ver->vv->len = 1;
@@ -880,7 +862,7 @@ int pfs_mkdir (struct pfs_instance * pfs,
       ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
       ver->vv->value[0] = 1;
 
-      if (pfs_create_dir (pfs, ver->dst_id, 1) != 0 ||
+      if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
 	  pfs_set_entry (pfs, pi.grp_id, pi.dst_id, 
 			 name, 1, ver) != 0) {
 	pfs_dir_rmdir (pfs, ver->dst_id);
@@ -903,6 +885,10 @@ int pfs_mkdir (struct pfs_instance * pfs,
     pfs_free_ver (ver);
   if (prt_path != NULL)
     free (prt_path);
+
+  printf ("PFS_LOG : PFS_MKDIR\n");
+  printf ("ERROR : retval %d\n", retval);
+
   return retval;
 }
 
@@ -951,6 +937,7 @@ int pfs_unlink (struct pfs_instance * pfs,
   entry = NULL;
 
   ver->type = PFS_DEL;
+  ver->st_mode = 0;
   memset (ver->dst_id, 0, PFS_ID_LEN);
   pfs_vv_incr (pfs, ver->vv);
   
@@ -970,6 +957,10 @@ int pfs_unlink (struct pfs_instance * pfs,
     pfs_free_entry (entry);
   if (ver != NULL)
     pfs_free_ver (ver);
+
+  printf ("PFS_LOG : PFS_UNLINK\n");
+  printf ("ERROR : retval %d\n", retval);
+
   return retval;
 }
 
@@ -1023,6 +1014,7 @@ int pfs_rmdir (struct pfs_instance * pfs,
   entry = NULL;
 
   ver->type = PFS_DEL;
+  ver->st_mode = 0;
   memset (ver->dst_id, 0, PFS_ID_LEN);
   pfs_vv_incr (pfs, ver->vv);
   
@@ -1044,6 +1036,12 @@ int pfs_rmdir (struct pfs_instance * pfs,
     pfs_free_entry (entry);
   if (ver != NULL)
     pfs_free_ver (ver);
+
+  if (retval != -ENOTEMPTY) {
+    printf ("PFS_LOG : PFS_RMDIR\n");
+    printf ("ERROR : retval %d\n", retval);
+  }
+
   return retval;
 }
 
@@ -1071,14 +1069,8 @@ int pfs_rename (struct pfs_instance * pfs,
   char * name;
   int i, retval;
 
-   //printf ("PFS_LOG : PFS_RENAME\n");
-
-  if (strlen (old) == 1 && strcmp (old, "/") == 0) {
-    retval = -EACCES;
-    goto error;
-  }
-
-  if (strlen (new) == 1 && strcmp (new, "/") == 0) {
+  if ((strlen (old) == 1 && strcmp (old, "/") == 0) || 
+      (strlen (new) == 1 && strcmp (new, "/") == 0)) {
     retval = -EACCES;
     goto error;
   }
@@ -1086,17 +1078,10 @@ int pfs_rename (struct pfs_instance * pfs,
   if ((retval = pfs_get_path_info (pfs, old, &pi_old)) != 0)
     goto error;
 
-  if (pi_old.type == PFS_GRP) {
+  if (pi_old.type == PFS_GRP ||
+      pi_old.is_main != 1) {
     retval = -EACCES;
     goto error;
-  }
-
-  if (pi_old.is_main != 1) {
-    retval = -EACCES;
-    goto error;
-    /*
-     * TODO IMPLEMENT MERGE SEMANTICS
-     */
   }
 
   if ((entry = pfs_get_entry (pfs, pi_old.dir_id, pi_old.name)) == NULL) {
@@ -1110,13 +1095,14 @@ int pfs_rename (struct pfs_instance * pfs,
 
   if (pfs_get_path_info (pfs, new, &pi_new) == 0)
     {
-      if (strncmp (pi_new.grp_id, pi_old.grp_id, PFS_ID_LEN) == 0) {
+      if (strncmp (pi_new.grp_id, pi_old.grp_id, PFS_ID_LEN) != 0) {
 	retval = -EXDEV;
 	goto error;
       }
 
-      if (pi_new.type == PFS_GRP || 
-	  pi_new.is_main != 1) {
+      if (pi_new.type == PFS_GRP ||
+	  pi_new.is_main != 1 ||
+	  (pi_new.type != PFS_DEL && ((pi_new.st_mode & S_IWUSR) == 0))) {
 	retval = -EACCES;
 	goto error;
       }
@@ -1130,7 +1116,7 @@ int pfs_rename (struct pfs_instance * pfs,
 	retval = -EIO;
 	goto error;
       }      
-      
+       
       ver_new = pfs_cpy_ver (entry->ver[entry->main_idx]);
       pfs_free_entry (entry);
       entry = NULL;
@@ -1139,8 +1125,8 @@ int pfs_rename (struct pfs_instance * pfs,
     }
 
   else
-    {
-      if (strncmp (pi_new.grp_id, pi_old.grp_id, PFS_ID_LEN) == 0) {
+    {      
+      if (strncmp (pi_new.grp_id, pi_old.grp_id, PFS_ID_LEN) != 0) {
 	retval = -EXDEV;
 	goto error;
       }
@@ -1157,11 +1143,12 @@ int pfs_rename (struct pfs_instance * pfs,
 	retval = -EACCES;
 	goto error;
       }
+
       if (strlen (name) > (PFS_NAME_LEN - 1)) {
 	retval = -ENAMETOOLONG;
 	goto error;
       }
-      
+
       if (pfs_get_path_info (pfs, prt_path, &pi_new) != 0) {
 	retval = -ENOENT;
 	goto error;
@@ -1187,18 +1174,20 @@ int pfs_rename (struct pfs_instance * pfs,
     }
 
   ver_new->type = ver_old->type;
-  memcpy (ver_new->dst_id, ver_new->dst_id, PFS_ID_LEN);
-  
+  memcpy (ver_new->dst_id, ver_old->dst_id, PFS_ID_LEN);
+  ver_new->st_mode = ver_old->st_mode;
+
   ver_old->type = PFS_DEL;
   memset (ver_old->dst_id, 0, PFS_ID_LEN);
+  ver_old->st_mode = 0;
   pfs_vv_incr (pfs, ver_old->vv);
-  
+   
   if (pfs_set_entry (pfs, pi_old.grp_id, pi_old.dir_id,
 		     pi_old.name, 0, ver_old) != 0) {
     retval = -EIO;
     goto error;
   }
-  
+   
   if (pfs_set_entry (pfs, pi_new.grp_id, pi_new.dir_id,
 		     pi_new.name, 1, ver_new) != 0) {
     retval = -EIO;
@@ -1220,6 +1209,9 @@ int pfs_rename (struct pfs_instance * pfs,
   if (prt_path != NULL)
     free (prt_path);
 
+  printf ("PFS_LOG : PFS_RENAME\n");
+  printf ("ERROR : retval %d\n", retval);
+
   return retval;
 }
 
@@ -1230,7 +1222,6 @@ int pfs_rename (struct pfs_instance * pfs,
  * Scope: Global Public
  *
  * Primarly used for now to pass the fs capacity
- * TODO : Implement v_SD capacities
  *
  *---------------------------------------------------------------------*/
 
@@ -1253,6 +1244,7 @@ int pfs_statfs (struct pfs_instance * pfs,
 
   buf->f_namemax = PFS_NAME_LEN - 1;
   buf->f_flag = ST_NOSUID;
+  buf->f_fsid = 0;
 
   //printf ("PFS_LOG : PFS_STATFS DONE\n");
 
@@ -1297,10 +1289,9 @@ int pfs_utimens (struct pfs_instance * pfs,
 		 const struct timespec tv[2])
 {						
   struct pfs_path_info pi;
-  struct pfs_entry * entry = NULL;
-  struct pfs_ver * ver = NULL;
-  int i, retval;
+  int retval;
   char * file_path = NULL;
+  struct timeval arg [2];
 
   if (strlen (path) == 1 && strcmp (path, "/") == 0) {
     retval = -EACCES;
@@ -1317,45 +1308,30 @@ int pfs_utimens (struct pfs_instance * pfs,
     goto error;
   }
 
-  if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
+  if (pi.type == PFS_SML) {
+    /*
+     * TODO SML
+     */
     retval = -ENOENT;
     goto error;
   }
 
-  for (i = 0; i < entry->ver_cnt; i ++) {
-    if (strncmp (entry->ver[i]->dst_id, pi.dst_id, PFS_ID_LEN) == 0) {
-      ver = pfs_cpy_ver (entry->ver[i]);
-    }
-  }
-  pfs_free_entry (entry);
-  entry = NULL;
-
-  if (ver == NULL) {
-    retval = -ENOENT;
-    goto error;
-  }
-  
-  if (ver->type != PFS_FIL_PRST &&
-      ver->type != PFS_FIL_INCH &&
-      ver->type != PFS_DIR) {
-    retval = -ENOENT;
-    goto error;
-  }
-
-  if (ver->type == PFS_FIL_INCH || ver->type == PFS_FIL_PRST)
+  if (pi.type == PFS_FIL)
     file_path = pfs_mk_file_path (pfs, pi.dst_id);
-  if (ver->type == PFS_DIR)
+  if (pi.type == PFS_DIR)
     file_path = pfs_mk_dir_path (pfs, pi.dst_id);
-
-  pfs_free_ver (ver);
-  ver = NULL;
 
   if (file_path == NULL) {
     retval = -EIO;
     goto error;
   }
   
-  if (utimes (file_path, (const struct timeval *) tv) < 0) {
+  arg[0].tv_sec = tv[0].tv_sec;
+  arg[0].tv_usec = tv[0].tv_nsec / 1000;
+  arg[1].tv_sec = tv[1].tv_sec;
+  arg[1].tv_usec = tv[1].tv_nsec / 1000;
+
+  if (utimes (file_path, arg) < 0) {
     retval = -errno;
     goto error;
   }
@@ -1364,15 +1340,85 @@ int pfs_utimens (struct pfs_instance * pfs,
   return 0;
 
  error:
-  if (ver != NULL)
-    pfs_free_ver (ver);
-  if (entry != NULL)
-    pfs_free_entry (entry);
   if (file_path != NULL)
     free (file_path);
+  
+  printf ("PFS_LOG : PFS_UTMIENS\n");
+  printf ("ERROR : retval %d\n", retval);
+  
   return retval;
 }
 
+
+/*---------------------------------------------------------------------
+ * Method: pfs_chmod
+ * Scope: Global Public
+ *
+ * Set the access mode
+ *
+ *---------------------------------------------------------------------*/
+
+int pfs_chmod (struct pfs_instance * pfs,
+	       const char * path,
+	       mode_t mode)
+{
+  struct pfs_path_info pi;
+  struct pfs_entry * entry = NULL;
+  struct pfs_ver * ver = NULL;
+  int retval;
+
+  if (strlen (path) == 1 && strcmp (path, "/") == 0) {
+    retval = -EPERM;
+    goto error;
+  }
+
+  if ((retval = pfs_get_path_info (pfs, path, &pi)) != 0)
+      goto error;
+  
+  if (pi.type == PFS_GRP || pi.is_main != 1) {
+    retval = -EACCES;
+    goto error;
+  }
+
+  if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
+    retval = -ENOENT;
+    goto error;
+  }
+
+  ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
+  pfs_free_entry (entry);
+  entry = NULL;
+
+  ver->st_mode = mode;
+  if (pi.type == PFS_DIR)
+    ver->st_mode |= S_IFDIR;
+  if (pi.type == PFS_FIL)
+    ver->st_mode |= S_IFREG;
+
+  pfs_vv_incr (pfs, ver->vv);
+  
+  if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
+		     pi.name, 0, ver) != 0) {
+    retval = -EIO;
+    goto error;
+  }
+  
+  pfs_free_ver (ver);
+  ver = NULL;
+
+  return 0;
+
+ error:
+  if (entry != NULL)
+    pfs_free_entry (entry);
+  if (ver != NULL)
+    pfs_free_ver (ver);
+
+  printf ("PFS_LOG : PFS_UNLINK\n");
+  printf ("ERROR : retval %d\n", retval);
+
+  return retval;
+}
 
 
 /* SPECIAL OPERATIONS */

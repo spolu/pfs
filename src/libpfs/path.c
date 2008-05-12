@@ -75,6 +75,8 @@ int pfs_get_path_info (struct pfs_instance * pfs,
 	strncpy (pi->name, token, PFS_NAME_LEN);
 	strncpy (pi->dst_id, pi->dir_id, PFS_ID_LEN);
 	pi->type = PFS_GRP;
+	pi->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
+	  | S_IXGRP | S_IROTH | S_IXGRP | S_IFDIR;
 	cnt ++;
       }
 
@@ -108,6 +110,7 @@ int pfs_get_path_info (struct pfs_instance * pfs,
 
 	strncpy (pi->dst_id, ver->dst_id, PFS_ID_LEN);
 	pi->type = ver->type;
+	pi->st_mode = ver->st_mode;
 	pfs_free_entry (entry);
       }
 

@@ -103,14 +103,8 @@ void pfs_print_updt (struct pfs_updt * updt)
   case PFS_DIR:
     printf ("DIR");
     break;
-  case PFS_FIL_PRST:
-    printf ("FIL_PRST");
-    break;
-  case PFS_FIL_INCH:
-    printf ("FIL_INCH");
-    break;
-  case PFS_FIL_EVCT:
-    printf ("FIL_EVCT");
+  case PFS_FIL:
+    printf ("FIL");
     break;
   case PFS_SML:
     printf ("SML");

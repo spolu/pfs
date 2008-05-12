@@ -11,6 +11,9 @@
 #include "pfs.h"
 #include "entry.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 struct pfs_path_info {
   char grp_id [PFS_ID_LEN];
   char dir_id [PFS_ID_LEN];
@@ -19,6 +22,7 @@ struct pfs_path_info {
   uint8_t is_main;
   char last_updt [PFS_ID_LEN];
   uint8_t type;
+  mode_t st_mode;
 };
 
 int pfs_get_path_info (struct pfs_instance * pfs,

@@ -8,6 +8,9 @@
 #ifndef _PFS_ENTRY_H
 #define _PFS_ENTRY_H
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "instance.h"
 #include "lib/lock.h"
 
@@ -36,17 +39,16 @@ enum pfs_entry_type {
   PFS_DEL = 0,                         /* Deleted file.         */
   PFS_DIR = 1,                         /* Directory entry.      */
   PFS_SML = 2,                         /* Symbolic link entry.  */
-  PFS_FIL_PRST = 3,                    /* File present entry.   */
-  PFS_FIL_INCH = 4,                    /* File in_charge entry. */
-  PFS_FIL_EVCT = 5,                    /* File evicted entry.   */
-  PFS_GRP = 6
+  PFS_FIL = 3,                         /* Regular File.         */
+  PFS_GRP = 4
 };
 
 struct pfs_ver
 {
-  uint8_t type;                   /* entry_ver type.                */
-  char dst_id [PFS_ID_LEN];       /* id of the object it points to. */
-  struct pfs_vv * vv;             /* version vector for that entry. */
+  uint8_t type;                   /* entry_ver type.                             */
+  mode_t st_mode;
+  char dst_id [PFS_ID_LEN];       /* id of the object it points to.              */
+  struct pfs_vv * vv;             /* version vector for that entry.              */
 };
 
 struct pfs_vv
@@ -63,8 +65,7 @@ struct pfs_vv
 /* ENTRY OPERATIONS */
 
 int pfs_create_dir (struct pfs_instance * pfs,
-		    char * dir_id, 
-		    uint8_t gen_id);
+		    char * dir_id);
 
 int pfs_dir_rmdir (struct pfs_instance *pfs,
 		   const char * dir_id);

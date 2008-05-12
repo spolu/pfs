@@ -306,8 +306,7 @@ int pfs_dirty_dir_cache (struct pfs_instance * pfs,
  *---------------------------------------------------------------------*/
 
 int pfs_create_dir_cache (struct pfs_instance * pfs,
-			  char * dir_id,
-			  uint8_t gen_id)
+			  char * dir_id)
 {
   pdce_t * val;
   char * dir_path;
@@ -324,16 +323,15 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
 
   pfs_mutex_init (&val->dir->lock);
   
-  if (gen_id == 1)
-    pfs_mk_id (pfs, val->dir->id);
-  else
-    memcpy (val->dir->id, dir_id, PFS_ID_LEN);
+  pfs_mk_id (pfs, val->dir->id);
   memcpy (val->dir->type, "DIR", 3);
   val->dir->entry_cnt = 0;
   val->dir->entry = NULL;
 
   dir_path = pfs_mk_dir_path (pfs, val->dir->id);
-  if ((fd = open (dir_path, O_WRONLY|O_APPEND|O_TRUNC|O_CREAT)) < 0) {
+  if ((fd = open (dir_path, 
+		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT,
+		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
     free (dir_path);
     pfs_free_pdce (val);
     return -EIO;
@@ -342,15 +340,13 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
 
   flock (fd, LOCK_EX);
   pfs_write_dir (fd, val->dir);
-  fchmod (fd, S_IRUSR | S_IWUSR);
   flock (fd, LOCK_UN);
   if (close (fd) < 0) {
     pfs_free_pdce (val);    
     return -errno;
   }
 
-  if (gen_id == 1)
-    memcpy (dir_id, val->dir->id, PFS_ID_LEN);
+  memcpy (dir_id, val->dir->id, PFS_ID_LEN);
   
   pfs_mutex_lock (&pfs->dir_cache->lock);  
   pfs_dir_cache_evict (pfs);
@@ -551,6 +547,7 @@ pfs_write_ver (int wd,
 	       const struct pfs_ver * ver)
 {
   writen (wd, &ver->type, sizeof (uint8_t));
+  writen (wd, &ver->st_mode, sizeof (mode_t));
   writen (wd, ver->dst_id, PFS_ID_LEN);
   pfs_write_vv (wd, ver->vv);
 }
@@ -609,6 +606,7 @@ pfs_read_ver (int rd)
   ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
   ASSERT (ver != NULL);
   readn (rd, &ver->type, sizeof (uint8_t));
+  readn (rd, &ver->st_mode, sizeof (mode_t));
   readn (rd, ver->dst_id, PFS_ID_LEN);
   ver->vv = pfs_read_vv (rd);
   return ver;

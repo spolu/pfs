@@ -38,7 +38,7 @@ int pfs_fuse_open (const char *path, struct fuse_file_info *fi)
 {
   int fd;
 
-  if ((fd = pfs_open (pfs, path, fi->flags)) < 0) {
+  if ((fd = pfs_open (pfs, path, fi->flags, 0)) < 0) {
     return fd;
   }
   fi->fh = fd;
@@ -72,7 +72,7 @@ int pfs_fuse_create (const char *path, mode_t mode, struct fuse_file_info *fi)
   int fd;
   
   fi->flags |= O_CREAT;
-  if ((fd = pfs_open (pfs, path, fi->flags)) < 0) {
+  if ((fd = pfs_open (pfs, path, fi->flags, mode)) < 0) {
     return fd;
   }
   fi->fh = fd;
@@ -92,7 +92,7 @@ int pfs_fuse_truncate (const char *path, off_t offset)
 
 int pfs_fuse_mkdir (const char *path, mode_t mode)
 {
-  return pfs_mkdir (pfs, path);
+  return pfs_mkdir (pfs, path, mode);
 }
 
 int pfs_fuse_unlink (const char *path)
@@ -137,7 +137,7 @@ int pfs_fuse_removexattr (const char *path, const char *name)
 
 int pfs_fuse_chmod (const char *path, mode_t mode)
 {
-  return 0;
+  return pfs_chmod (pfs, path, mode);
 }
 
 int pfs_fuse_chown (const char *path, uid_t uid, gid_t gid)

@@ -43,6 +43,7 @@ int pfs_fuse_chown (const char *path, uid_t uid, gid_t gid);
 
 int pfs_fuse_statfs (const char *path, struct statvfs *buf);
 int pfs_fuse_utimens (const char *path, const struct timespec tv[2]);
+int pfs_fuse_chmod (const char *path, mode_t mode);
 
 void pfs_fuse_destroy (void * v);
 

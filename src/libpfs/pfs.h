@@ -23,7 +23,7 @@ struct pfs_updt;
 */
 int pfs_open (struct pfs_instance * pfs,
 	      const char * path,
-	      int flags);
+	      int flags, mode_t mode);
 
 /** Write data to an open file.
  */
@@ -94,7 +94,8 @@ char ** pfs_readdir (struct pfs_instance * pfs,
 /** Create a directory.
  */
 int pfs_mkdir (struct pfs_instance * pfs,
-	       const char * path);
+	       const char * path,
+	       mode_t mode);
 
 /** Delete a file.
  */

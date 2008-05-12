@@ -37,6 +37,8 @@ pfs_init_instance (const char * root_path)
   int fd = -1;
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
+
+  umask (S_IWGRP | S_IWOTH);
   
   /* Set up the paths. */
   pfs->root_path = (char *) malloc ((strlen (root_path) + 1));
@@ -501,6 +503,8 @@ int pfs_bootstrap_inst (const char * root_path,
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
 
+  umask (S_IWGRP | S_IWOTH);
+
   pfs->root_path = (char *) malloc (strlen (root_path) + 1);
   strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
 
@@ -593,7 +597,7 @@ int pfs_bootstrap_inst (const char * root_path,
 
   pfs_init_dir_cache (pfs);
 
-  ASSERT (pfs_create_dir (pfs, pfs->group->v_sd_id, 1) == 0);
+  ASSERT (pfs_create_dir (pfs, pfs->group->v_sd_id) == 0);
   ASSERT (pfs_write_group_info (pfs) == 0);
 
   free (data_subdir);

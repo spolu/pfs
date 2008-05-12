@@ -31,10 +31,9 @@
 
 int
 pfs_create_dir (struct pfs_instance * pfs, 
-		char * dir_id,
-		uint8_t gen_id)
+		char * dir_id)
 {
-  return pfs_create_dir_cache (pfs, dir_id, gen_id);
+  return pfs_create_dir_cache (pfs, dir_id);
 }
 
 /*---------------------------------------------------------------------
@@ -244,16 +243,9 @@ pfs_set_entry (struct pfs_instance * pfs,
 	}
 	break;
 
-      case PFS_FIL_PRST:
+      case PFS_FIL:
 	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
 	break;
-      case PFS_FIL_INCH:
-	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
-	break;
-      case PFS_FIL_EVCT:
-	/* Nothing to do */
-	break;
-
       case PFS_SML:
 	/*
 	 * TODO RECLAIM SML
@@ -385,14 +377,8 @@ void pfs_print_entry (struct pfs_instance * pfs,
     case PFS_DIR:
       printf ("DIR ");
       break;
-    case PFS_FIL_PRST:
-      printf ("FIL_PRST ");
-      break;
-    case PFS_FIL_INCH:
-      printf ("FIL_INCH ");
-      break;
-    case PFS_FIL_EVCT:
-      printf ("FIL_EVCT ");
+    case PFS_FIL:
+      printf ("FIL ");
       break;
     case PFS_SML:
       printf ("SML ");
@@ -678,6 +664,7 @@ pfs_cpy_ver (const struct pfs_ver * ver)
   ver_cpy = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
   ASSERT (ver_cpy != NULL);
   ver_cpy->type = ver->type;
+  ver_cpy->st_mode = ver->st_mode;
   memcpy (ver_cpy->dst_id, ver->dst_id, PFS_ID_LEN);
   ver_cpy->vv = pfs_cpy_vv (ver->vv);
   return ver_cpy;

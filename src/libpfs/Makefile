@@ -18,5 +18,5 @@ libpfs: $(pfs_obj)
 all: libpfs
 
 clean: 
-	@rm -f ../../lib/$(TARGET_LIBPFS) *.o *~
+	@rm -f ../../lib/$(TARGET_LIBPFS) *.o *~ cscope.out
 	@make -C $(LIB) clean
