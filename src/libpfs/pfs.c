@@ -504,20 +504,12 @@ int pfs_stat (struct pfs_instance * pfs,
       return 0;
     }
 
-  if (pi.type == PFS_SML) {
-    /*
-     * TODO : SML
-     */
-    retval = -ENOENT;
-    goto error;
-  }
-
   if (pi.type == PFS_DEL) {
     retval = -ENOENT;
     goto error;
   }
 
-  if (pi.type == PFS_FIL)
+  if (pi.type == PFS_FIL || pi.type == PFS_SML)
     file_path = pfs_mk_file_path (pfs, pi.dst_id);
   if (pi.type == PFS_DIR)
     file_path = pfs_mk_dir_path (pfs, pi.dst_id);
@@ -1265,14 +1257,224 @@ int pfs_readlink (struct pfs_instance * pfs,
 		  char * buf,
 		  size_t bufsize)
 {
-  return -ENOENT;
+  struct pfs_path_info pi;
+  int retval;
+  int fd = 0;
+  char * ln_path = NULL;
+  size_t len = 0;
+
+  if (strlen (path) == 1 && strncmp (path, "/", 1) == 0)
+    return -EISDIR;
+
+  if ((retval = pfs_get_path_info (pfs, path, &pi)) != 0)
+    goto error;
+
+  /* The file exist we try to open it. */
+  if (pi.type != PFS_SML) {
+    retval = -ENOENT;
+    goto error;
+  }
+  
+  /* Check "Permissions". */
+  if ((pi.st_mode & S_IRUSR) == 0) {
+    retval = -EACCES;
+    goto error;
+  }
+      
+  if((ln_path = pfs_mk_file_path (pfs, pi.dst_id)) == NULL ||
+     (fd = open (ln_path, O_RDONLY)) < 0) {
+    if (fd < 0)
+      retval = fd;
+    else
+      retval = -EIO;
+    goto error;
+  }
+  free (ln_path);
+  ln_path = NULL;
+  
+  read (fd, &len, sizeof (size_t));
+  if (len > bufsize)
+    len = bufsize - 1;
+  
+  read (fd, buf, len);
+  buf[len] = 0;
+
+  close (fd);
+
+  return 0;
+
+ error:
+  if (ln_path != NULL)
+    free (ln_path);
+  if (fd > 0)
+    close (fd);
+
+  printf ("PFS_LOG : PFS_READLINK\n");
+  printf ("ERROR : retval %d\n", retval);
+
+  return retval;
 }
 
+/*---------------------------------------------------------------------
+ * Method: pfs_symlink
+ * Scope: Global Public
+ *
+ * 
+ *
+ *---------------------------------------------------------------------*/
+
 int pfs_symlink (struct pfs_instance * pfs,
-		 const char * from,
+		 const char * path,
 		 const char * to)
 {  
-  return -ENOENT;
+  int fd = 0;
+  size_t len;
+  struct pfs_path_info pi;
+  int retval, i;
+  struct pfs_ver * ver = NULL;
+  struct pfs_entry * entry = NULL;
+  char * prt_path = NULL;
+  char * file_name;
+  
+  if (strlen (path) == 1 && strncmp (path, "/", 1) == 0)
+    return -EISDIR;
+  
+  /* If the entry does not exist we create it along with the
+     underlying link file. */
+  if ((retval = pfs_get_path_info (pfs, path, &pi)) != 0)
+    {
+      if (retval != -ENOENT)
+	goto error;
+
+      prt_path = (char *) malloc (sizeof (char) * (strlen (path) + 1));
+      strncpy (prt_path, path, strlen (path) + 1); 
+      
+      for (i = strlen (prt_path) - 1; i > 0 && prt_path[i] != '/'; i--);
+      prt_path[i] = 0;
+      file_name = prt_path + (i + 1);
+
+      if (i == 0 ||
+	  strstr (file_name, ":") != NULL) {
+	retval = -EACCES;
+	goto error;
+      }
+      if (strlen (file_name) > (PFS_NAME_LEN - 1)) {
+	retval = -ENAMETOOLONG;
+	goto error;
+      }
+      if (pfs_get_path_info (pfs, prt_path, &pi) != 0) {
+	retval = -ENOENT;
+	goto error;
+      }
+
+      /* We create the entry. */
+      ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
+      ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
+      strncpy (ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
+      ver->vv->len = 1;
+      ver->vv->sd_id = (char **) malloc (sizeof (char *));
+      ver->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
+      strncpy (ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
+      ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
+      ver->vv->value[0] = 1;
+      ver->type = PFS_SML;
+      
+      if ((fd = pfs_file_create (pfs, ver->dst_id, 
+				 O_CREAT | O_WRONLY | O_TRUNC)) < 0) {
+	retval = -EIO;
+	goto error;
+      }
+      len = strlen (to);
+      write (fd, &len, sizeof (size_t));
+      write (fd, to, len);
+      close (fd);
+
+      ver->st_mode =  
+	S_IRWXU | 
+	S_IRGRP | S_IXGRP | 
+	S_IROTH | S_IXOTH | 
+	S_IFLNK;
+
+      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
+			 file_name, 1, ver) != 0) {
+	retval = -EIO;
+	goto error;
+      }
+
+      pfs_free_ver (ver);
+      ver = NULL;
+      free (prt_path);
+      prt_path = NULL;
+    }
+  
+  /* if DEL and pi.is_main. */
+  else if (pi.type == PFS_DEL && pi.is_main == 1)
+    {
+      if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
+	retval = -ENOENT;
+	goto error;
+      }
+      ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
+      pfs_free_entry (entry);
+      entry = NULL;
+
+      ver->type = PFS_SML;
+      if ((fd = pfs_file_create (pfs, ver->dst_id, 
+				 O_CREAT | O_WRONLY | O_TRUNC)) <= 0) {
+	retval = -EIO;
+	goto error;
+      }       
+      len = strlen (to);
+      write (fd, &len, sizeof (size_t));
+      write (fd, to, len);
+      close (fd);
+
+      ver->st_mode =  
+	S_IRWXU | 
+	S_IRGRP | S_IXGRP | 
+	S_IROTH | S_IXOTH | 
+	S_IFLNK;
+
+      if (pfs_vv_incr (pfs, ver->vv) != 0) {
+	retval = -EIO;
+	goto error;
+      }
+      
+      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
+			 pi.name, 1, ver) != 0) {
+	retval = -EIO;
+	goto error;
+      }
+
+      pfs_free_ver (ver);
+      ver = NULL;
+    }
+
+  else if (pi.type == PFS_DEL && pi.is_main == 0)
+    {
+      retval = -EACCES;
+      goto error;
+    }
+
+  else  {
+    retval = -EEXIST;
+    goto error;
+  }
+  
+  return 0;
+
+ error:
+  if (prt_path != NULL)
+    free (prt_path);
+  if (fd > 0)
+    close (fd);
+  if (ver != NULL)
+    pfs_free_ver (ver);
+
+  printf ("PFS_LOG : PFS_SYMLINK\n");
+  printf ("ERROR : retval %d\n", retval);
+
+  return retval;
 }
 
 
@@ -1308,15 +1510,7 @@ int pfs_utimens (struct pfs_instance * pfs,
     goto error;
   }
 
-  if (pi.type == PFS_SML) {
-    /*
-     * TODO SML
-     */
-    retval = -ENOENT;
-    goto error;
-  }
-
-  if (pi.type == PFS_FIL)
+  if (pi.type == PFS_FIL || pi.type == PFS_SML)
     file_path = pfs_mk_file_path (pfs, pi.dst_id);
   if (pi.type == PFS_DIR)
     file_path = pfs_mk_dir_path (pfs, pi.dst_id);

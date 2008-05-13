@@ -110,7 +110,7 @@ int pfs_rmdir (struct pfs_instance * pfs,
 /** Creates a symbolic link.
  */
 int pfs_symlink (struct pfs_instance * pfs,
-		 const char * from,
+		 const char * path,
 		 const char * to);
 
 /** Rename a file/directory

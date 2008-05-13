@@ -41,7 +41,6 @@ struct pfs_instance
   
   char * root_path;
   char * data_path;
-  char * sml_path;
 
   struct pfs_mutex open_lock;
   struct pfs_open_file * open_file;

@@ -48,10 +48,6 @@ pfs_init_instance (const char * root_path)
 				     strlen (PFS_DATA_PATH) + 1));
   sprintf (pfs->data_path, "%s%s", root_path, PFS_DATA_PATH);
 
-  pfs->sml_path = (char *) malloc ((strlen (root_path) + 
-				    strlen (PFS_SML_PATH) + 1));
-  sprintf (pfs->sml_path, "%s%s", root_path, PFS_SML_PATH);
-
   info_path = (char *) malloc ((strlen (root_path) + strlen (PFS_INFO_PATH) + 1));
   sprintf (info_path, "%s%s", root_path, PFS_INFO_PATH);
 
@@ -131,7 +127,6 @@ pfs_destroy_instance (struct pfs_instance * pfs)
 
   free (pfs->root_path);
   free (pfs->data_path);
-  free (pfs->sml_path);
   free (pfs);
 
   return 0;
@@ -502,9 +497,9 @@ int pfs_bootstrap_inst (const char * root_path,
   char * data_subdir;
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
-
   umask (S_IWGRP | S_IWOTH);
 
+  /* Setting up paths. */
   pfs->root_path = (char *) malloc (strlen (root_path) + 1);
   strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
 
@@ -512,18 +507,9 @@ int pfs_bootstrap_inst (const char * root_path,
 				    strlen (PFS_DATA_PATH) + 1);
   sprintf (pfs->data_path, "%s%s", pfs->root_path, PFS_DATA_PATH);
 
-  pfs->sml_path = (char *) malloc (strlen (root_path) + 
-				   strlen (PFS_SML_PATH) + 1);
-  sprintf (pfs->sml_path, "%s%s", root_path, PFS_SML_PATH);
-
   info_path = (char *) malloc (strlen (root_path) + 
 			       strlen (PFS_INFO_PATH) + 1);
   sprintf (info_path, "%s%s", root_path, PFS_INFO_PATH);
-
-  /* Creating sml_file. */
-  ASSERT ((fd = open (pfs->sml_path, O_CREAT|O_TRUNC)) >= 0);
-  fchmod (fd, S_IRUSR | S_IWUSR);
-  close (fd);
 
   /* Setting up info */
   strncpy (pfs->sd_owner, sd_owner, PFS_NAME_LEN);
@@ -541,6 +527,7 @@ int pfs_bootstrap_inst (const char * root_path,
   pfs->uid_cnt ++;
   writen (fd, &pfs->uid_cnt, sizeof (uint32_t));
   pfs->uid_cnt --;
+
   fchmod (fd, S_IRUSR | S_IWUSR);
   close (fd);
 
@@ -577,8 +564,11 @@ int pfs_bootstrap_inst (const char * root_path,
       }
     }
 
-  /* Setting up initial group me. */
+  /* Setting dir_cache for initial group creation. */
   pfs->open_file = NULL;
+  pfs_init_dir_cache (pfs);
+
+  /* Setting up initial group me. */
   pfs->grp_cnt = 1;
   pfs->group = (struct pfs_info_group *) malloc (sizeof (struct pfs_info_group));
   
@@ -595,13 +585,14 @@ int pfs_bootstrap_inst (const char * root_path,
   strncpy (pfs->group->sd->sd_id, pfs->sd_id, PFS_ID_LEN);
   pfs->group->sd->next = NULL;
 
-  pfs_init_dir_cache (pfs);
-
   ASSERT (pfs_create_dir (pfs, pfs->group->v_sd_id) == 0);
   ASSERT (pfs_write_group_info (pfs) == 0);
 
+  /* Closing. */
+  pfs_destroy_instance (pfs);
+
+  /* Cleaning. */
   free (data_subdir);
-  free (pfs->sml_path);
   free (pfs->root_path);
   free (pfs->data_path);
   free (info_path);

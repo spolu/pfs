@@ -110,6 +110,16 @@ int pfs_fuse_rename (const char *path, const char *to)
   return pfs_rename (pfs, path, to);
 }
 
+int pfs_fuse_symlink (const char *to, const char *path)
+{
+  return pfs_symlink (pfs, path, to);
+}
+
+int pfs_fuse_readlink (const char *path, char *buf, size_t bufsize)
+{
+  return pfs_readlink (pfs, path, buf, bufsize);
+}
+
 int pfs_fuse_link (const char *path, const char *to)
 {
   return -EACCES;

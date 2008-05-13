@@ -247,9 +247,7 @@ pfs_set_entry (struct pfs_instance * pfs,
 	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
 	break;
       case PFS_SML:
-	/*
-	 * TODO RECLAIM SML
-	 */
+	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
 	break;
       }
     }
