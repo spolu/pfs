@@ -36,11 +36,6 @@ int pfs_fuse_link (const char *path, const char *to);
 int pfs_fuse_symlink (const char *to, const char *path);
 int pfs_fuse_readlink (const char *path, char *buf, size_t bufsize);
 
-int pfs_fuse_setxattr (const char *path, const char *name, const char *value, size_t size, int position);
-int pfs_fuse_getxattr (const char *path, const char *name, char *buf, size_t size);
-int pfs_fuse_listxattr (const char *path, char *buf, size_t size);
-int pfs_fuse_removexattr (const char *path, const char *name);
-
 int pfs_fuse_chmod (const char *path, mode_t mode);
 int pfs_fuse_chown (const char *path, uid_t uid, gid_t gid);
 

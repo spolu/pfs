@@ -120,29 +120,9 @@ int pfs_fuse_readlink (const char *path, char *buf, size_t bufsize)
   return pfs_readlink (pfs, path, buf, bufsize);
 }
 
-int pfs_fuse_link (const char *path, const char *to)
+int pfs_fuse_link (const char *to, const char *path)
 {
-  return -EACCES;
-}
-
-int pfs_fuse_setxattr (const char *path, const char *name, const char *value, size_t size, int position)
-{
-  return 0;
-}
-
-int pfs_fuse_getxattr (const char *path, const char *name, char *buf, size_t size)
-{
-  return -ENOTSUP;
-}
-
-int pfs_fuse_listxattr (const char *path, char *buf, size_t size)
-{
-  return -ENOTSUP;
-}
-
-int pfs_fuse_removexattr (const char *path, const char *name)
-{
-  return -ENOTSUP;
+  return pfs_link (pfs, path, to);
 }
 
 int pfs_fuse_chmod (const char *path, mode_t mode)

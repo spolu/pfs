@@ -67,6 +67,11 @@ int pfs_readlink (struct pfs_instance * pfs,
 		  char * buf,
 		  size_t bufsize);
 
+/** link
+ */
+int pfs_link (struct pfs_instance * pfs,
+	      const char * path,
+	      const char * to);
 
 /** Change file size.
  */
@@ -128,6 +133,9 @@ int pfs_utimens (struct pfs_instance * pfs,
 		 const char * path,
 		 const struct timespec tv[2]);
 
+int pfs_chmod (struct pfs_instance * pfs,
+	       const char * path,
+	       mode_t mode);
 
 /* SPECIAL OPERATIONS */
 

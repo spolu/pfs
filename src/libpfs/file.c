@@ -107,5 +107,54 @@ pfs_file_create (struct pfs_instance * pfs,
   return fd;
 }
 
+/*---------------------------------------------------------------------
+ * Method: pfs_file_copy_id
+ * Scope:  Global
+ *
+ * Copy blob and assign a new id to copy. Used for link semantics.
+ * 
+ *---------------------------------------------------------------------*/
 
+int
+pfs_file_copy_id (struct pfs_instance * pfs,
+		  const char * file_id,
+		  char * new_id)
+{
+  char * file_path;
+  char * new_file_path;
+  int fd_from;
+  int fd_to;
+  ssize_t len;
+  char buf[4096];
 
+  pfs_mk_id (pfs, new_id);
+
+  file_path = pfs_mk_file_path (pfs, file_id);
+  new_file_path = pfs_mk_file_path (pfs, new_id);
+
+  if ((fd_from = open (file_path, O_RDONLY)) < 0) {
+    free (file_path);
+    free (new_file_path);
+    return -errno;
+  }
+    
+  if ((fd_to = open (new_file_path, 
+		     O_CREAT | O_WRONLY | O_APPEND,
+		     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+    close (fd_from);
+    free (file_path);
+    free (new_file_path);
+    return -errno;
+  }
+  
+  while ((len = readn (fd_from, buf, 4096)) > 0) {
+    writen (fd_to, buf, len);
+  }
+  
+  close (fd_from);
+  close (fd_to);  
+  free (file_path);
+  free (new_file_path);
+
+  return 0;
+}
