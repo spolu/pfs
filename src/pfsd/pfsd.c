@@ -10,15 +10,14 @@
 #include <stdio.h>
 #include <pthread.h>
 
+#include "state.h"
 #include "pfsd.h"
 #include "fuse/pfs_fuse.h"
-#include "../libpfs/updt.h"
 
 int
 main (int argc, char ** argv)
 {
-  char root_path [PFS_NAME_LEN];
-  
+  char root_path [PFS_NAME_LEN];  
   pthread_t threads [1];
 
   if (argc <= 2) {
@@ -27,19 +26,16 @@ main (int argc, char ** argv)
   }
 
   strncpy (root_path, argv[1], PFS_NAME_LEN);
-
   pfs = pfs_init (root_path);
-  
+  pfsd_state_read (pfsd);
   strncpy (argv[1], argv[0], strlen (argv[1]));
   argv ++;
   argc --;
 
   pfs_set_updt_cb (pfs, updt_cb);
-
   if (pthread_create (&threads[0], NULL, start_write_back, (void *)0) != 0) {
     exit (1);
   }
-
   fuse_main (argc, argv, &pfs_operations, NULL);
   
   exit (0);

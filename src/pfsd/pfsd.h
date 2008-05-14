@@ -9,10 +9,6 @@
 #ifndef _PFSD_H
 #define _PFSD_H
 
-#include "../libpfs/pfs.h"
-
-struct pfs_instance * pfs;
-
 void * start_write_back (void * tid);
 
 int updt_cb (struct pfs_instance * pfs,

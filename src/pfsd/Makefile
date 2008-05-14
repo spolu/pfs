@@ -4,7 +4,7 @@ MAKE = make
 
 FUSE = fuse
 LIBPFS = ../libpfs
-PFSD_SRC = pfsd.c
+PFSD_SRC = pfsd.c state.c
 FUSE_SRC = fuse/fuse_stub.c
 
 pfsd_obj = $(PFSD_SRC:.c=.o)
