@@ -19,4 +19,4 @@ clean:
 	@$(MAKE) -C $(UTILS) clean
 	@$(MAKE) -C $(BENCH_LFS) clean
 	@$(MAKE) -C $(FUSE_NOPFS) clean
-	@rm -f *~
+	@rm -f *~ cscope.out
