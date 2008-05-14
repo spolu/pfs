@@ -404,7 +404,6 @@ void pfs_print_entry (struct pfs_instance * pfs,
  * Compares two version vectors. 
  * Returns 1 if a dominates b -1 if b dominates a 0 otherwise
  * 2 if equals
- * TODO : take into account ordering of the version to gain complexity
  *
  *---------------------------------------------------------------------*/
 
