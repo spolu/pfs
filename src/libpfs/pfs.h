@@ -140,6 +140,10 @@ int pfs_chmod (struct pfs_instance * pfs,
 /* SPECIAL OPERATIONS */
 
 
+int 
+pfs_group_create (struct pfs_instance * pfs,
+		  char * grp_name);
+
 struct pfs_instance * pfs_init (const char * root_path);
 
 int pfs_destroy (struct pfs_instance * pfs);
@@ -148,15 +152,6 @@ int pfs_sync_cache (struct pfs_instance * pfs);
 
 int pfs_set_updt_cb (struct pfs_instance * pfs,
 		     int(*updt_cb)(struct pfs_instance *, struct pfs_updt *));
-
-int pfs_create_group (struct pfs_instance * pfs,
-		      const char * grp);
-
-int pfs_add_sd (struct pfs_instance * pfs,
-		const char * grp,
-		const char * sd_owner,
-		const char * sd_name,
-		const char * sd_id);
 
 int pfs_bootstrap (const char * root_path,
 		   const char * sd_owner,

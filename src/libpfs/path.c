@@ -14,6 +14,7 @@
 #include "path.h"
 #include "instance.h"
 #include "entry.h"
+#include "group.h"
 
 static int pfs_split_name (struct pfs_instance * pfs,
 			   char * name,
@@ -69,8 +70,9 @@ int pfs_get_path_info (struct pfs_instance * pfs,
       }
 
       if (cnt == 0) {
-	if (pfs_get_v_sd_id (pfs, token, pi->grp_id, pi->dir_id) != 0)
+	if (pfs_get_grp_id (pfs, token, pi->grp_id) != 0)
 	  goto error;
+	strncpy (pi->dir_id, pi->grp_id, PFS_ID_LEN);
 	pi->is_main = 0;
 	strncpy (pi->name, token, PFS_NAME_LEN);
 	strncpy (pi->dst_id, pi->dir_id, PFS_ID_LEN);

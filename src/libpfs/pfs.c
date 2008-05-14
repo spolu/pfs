@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
+#include <sys/file.h>
 
 #include "pfs.h"
 #include "instance.h"
@@ -22,7 +23,7 @@
 #include "file.h"
 #include "dir_cache.h"
 #include "path.h"
-
+#include "group.h"
 
 /*---------------------------------------------------------------------
  * Method: pfs_open
@@ -685,7 +686,7 @@ char ** pfs_readdir (struct pfs_instance * pfs,
 {
   struct pfs_dir * dir = NULL;
   char ** entry_list = NULL;
-  int i, j, k, entry_cnt;
+  int i, j, k, entry_cnt, grp_cnt;
 
   struct pfs_path_info pi;
   char sd_owner [PFS_NAME_LEN];
@@ -697,8 +698,14 @@ char ** pfs_readdir (struct pfs_instance * pfs,
 
   if (strlen (path) == 1 && strcmp (path, "/") == 0)
     {
-      entry_list = (char **) malloc (sizeof (char *) * (pfs->grp_cnt + 3));
-      for (i = 0; i < pfs->grp_cnt + 3; i ++)
+      grp_cnt = 0;
+      for (next_grp = pfs->group; 
+	   next_grp != NULL; 
+	   next_grp = next_grp->next)
+	grp_cnt ++;
+      
+      entry_list = (char **) malloc (sizeof (char *) * (grp_cnt + 3));
+      for (i = 0; i < grp_cnt + 3; i ++)
 	entry_list[i] = NULL;
       
       entry_list[0] = (char *) malloc (sizeof (char) * 2);
@@ -707,12 +714,12 @@ char ** pfs_readdir (struct pfs_instance * pfs,
       strncpy (entry_list[1], "..", 3);
       
       next_grp = pfs->group;
-      for (i = 2; i < pfs->grp_cnt + 2; i ++) { 
+      for (i = 2; i < grp_cnt + 2; i ++) { 
 	entry_list[i] = (char *) malloc (sizeof (char) * 
 					 (strlen (next_grp->name) + 1));
 	strncpy (entry_list[i], next_grp->name, strlen (next_grp->name) + 1);
 	next_grp = next_grp->next;
-    }
+      }
     
       entry_list[i] = NULL;
       return entry_list;
@@ -819,9 +826,6 @@ int pfs_mkdir (struct pfs_instance * pfs,
   struct pfs_entry * entry = NULL;
   
   if (strlen (path) == 1 && strcmp (path, "/") == 0) {
-    /*
-     * TODO : Group creation
-     */
     retval = -EACCES;
     goto error;
   }  
@@ -877,9 +881,14 @@ int pfs_mkdir (struct pfs_instance * pfs,
       for (i = strlen (prt_path) - 1; i > 0 && prt_path[i] != '/'; i--);
       prt_path[i] = 0;
       name = prt_path + (i + 1);
-      
-      if (i == 0 ||
-	  strstr (name, ":") != NULL) {
+           
+      if (i == 0) {
+	retval = pfs_group_create (pfs, name);
+	free (prt_path);
+	return retval;
+      }
+
+      if (strstr (name, ":") != NULL) {
 	retval = -EACCES;
 	goto error;
       }
@@ -1841,18 +1850,72 @@ int pfs_chmod (struct pfs_instance * pfs,
 
 /* SPECIAL OPERATIONS */
 
-int pfs_create_group (struct pfs_instance * pfs,
-		      const char * grp)
-{
-  return 0;
-}
+/*---------------------------------------------------------------------
+ * Method: pfs_group_create
+ * Scope: Global
+ *
+ * Create a group
+ *
+ *---------------------------------------------------------------------*/
 
-int pfs_add_sd (struct pfs_instance * pfs,
-		const char * grp,
-		const char * sd_owner,
-		const char * sd_name,
-		const char * sd_id)
+int 
+pfs_group_create (struct pfs_instance * pfs,
+		  char * grp_name)
 {
+  int fd;
+  char * group_path;  
+  char grp_line [2 * PFS_NAME_LEN + PFS_ID_LEN];
+  char grp_id [PFS_ID_LEN];
+  char * path;
+
+  if (strlen (grp_name) > PFS_NAME_LEN - 1)
+    return -1;
+
+  /* add the root dir. */
+  if (pfs_create_dir (pfs, grp_id) != 0)
+    return -1;
+
+  /* update group file. */
+  sprintf (grp_line, "%s:%.*s", grp_name, PFS_ID_LEN, grp_id);  
+  group_path = (char *) malloc (strlen (pfs->root_path) + 
+				strlen (PFS_GROUP_PATH) + 1);
+  sprintf (group_path, "%s%s", pfs->root_path, PFS_GROUP_PATH);
+  if ((fd = open (group_path, O_WRONLY | O_APPEND)) <= 0) {
+    free (group_path);
+    return -1;
+  }
+  free (group_path);
+
+  flock (fd, LOCK_EX);
+  writeline (fd, grp_line, strlen (grp_line));
+  flock (fd, LOCK_UN);
+  close (fd);
+  
+  pfs_group_free (pfs);
+  pfs_group_read (pfs);
+
+  /* create .pfs file. */
+  path = (char *) malloc (strlen (grp_name) + 10);
+  sprintf (path, "/%s/.pfs", grp_name);
+
+  printf ("group create : %s\n", path);  
+
+  if ((fd = pfs_open (pfs, path, 
+		      O_CREAT | O_WRONLY, 
+		      S_IRUSR | S_IRGRP | S_IROTH)) < 0) {
+    free (path);
+    return -1;
+  } 
+  free (path);
+  sprintf (grp_line, "%.*s:%s:%s\n", PFS_ID_LEN, pfs->sd_id, pfs->sd_owner, pfs->sd_name);
+  pfs_pwrite (pfs, fd, grp_line, strlen (grp_line), 0);
+  pfs_close (pfs, fd);
+
+  pfs_group_free (pfs);
+  pfs_group_read (pfs);
+
+  
+
   return 0;
 }
 
@@ -1882,6 +1945,7 @@ pfs_destroy (struct pfs_instance * pfs)
 int
 pfs_sync_cache (struct pfs_instance * pfs)
 {
+  pfs_write_back_info (pfs);
   return pfs_sync_dir_cache (pfs);
 }
 
