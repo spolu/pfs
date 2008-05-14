@@ -86,13 +86,16 @@ struct pfsd_grp
 struct pfsd_state
 {
   uint32_t grp_cnt;
-  struct pfsd_grp * grp;
+  struct pfsd_grp * grp;     /* Grp state.           */
   struct pfs_mutex s_lock;
   
-  struct pfsd_log * log;
+  struct pfsd_log_grp * log; /* Log structure.       */
 
-  int sock_c [CONN_CNT];  /* Connectivity sockets. */
-  int sock_a;             /* Admin sockets. */
+  struct pfs_updt * updt;    /* Uncommited updates.  */
+  struct pfs_mutex u_lock;
+  
+  int sock_c [CONN_CNT];     /* Connectivity sockets. */
+  int sock_a;                /* Admin sockets.        */
 };
 
 
