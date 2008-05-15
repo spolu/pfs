@@ -39,6 +39,9 @@ pfs_init_instance (const char * root_path)
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
   umask (S_IWGRP | S_IWOTH);
+  pfs_mutex_init (&pfs->open_lock);
+  pfs_mutex_init (&pfs->info_lock);
+  pfs_mutex_init (&pfs->group_lock);
   
   /* Set up the paths. */
   pfs->root_path = (char *) malloc ((strlen (root_path) + 1));
@@ -71,12 +74,15 @@ pfs_init_instance (const char * root_path)
   pfs->uid_cnt = atoi (buf);
   free (buf);
 
+  buf = readline (fd);
+  pfs->updt_cnt = atoi (buf);
+  free (buf);
+
   close (fd);
 
   /* we use info file as lock file for group open_file list access. */
   pfs->open_file = NULL;
   pfs->group = NULL;
-  pfs_mutex_init (&pfs->open_lock);
   
   pfs_init_dir_cache (pfs);
   pfs->updt_cb = NULL;
@@ -111,11 +117,15 @@ pfs_destroy_instance (struct pfs_instance * pfs)
   while (pfs->open_file != NULL) {
     pfs_close (pfs, pfs->open_file->fd);
   }
-  pfs_mutex_destroy (&pfs->open_lock);
 
   pfs_destroy_dir_cache (pfs);
-  pfs_group_free (pfs);
   pfs_write_back_info (pfs);
+  pfs_write_back_group (pfs);
+  pfs_group_free (pfs);
+
+  pfs_mutex_destroy (&pfs->open_lock);
+  pfs_mutex_destroy (&pfs->info_lock);
+  pfs_mutex_destroy (&pfs->group_lock);
 
   free (pfs->root_path);
   free (pfs->data_path);
@@ -149,11 +159,16 @@ int pfs_write_back_info (struct pfs_instance * pfs)
   }
   free (info_path);
 
+  pfs_mutex_lock (&pfs->info_lock);
   writeline (fd, pfs->sd_owner, strlen (pfs->sd_owner));
   writeline (fd, pfs->sd_id, PFS_ID_LEN);
   writeline (fd, pfs->sd_name, strlen (pfs->sd_name));
-  sprintf (buf, "%d", pfs->uid_cnt);
+  sprintf (buf, "%d", (int) pfs->uid_cnt);
   writeline (fd, buf, strlen (buf));
+  sprintf (buf, "%d", (int) pfs->updt_cnt);
+  writeline (fd, buf, strlen (buf));
+  pfs_mutex_unlock (&pfs->info_lock);
+
   close (fd);
 
   return 0;
@@ -168,13 +183,15 @@ int pfs_write_back_info (struct pfs_instance * pfs)
  *---------------------------------------------------------------------*/
 
 int pfs_mk_id (struct pfs_instance * pfs,
-		char * id)
+	       char * id)
 {
   char data [2 * PFS_ID_LEN];
 
+  pfs_mutex_lock (&pfs->info_lock);
   pfs->uid_cnt++;
   memcpy (data, pfs->sd_id, PFS_ID_LEN);
-  sprintf (data + PFS_ID_LEN, "%d", pfs->uid_cnt);
+  sprintf (data + PFS_ID_LEN, "%d", (int) pfs->uid_cnt);
+  pfs_mutex_unlock (&pfs->info_lock);
   mk_hash (data, strlen (data), id);
   return 0;
 }
@@ -247,6 +264,9 @@ int pfs_bootstrap_inst (const char * root_path,
 
   pfs = (struct pfs_instance *) malloc (sizeof (struct pfs_instance));
   umask (S_IWGRP | S_IWOTH);
+  pfs_mutex_init (&pfs->open_lock);
+  pfs_mutex_init (&pfs->info_lock);
+  pfs_mutex_init (&pfs->group_lock);
 
   /* Setting up paths. */
   pfs->root_path = (char *) malloc (strlen (root_path) + 1);
@@ -265,8 +285,9 @@ int pfs_bootstrap_inst (const char * root_path,
   strncpy (pfs->sd_owner, sd_owner, PFS_NAME_LEN);
   strncpy (pfs->sd_name, sd_name, PFS_NAME_LEN);
   pfs->uid_cnt = 0;
+  pfs->updt_cnt = 0;
   snprintf (data, 2 * PFS_NAME_LEN + 2, "%s%s%d", 
-	    pfs->sd_owner, pfs->sd_name, pfs->uid_cnt);
+	    pfs->sd_owner, pfs->sd_name, (int) pfs->uid_cnt);
   mk_hash (data, strlen (data), pfs->sd_id);  
 
   ASSERT ((fd = open (info_path, O_WRONLY|O_TRUNC|O_APPEND|O_CREAT)) >= 0);
@@ -309,8 +330,17 @@ int pfs_bootstrap_inst (const char * root_path,
       }
     }
 
+  /* Setting up group info. */
+  pfs->grp_cnt = 0;
+  pfs->group = NULL;
+  
   /* Writing back info. */
   pfs_write_back_info (pfs);
+  pfs_write_back_group (pfs);
+
+  pfs_mutex_destroy (&pfs->open_lock);
+  pfs_mutex_destroy (&pfs->info_lock);
+  pfs_mutex_destroy (&pfs->group_lock);
 
   /* Cleaning. */
   free (data_subdir);

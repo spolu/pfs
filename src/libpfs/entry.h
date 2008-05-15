@@ -16,13 +16,11 @@
 
 struct pfs_dir
 {
-  char type [3];                  /* "DIR" to identify dirs.     */
   char id [PFS_ID_LEN];           /* Hash (creator, incr_token). */
   uint32_t entry_cnt;             /* Entry count.                */
   struct pfs_entry ** entry;      /* Pfs entries.                */
   struct pfs_mutex lock;          /* Used path_cache.            */
 };
-
 
 
 struct pfs_entry
@@ -34,7 +32,6 @@ struct pfs_entry
 };
 
 
-
 enum pfs_entry_type {
   PFS_DEL = 0,                         /* Deleted file.         */
   PFS_DIR = 1,                         /* Directory entry.      */
@@ -43,20 +40,26 @@ enum pfs_entry_type {
   PFS_GRP = 4
 };
 
+
 struct pfs_ver
 {
-  uint8_t type;                   /* entry_ver type.                             */
-  mode_t st_mode;
-  char dst_id [PFS_ID_LEN];       /* id of the object it points to.              */
-  struct pfs_vv * vv;             /* version vector for that entry.              */
+  uint8_t type;                   /* entry_ver type.                               */
+  mode_t st_mode;                 /* entry mode.                                   */
+  char dst_id [PFS_ID_LEN];       /* id of the object it points to.                */
+
+  char last_updt [PFS_ID_LEN];    /* Id of the last_updater sd.                    */
+  char sd_orig [PFS_ID_LEN];      /* Sd on which the file was created.             */
+  uint64_t cs;                    /* Creation scalar (updt_cnt) of sd at creation. */
+
+  struct pfs_vv * mv;             /* modification vector for that entry.           */
 };
+
 
 struct pfs_vv
 { 
-  char last_updt [PFS_ID_LEN];    /* Id of the last_updater sd.           */
   uint32_t len;                   /* Len of the version vector.           */
   char ** sd_id;                  /* Ids of sds associated with versions. */
-  uint32_t * value;               /* Versions value.                      */
+  uint64_t * value;               /* Versions value.                      */
 };
 
 
@@ -90,12 +93,15 @@ int pfs_vv_cmp (struct pfs_vv * a,
 		struct pfs_vv * b);
 
 struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
-			      struct pfs_vv * a,
-			      struct pfs_vv * b);
+			      const struct pfs_vv * a,
+			      const struct pfs_vv * b);
 
 int pfs_vv_incr (struct pfs_instance * pfs,
-		  struct pfs_vv * vv);
+		 struct pfs_ver * ver);
 
+int
+pfs_gen_vv (struct pfs_instance * pfs,
+	    struct pfs_ver * ver);
 
 /* DEBUG OPERATIONS */
 
@@ -113,5 +119,8 @@ void pfs_free_vv (struct pfs_vv * vv);
 void pfs_free_ver (struct pfs_ver * ver);
 void pfs_free_entry (struct pfs_entry * entry);
 void pfs_free_dir (struct pfs_dir * dir);
+void pfs_write_vv (int wd, 
+		   struct pfs_vv * vv);
+struct pfs_vv * pfs_read_vv (int rd);
 
 #endif  /* _PFS_ENTRY_H */

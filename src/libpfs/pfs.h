@@ -148,7 +148,7 @@ struct pfs_instance * pfs_init (const char * root_path);
 
 int pfs_destroy (struct pfs_instance * pfs);
 
-int pfs_sync_cache (struct pfs_instance * pfs);
+int pfs_sync (struct pfs_instance * pfs);
 
 int pfs_set_updt_cb (struct pfs_instance * pfs,
 		     int(*updt_cb)(struct pfs_instance *, struct pfs_updt *));

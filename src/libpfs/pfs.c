@@ -93,15 +93,8 @@ int pfs_open (struct pfs_instance * pfs,
       
       /* We create the entry. */
       open_file->ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
-      open_file->ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-      strncpy (open_file->ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
-      open_file->ver->vv->len = 1;
-      open_file->ver->vv->sd_id = (char **) malloc (sizeof (char *));
-      open_file->ver->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
-      strncpy (open_file->ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
-      open_file->ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
-      open_file->ver->vv->value[0] = 1;
-      open_file->ver->type = PFS_FIL;
+      pfs_gen_vv (pfs, open_file->ver);
+      open_file->ver->type = PFS_FIL;      
       
       if ((open_file->fd = pfs_file_create (pfs, open_file->ver->dst_id, flags)) < 0) {
 	retval = -EIO;
@@ -155,7 +148,7 @@ int pfs_open (struct pfs_instance * pfs,
 
       open_file->ver->type = PFS_FIL;
       if ((open_file->fd = pfs_file_create (pfs, open_file->ver->dst_id, flags)) <= 0 ||
-	  pfs_vv_incr (pfs, open_file->ver->vv) != 0) {
+	  pfs_vv_incr (pfs, open_file->ver) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -438,7 +431,7 @@ int pfs_close (struct pfs_instance * pfs,
      */
   }
   else if (open_file->dirty == 1) {
-    pfs_vv_incr (pfs, open_file->ver->vv);
+    pfs_vv_incr (pfs, open_file->ver);
     if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
 		       open_file->file_name, 1, open_file->ver) != 0) {
       pfs_free_ver (open_file->ver);
@@ -634,8 +627,8 @@ int pfs_truncate (struct pfs_instance * pfs,
     goto error;
   }
 
-  pfs_vv_incr (pfs, ver->vv);
-  
+  pfs_vv_incr (pfs, ver);
+
   file_path = pfs_mk_file_path (pfs, ver->dst_id);
   if (truncate (file_path, len) < 0) {
     retval = -errno;
@@ -686,26 +679,21 @@ char ** pfs_readdir (struct pfs_instance * pfs,
 {
   struct pfs_dir * dir = NULL;
   char ** entry_list = NULL;
-  int i, j, k, entry_cnt, grp_cnt;
+  int i, j, k, entry_cnt;
 
   struct pfs_path_info pi;
   char sd_owner [PFS_NAME_LEN];
   char sd_name [PFS_NAME_LEN];
 
-  struct pfs_info_group * next_grp;
+  struct pfs_group * next_grp;
 
   /* list the groups. */
 
   if (strlen (path) == 1 && strcmp (path, "/") == 0)
-    {
-      grp_cnt = 0;
-      for (next_grp = pfs->group; 
-	   next_grp != NULL; 
-	   next_grp = next_grp->next)
-	grp_cnt ++;
-      
-      entry_list = (char **) malloc (sizeof (char *) * (grp_cnt + 3));
-      for (i = 0; i < grp_cnt + 3; i ++)
+    {      
+      pfs_mutex_lock (&pfs->group_lock);
+      entry_list = (char **) malloc (sizeof (char *) * (pfs->grp_cnt + 3));
+      for (i = 0; i < pfs->grp_cnt + 3; i ++)
 	entry_list[i] = NULL;
       
       entry_list[0] = (char *) malloc (sizeof (char) * 2);
@@ -714,14 +702,15 @@ char ** pfs_readdir (struct pfs_instance * pfs,
       strncpy (entry_list[1], "..", 3);
       
       next_grp = pfs->group;
-      for (i = 2; i < grp_cnt + 2; i ++) { 
+      for (i = 2; i < pfs->grp_cnt + 2; i ++) { 
 	entry_list[i] = (char *) malloc (sizeof (char) * 
-					 (strlen (next_grp->name) + 1));
-	strncpy (entry_list[i], next_grp->name, strlen (next_grp->name) + 1);
+					 (strlen (next_grp->grp_name) + 1));
+	strncpy (entry_list[i], next_grp->grp_name, strlen (next_grp->grp_name) + 1);
 	next_grp = next_grp->next;
       }
     
       entry_list[i] = NULL;
+      pfs_mutex_unlock (&pfs->group_lock);
       return entry_list;
     }
 
@@ -756,7 +745,7 @@ char ** pfs_readdir (struct pfs_instance * pfs,
     for (j = 0; j < dir->entry[i]->ver_cnt; j ++) {
       if (dir->entry[i]->ver[j]->type != PFS_DEL) {
 	if (pfs_get_sd_info (pfs, pi.grp_id, 
-			     dir->entry[i]->ver[j]->vv->last_updt,
+			     dir->entry[i]->ver[j]->last_updt,
 			     sd_owner, sd_name) != 0)
 	  goto error;       
 	if (j != dir->entry[i]->main_idx) {
@@ -854,7 +843,7 @@ int pfs_mkdir (struct pfs_instance * pfs,
 
       ver->type = PFS_DIR;
       ver->st_mode = mode | S_IFDIR;
-      pfs_vv_incr (pfs, ver->vv);
+      pfs_vv_incr (pfs, ver);
       
       if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
 	  pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
@@ -908,14 +897,8 @@ int pfs_mkdir (struct pfs_instance * pfs,
       ver->type = PFS_DIR;
       ver->st_mode = S_IRUSR | S_IXUSR | S_IWUSR | S_IRGRP 
 	| S_IXGRP | S_IROTH | S_IXGRP | S_IFDIR;
-      ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-      memcpy (ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
-      ver->vv->len = 1;
-      ver->vv->sd_id = (char **) malloc (sizeof (char *));
-      ver->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
-      memcpy (ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
-      ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
-      ver->vv->value[0] = 1;
+      ver->mv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
+      pfs_gen_vv (pfs, ver);
 
       if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
 	  pfs_set_entry (pfs, pi.grp_id, pi.dst_id, 
@@ -994,8 +977,8 @@ int pfs_unlink (struct pfs_instance * pfs,
   ver->type = PFS_DEL;
   ver->st_mode = 0;
   memset (ver->dst_id, 0, PFS_ID_LEN);
-  pfs_vv_incr (pfs, ver->vv);
-  
+  pfs_vv_incr (pfs, ver);
+
   if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
 		     pi.name, 1, ver) != 0) {
     retval = -EIO;
@@ -1071,8 +1054,8 @@ int pfs_rmdir (struct pfs_instance * pfs,
   ver->type = PFS_DEL;
   ver->st_mode = 0;
   memset (ver->dst_id, 0, PFS_ID_LEN);
-  pfs_vv_incr (pfs, ver->vv);
-  
+  pfs_vv_incr (pfs, ver);
+
   if ((retval = pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
 			       pi.name, 1, ver)) != 0) {
     retval = -EIO;
@@ -1176,7 +1159,7 @@ int pfs_rename (struct pfs_instance * pfs,
       pfs_free_entry (entry);
       entry = NULL;
 
-      pfs_vv_incr (pfs, ver_new->vv);  
+      pfs_vv_incr (pfs, ver_new);  
     }
 
   else
@@ -1210,14 +1193,7 @@ int pfs_rename (struct pfs_instance * pfs,
       }
       
       ver_new = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
-      ver_new->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-      memcpy (ver_new->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
-      ver_new->vv->len = 1;
-      ver_new->vv->sd_id = (char **) malloc (sizeof (char *));
-      ver_new->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
-      memcpy (ver_new->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
-      ver_new->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
-      ver_new->vv->value[0] = 1;
+      pfs_gen_vv (pfs, ver_new);
       memset (ver_new->dst_id, 0, PFS_ID_LEN);
 
       strncpy (pi_new.dir_id, pi_new.dst_id, PFS_ID_LEN);
@@ -1235,7 +1211,7 @@ int pfs_rename (struct pfs_instance * pfs,
   ver_old->type = PFS_DEL;
   memset (ver_old->dst_id, 0, PFS_ID_LEN);
   ver_old->st_mode = 0;
-  pfs_vv_incr (pfs, ver_old->vv);
+  pfs_vv_incr (pfs, ver_old);
    
   if (pfs_set_entry (pfs, pi_old.grp_id, pi_old.dir_id,
 		     pi_old.name, 0, ver_old) != 0) {
@@ -1432,14 +1408,7 @@ int pfs_symlink (struct pfs_instance * pfs,
 
       /* We create the entry. */
       ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
-      ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-      strncpy (ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
-      ver->vv->len = 1;
-      ver->vv->sd_id = (char **) malloc (sizeof (char *));
-      ver->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
-      strncpy (ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
-      ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
-      ver->vv->value[0] = 1;
+      pfs_gen_vv (pfs, ver);
       ver->type = PFS_SML;
       
       if ((fd = pfs_file_create (pfs, ver->dst_id, 
@@ -1498,7 +1467,7 @@ int pfs_symlink (struct pfs_instance * pfs,
 	S_IROTH | S_IXOTH | 
 	S_IFLNK;
 
-      if (pfs_vv_incr (pfs, ver->vv) != 0) {
+      if (pfs_vv_incr (pfs, ver) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -1619,14 +1588,7 @@ int pfs_link (struct pfs_instance * pfs,
 
       /* We create the entry. */
       ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
-      ver->vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-      strncpy (ver->vv->last_updt, pfs->sd_id, PFS_ID_LEN);
-      ver->vv->len = 1;
-      ver->vv->sd_id = (char **) malloc (sizeof (char *));
-      ver->vv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
-      strncpy (ver->vv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
-      ver->vv->value = (uint32_t *) malloc (sizeof (uint32_t));
-      ver->vv->value[0] = 1;
+      pfs_gen_vv (pfs, ver);
       ver->type = PFS_FIL;
       
       if (pfs_file_copy_id (pfs, pi_to.dst_id, ver->dst_id) != 0) {
@@ -1666,7 +1628,7 @@ int pfs_link (struct pfs_instance * pfs,
 
       ver->st_mode = pi_to.st_mode;
 
-      if (pfs_vv_incr (pfs, ver->vv) != 0) {
+      if (pfs_vv_incr (pfs, ver) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -1822,7 +1784,7 @@ int pfs_chmod (struct pfs_instance * pfs,
   if (pi.type == PFS_FIL)
     ver->st_mode |= S_IFREG;
 
-  pfs_vv_incr (pfs, ver->vv);
+  pfs_vv_incr (pfs, ver);
   
   if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
 		     pi.name, 0, ver) != 0) {
@@ -1862,11 +1824,7 @@ int
 pfs_group_create (struct pfs_instance * pfs,
 		  char * grp_name)
 {
-  int fd;
-  char * group_path;  
-  char grp_line [2 * PFS_NAME_LEN + PFS_ID_LEN];
   char grp_id [PFS_ID_LEN];
-  char * path;
 
   if (strlen (grp_name) > PFS_NAME_LEN - 1)
     return -1;
@@ -1875,47 +1833,7 @@ pfs_group_create (struct pfs_instance * pfs,
   if (pfs_create_dir (pfs, grp_id) != 0)
     return -1;
 
-  /* update group file. */
-  sprintf (grp_line, "%s:%.*s", grp_name, PFS_ID_LEN, grp_id);  
-  group_path = (char *) malloc (strlen (pfs->root_path) + 
-				strlen (PFS_GROUP_PATH) + 1);
-  sprintf (group_path, "%s%s", pfs->root_path, PFS_GROUP_PATH);
-  if ((fd = open (group_path, O_WRONLY | O_APPEND)) <= 0) {
-    free (group_path);
-    return -1;
-  }
-  free (group_path);
-
-  flock (fd, LOCK_EX);
-  writeline (fd, grp_line, strlen (grp_line));
-  flock (fd, LOCK_UN);
-  close (fd);
-  
-  pfs_group_free (pfs);
-  pfs_group_read (pfs);
-
-  /* create .pfs file. */
-  path = (char *) malloc (strlen (grp_name) + 10);
-  sprintf (path, "/%s/.pfs", grp_name);
-
-  printf ("group create : %s\n", path);  
-
-  if ((fd = pfs_open (pfs, path, 
-		      O_CREAT | O_WRONLY, 
-		      S_IRUSR | S_IRGRP | S_IROTH)) < 0) {
-    free (path);
-    return -1;
-  } 
-  free (path);
-  sprintf (grp_line, "%.*s:%s:%s\n", PFS_ID_LEN, pfs->sd_id, pfs->sd_owner, pfs->sd_name);
-  pfs_pwrite (pfs, fd, grp_line, strlen (grp_line), 0);
-  pfs_close (pfs, fd);
-
-  pfs_group_free (pfs);
-  pfs_group_read (pfs);
-
-  
-
+  pfs_group_add (pfs, grp_name, grp_id);
   return 0;
 }
 
@@ -1943,16 +1861,20 @@ pfs_destroy (struct pfs_instance * pfs)
 }
 
 int
-pfs_sync_cache (struct pfs_instance * pfs)
+pfs_sync (struct pfs_instance * pfs)
 {
   pfs_write_back_info (pfs);
-  return pfs_sync_dir_cache (pfs);
+  pfs_write_back_group (pfs);
+  pfs_sync_dir_cache (pfs);
+  return 0;
 }
 
 int 
 pfs_set_updt_cb (struct pfs_instance * pfs,
 		     int(*updt_cb)(struct pfs_instance *, struct pfs_updt *))
 {
+  pfs_mutex_lock (&pfs->info_lock);
   pfs->updt_cb = updt_cb;
+  pfs_mutex_unlock (&pfs->info_lock);
   return 0;
 }

@@ -19,6 +19,7 @@
 #include "file.h"
 #include "updt.h"
 #include "dir_cache.h"
+#include "group.h"
 
 /*---------------------------------------------------------------------
  * Method: pfs_create_dir
@@ -157,7 +158,7 @@ pfs_set_entry (struct pfs_instance * pfs,
   ver_cnt = 1;
   if (entry != NULL) {
     for (i = 0; i < entry->ver_cnt; i ++) {
-      cmp_val = pfs_vv_cmp (ver->vv, entry->ver[i]->vv);
+      cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
       if (cmp_val == 0)
 	ver_cnt ++;
       if (cmp_val == -1) {
@@ -178,6 +179,10 @@ pfs_set_entry (struct pfs_instance * pfs,
     }
   }
 
+  /* Update sync vector. */
+  if (pfs_group_updt_sv (pfs, grp_id, ver->mv) != 0)
+    goto error;
+
   /* log the set_entry. */
   if (pfs_push_log_entry (pfs, grp_id, dir_id, name, reclaim, ver) != 0)
     goto error;
@@ -194,7 +199,7 @@ pfs_set_entry (struct pfs_instance * pfs,
   j = 0;
   trans_main_idx = -1; 
   for (i = 0; entry != NULL && i < entry->ver_cnt; i ++) {
-    cmp_val = pfs_vv_cmp (ver->vv, entry->ver[i]->vv);
+    cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
     if (cmp_val == 0) {
       /* translated main_idx for new_entry. */
       if (i == entry->main_idx)
@@ -226,7 +231,7 @@ pfs_set_entry (struct pfs_instance * pfs,
 	    pfs_unlock_dir_cache (pfs, dir);
 
 	    /* restart */
-	    pfs_vv_incr (pfs, replay_ver->vv);
+	    pfs_vv_incr (pfs, replay_ver);
 	    if ((i = pfs_set_entry (pfs, grp_id, 
 				    dir_id, name, 
 				    0, replay_ver)) < 0) {
@@ -263,18 +268,18 @@ pfs_set_entry (struct pfs_instance * pfs,
   else {
     m_upt_num = -1; m_sd_upt_num = -1; upt_num = -1; sd_upt_num = -1;
     
-    for (i = 0; i < entry->ver[entry->main_idx]->vv->len; i ++) {
-      m_upt_num += entry->ver[entry->main_idx]->vv->value[i];
-      if (memcmp (entry->ver[entry->main_idx]->vv->sd_id[i],
+    for (i = 0; i < entry->ver[entry->main_idx]->mv->len; i ++) {
+      m_upt_num += entry->ver[entry->main_idx]->mv->value[i];
+      if (memcmp (entry->ver[entry->main_idx]->mv->sd_id[i],
 		  pfs->sd_id, PFS_ID_LEN) == 0) {
-	m_sd_upt_num = entry->ver[entry->main_idx]->vv->value[i];
+	m_sd_upt_num = entry->ver[entry->main_idx]->mv->value[i];
       }
     }
-    for (i = 0; i < ver->vv->len; i ++) {
-      upt_num += ver->vv->value[i];
-      if (memcmp (ver->vv->sd_id[i],
+    for (i = 0; i < ver->mv->len; i ++) {
+      upt_num += ver->mv->value[i];
+      if (memcmp (ver->mv->sd_id[i],
 		  pfs->sd_id, PFS_ID_LEN) == 0) {
-	sd_upt_num = ver->vv->value[i];
+	sd_upt_num = ver->mv->value[i];
       }
     }
     if (sd_upt_num > m_sd_upt_num)
@@ -387,10 +392,10 @@ void pfs_print_entry (struct pfs_instance * pfs,
     }
     sprintf (id, "%s", entry->ver[i]->dst_id);
     printf ("%s ", id);
-    printf ("last_updt : %s\n", entry->ver[i]->vv->last_updt);
-    for (j = 0; j < entry->ver[i]->vv->len; j ++) {
-      sprintf (id, "%s", entry->ver[i]->vv->sd_id[j]);
-      printf ("  %s : %d\n", id, entry->ver[i]->vv->value[j]);
+    printf ("last_updt : %s\n", entry->ver[i]->last_updt);
+    for (j = 0; j < entry->ver[i]->mv->len; j ++) {
+      sprintf (id, "%s", entry->ver[i]->mv->sd_id[j]);
+      printf ("  %s : %d\n", id, (int) entry->ver[i]->mv->value[j]);
     }
   }
   pfs_free_entry (entry);
@@ -478,8 +483,8 @@ pfs_vv_cmp (struct pfs_vv * a,
  *---------------------------------------------------------------------*/
 
 struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
-			      struct pfs_vv * a,
-			      struct pfs_vv * b)
+			      const struct pfs_vv * a,
+			      const struct pfs_vv * b)
 {
   int a_idx = 0;
   int b_idx = 0;
@@ -489,7 +494,6 @@ struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
   
   new_vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
   ASSERT (new_vv != NULL);
-  memcpy (new_vv->last_updt, pfs->sd_id, PFS_ID_LEN);
   new_vv->len = 0;
 
   /* Calculate the new len. */
@@ -520,7 +524,7 @@ struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
   }
 
   new_vv->sd_id = (char **) malloc (sizeof (void *) * new_vv->len);
-  new_vv->value = (uint32_t *) malloc (sizeof (uint32_t) * new_vv->len);
+  new_vv->value = (uint64_t *) malloc (sizeof (uint64_t) * new_vv->len);
   ASSERT (new_vv->sd_id != NULL && new_vv->value != NULL);
   for (i = 0; i < new_vv->len; i ++) {
     new_vv->sd_id[i] = (char *) malloc (PFS_ID_LEN);
@@ -581,46 +585,73 @@ struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
  *---------------------------------------------------------------------*/
 
 int pfs_vv_incr (struct pfs_instance * pfs,
-		 struct pfs_vv * vv)
+		 struct pfs_ver * ver)
 {
   int i,j;
   int cmp_val;
   
-  for (i = 0; i < vv->len; i ++) {
-    cmp_val = strncmp (vv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
+  for (i = 0; i < ver->mv->len; i ++) {
+    cmp_val = strncmp (ver->mv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
     if (cmp_val == 0) {
-      vv->value[i] ++;
-      memcpy (vv->last_updt, pfs->sd_id, PFS_ID_LEN);
+      pfs_mutex_lock (&pfs->info_lock);
+      pfs->updt_cnt ++;
+      ver->mv->value[i] = pfs->updt_cnt;
+      pfs_mutex_unlock (&pfs->info_lock);
+      strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
       return 0;
     }
   }
   
-  vv->len ++;
-  vv->sd_id = (char **) realloc (vv->sd_id, sizeof (char *) * vv->len);
-  vv->value = (uint32_t *) realloc (vv->value, sizeof (uint32_t) * vv->len);
-  ASSERT (vv->sd_id != NULL && vv->value != NULL);
+  ver->mv->len ++;
+  ver->mv->sd_id = (char **) realloc (ver->mv->sd_id, sizeof (char *) * ver->mv->len);
+  ver->mv->value = (uint64_t *) realloc (ver->mv->value, sizeof (uint64_t) * ver->mv->len);
+  ASSERT (ver->mv->sd_id != NULL && ver->mv->value != NULL);
   
-  for (i = 0; i < vv->len - 1; i ++) {
-    cmp_val = strncmp (vv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
+  for (i = 0; i < ver->mv->len - 1; i ++) {
+    cmp_val = strncmp (ver->mv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
     ASSERT (cmp_val != 0);
     if (cmp_val > 0)
       break;
   }
   
-  for (j = vv->len - 2; j >= i; j --) {
-    vv->sd_id[j+1] = vv->sd_id[j];
-    vv->value[j+1] = vv->value[j];
+  for (j = ver->mv->len - 2; j >= i; j --) {
+    ver->mv->sd_id[j+1] = ver->mv->sd_id[j];
+    ver->mv->value[j+1] = ver->mv->value[j];
   }
   
-  vv->sd_id [i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
-  ASSERT (vv->sd_id[i] != NULL);
-  memcpy (vv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
-  vv->value[i] = 1;
-  memcpy (vv->last_updt, pfs->sd_id, PFS_ID_LEN);
+  ver->mv->sd_id [i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
+  ASSERT (ver->mv->sd_id[i] != NULL);
+  memcpy (ver->mv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
+  pfs_mutex_lock (&pfs->info_lock);
+  pfs->updt_cnt ++;
+  ver->mv->value[i] = pfs->updt_cnt;
+  pfs_mutex_unlock (&pfs->info_lock);
+  strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
   
   return 0;
 }
 
+
+int
+pfs_gen_vv (struct pfs_instance * pfs,
+	    struct pfs_ver * ver)
+{
+  ver->mv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
+  strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
+  ver->mv->len = 1;
+  ver->mv->sd_id = (char **) malloc (sizeof (char *));
+  ver->mv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
+  strncpy (ver->mv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
+  ver->mv->value = (uint64_t *) malloc (sizeof (uint64_t));
+  pfs_mutex_lock (&pfs->info_lock);
+  pfs->updt_cnt ++;
+  ver->mv->value[0] = pfs->updt_cnt;
+  pfs_mutex_unlock (&pfs->info_lock);
+  strncpy (ver->sd_orig, pfs->sd_id, PFS_ID_LEN);
+  ver->cs = ver->mv->value[0];
+  
+  return 0;
+}
 
 /* DEALLOC/CPY FUNCTION. */
 
@@ -640,10 +671,9 @@ pfs_cpy_vv (struct pfs_vv * vv)
   struct pfs_vv * vv_cpy = NULL;
   vv_cpy = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
   ASSERT (vv_cpy != NULL);
-  memcpy (vv_cpy->last_updt, vv->last_updt, PFS_ID_LEN);
   vv_cpy->len = vv->len;
   vv_cpy->sd_id = (char **) malloc (vv_cpy->len * sizeof (char *));
-  vv_cpy->value = (uint32_t *) malloc (vv_cpy->len * sizeof (uint32_t));
+  vv_cpy->value = (uint64_t *) malloc (vv_cpy->len * sizeof (uint64_t));
   ASSERT (vv_cpy->sd_id != NULL && vv_cpy->value != NULL);
   for (i = 0; i < vv_cpy->len; i ++) {
     vv_cpy->sd_id[i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
@@ -663,7 +693,10 @@ pfs_cpy_ver (const struct pfs_ver * ver)
   ver_cpy->type = ver->type;
   ver_cpy->st_mode = ver->st_mode;
   memcpy (ver_cpy->dst_id, ver->dst_id, PFS_ID_LEN);
-  ver_cpy->vv = pfs_cpy_vv (ver->vv);
+  memcpy (ver_cpy->last_updt, ver->last_updt, PFS_ID_LEN);
+  memcpy (ver_cpy->sd_orig, ver->sd_orig, PFS_ID_LEN);
+  ver_cpy->cs = ver->cs;
+  ver_cpy->mv = pfs_cpy_vv (ver->mv);
   return ver_cpy;
 }
 
@@ -701,7 +734,7 @@ pfs_free_vv (struct pfs_vv * vv)
 void
 pfs_free_ver (struct pfs_ver * ver)
 {
-  pfs_free_vv (ver->vv);
+  pfs_free_vv (ver->mv);
   free (ver);
 }
 
@@ -726,3 +759,34 @@ pfs_free_dir (struct pfs_dir * dir)
 }
 
 
+void
+pfs_write_vv (int wd, 
+	      struct pfs_vv * vv)
+{
+  int i;
+  writen (wd, &vv->len, sizeof (uint32_t));
+  for (i = 0; i < vv->len; i ++) {
+    writen (wd, vv->sd_id[i], PFS_ID_LEN);
+    writen (wd, &vv->value[i], sizeof (uint64_t));
+  }
+}
+
+struct pfs_vv *
+pfs_read_vv (int rd)
+{
+  int i;
+  struct pfs_vv * vv = NULL;
+  vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
+  ASSERT (vv != NULL);
+  readn (rd, &vv->len, sizeof (uint32_t));
+  vv->sd_id = (char **) malloc (vv->len * sizeof (char *));
+  vv->value = (uint64_t *) malloc (vv->len * sizeof (uint64_t));
+  ASSERT (vv->sd_id != NULL && vv->value != NULL);
+  for (i = 0; i < vv->len; i ++) {
+    vv->sd_id[i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
+    ASSERT (vv->sd_id[i] != NULL);
+    readn (rd, vv->sd_id[i], PFS_ID_LEN);
+    readn (rd, &vv->value[i], sizeof (uint64_t));    
+  }
+  return vv;
+}

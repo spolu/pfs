@@ -18,7 +18,6 @@
 #include "dir_cache.h"
 
 #define PFS_DATA_PATH "data/"
-#define PFS_GROUP_PATH "groups"
 #define PFS_INFO_PATH "info"
 
 
@@ -29,20 +28,23 @@ struct pfs_instance
   char sd_owner [PFS_NAME_LEN];
   char sd_id [PFS_ID_LEN];
   char sd_name [PFS_NAME_LEN];
-  uint32_t uid_cnt;
+
+  char * root_path;
+  char * data_path;
 
   pdc_t * dir_cache;
 
+  struct pfs_mutex info_lock;
+  uint64_t uid_cnt;
+  uint64_t updt_cnt;
   int (*updt_cb)(struct pfs_instance *, struct pfs_updt *);
-  
-  char * root_path;
-  char * data_path;
 
   struct pfs_mutex open_lock;
   struct pfs_open_file * open_file;
 
+  struct pfs_mutex group_lock;
   uint32_t grp_cnt;
-  struct pfs_info_group * group;
+  struct pfs_group * group;
 };
 
 
@@ -66,30 +68,6 @@ struct pfs_open_file
   struct pfs_open_file * prev;
   struct pfs_open_file * next;
 };
-
-
-
-/* INFOS */
-
-struct pfs_info_group
-{
-  char id [PFS_ID_LEN];        /* Group id.                */
-  char name [PFS_NAME_LEN];    /* Group name.              */
-
-  struct pfs_info_sd * sd;
-  struct pfs_info_group * next;
-};
-
-
-struct pfs_info_sd
-{
-  char sd_id [PFS_ID_LEN];
-  char sd_owner [PFS_NAME_LEN];
-  char sd_name [PFS_NAME_LEN];
-
-  struct pfs_info_sd * next;
-};
-
 
 
 

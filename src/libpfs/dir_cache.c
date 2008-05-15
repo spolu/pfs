@@ -25,12 +25,10 @@ static int pfs_dir_cache_evict (struct pfs_instance *pfs);
 
 /* SERIALIZATION FUNCTION. */
 
-static void pfs_write_vv (int wd, struct pfs_vv * vv);
 static void pfs_write_ver (int wd, const struct pfs_ver * ver);
 static void pfs_write_entry (int wd, struct pfs_entry * entry);
 static void pfs_write_dir (int wd, struct pfs_dir * dir);
 
-static struct pfs_vv * pfs_read_vv (int rd);
 static struct pfs_ver * pfs_read_ver (int rd);
 static struct pfs_entry * pfs_read_entry (int rd);
 static struct pfs_dir * pfs_read_dir (int rd);
@@ -324,7 +322,6 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
   pfs_mutex_init (&val->dir->lock);
   
   pfs_mk_id (pfs, val->dir->id);
-  memcpy (val->dir->type, "DIR", 3);
   val->dir->entry_cnt = 0;
   val->dir->entry = NULL;
 
@@ -529,19 +526,6 @@ pfs_free_pdce (void * val)
  *
  *---------------------------------------------------------------------*/
 
-static void
-pfs_write_vv (int wd, 
-	      struct pfs_vv * vv)
-{
-  int i;
-  writen (wd, vv->last_updt, PFS_ID_LEN);
-  writen (wd, &vv->len, sizeof (uint32_t));
-  for (i = 0; i < vv->len; i ++) {
-    writen (wd, vv->sd_id[i], PFS_ID_LEN);
-    writen (wd, &vv->value[i], sizeof (uint32_t));
-  }
-}
-
 static void 
 pfs_write_ver (int wd, 
 	       const struct pfs_ver * ver)
@@ -549,7 +533,10 @@ pfs_write_ver (int wd,
   writen (wd, &ver->type, sizeof (uint8_t));
   writen (wd, &ver->st_mode, sizeof (mode_t));
   writen (wd, ver->dst_id, PFS_ID_LEN);
-  pfs_write_vv (wd, ver->vv);
+  writen (wd, ver->last_updt, PFS_ID_LEN);
+  writen (wd, ver->sd_orig, PFS_ID_LEN);
+  writen (wd, &ver->cs, sizeof (uint64_t));
+  pfs_write_vv (wd, ver->mv);
 }
 
 static void
@@ -570,7 +557,6 @@ pfs_write_dir (int wd,
 	       struct pfs_dir * dir)
 {
   int i;
-  writen (wd, "DIR", 3);
   writen (wd, dir->id, PFS_ID_LEN);
   writen (wd, &dir->entry_cnt, sizeof (uint32_t));
   for (i = 0; i < dir->entry_cnt; i ++) {
@@ -578,26 +564,6 @@ pfs_write_dir (int wd,
   }
 }
 
-static struct pfs_vv *
-pfs_read_vv (int rd)
-{
-  int i;
-  struct pfs_vv * vv = NULL;
-  vv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
-  ASSERT (vv != NULL);
-  readn (rd, vv->last_updt, PFS_ID_LEN);
-  readn (rd, &vv->len, sizeof (uint32_t));
-  vv->sd_id = (char **) malloc (vv->len * sizeof (char *));
-  vv->value = (uint32_t *) malloc (vv->len * sizeof (uint32_t));
-  ASSERT (vv->sd_id != NULL && vv->value != NULL);
-  for (i = 0; i < vv->len; i ++) {
-    vv->sd_id[i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
-    ASSERT (vv->sd_id[i] != NULL);
-    readn (rd, vv->sd_id[i], PFS_ID_LEN);
-    readn (rd, &vv->value[i], sizeof (uint32_t));    
-  }
-  return vv;
-}
 
 static struct pfs_ver *
 pfs_read_ver (int rd)
@@ -608,7 +574,10 @@ pfs_read_ver (int rd)
   readn (rd, &ver->type, sizeof (uint8_t));
   readn (rd, &ver->st_mode, sizeof (mode_t));
   readn (rd, ver->dst_id, PFS_ID_LEN);
-  ver->vv = pfs_read_vv (rd);
+  readn (rd, ver->last_updt, PFS_ID_LEN);
+  readn (rd, ver->sd_orig, PFS_ID_LEN);
+  readn (rd, &ver->cs, sizeof (uint64_t));
+  ver->mv = pfs_read_vv (rd);
   return ver;
 }
 
@@ -637,11 +606,6 @@ pfs_read_dir (int rd)
   struct pfs_dir * dir = NULL;
   dir = (struct pfs_dir *) malloc (sizeof (struct pfs_dir));
   ASSERT (dir != NULL);
-  readn (rd, dir->type, 3);
-  if (memcmp (dir->type, "DIR", 3) != 0) {
-    free (dir);
-    return NULL;
-  }
   readn (rd, dir->id, PFS_ID_LEN);
   readn (rd, &dir->entry_cnt, sizeof (uint32_t));
   if (dir->entry_cnt > 0) {

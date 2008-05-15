@@ -113,8 +113,8 @@ void pfs_print_updt (struct pfs_updt * updt)
     printf ("DEL");
     break;
   }
-  printf (") reclaim : %d\nlast_updt : %.*s \n", updt->reclaim, PFS_ID_LEN, updt->ver->vv->last_updt);
-  for (j = 0; j < updt->ver->vv->len; j ++) {
-    printf ("  %.*s : %d\n", PFS_ID_LEN, updt->ver->vv->sd_id[j], updt->ver->vv->value[j]);
+  printf (") reclaim : %d\nlast_updt : %.*s \n", updt->reclaim, PFS_ID_LEN, updt->ver->last_updt);
+  for (j = 0; j < updt->ver->mv->len; j ++) {
+    printf ("  %.*s : %d\n", PFS_ID_LEN, updt->ver->mv->sd_id[j], (int) updt->ver->mv->value[j]);
   }
 }

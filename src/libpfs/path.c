@@ -97,11 +97,11 @@ int pfs_get_path_info (struct pfs_instance * pfs,
 	ver = NULL;
 	if (pi->is_main == 1) {
 	  ver = entry->ver[entry->main_idx];
-	  strncpy (pi->last_updt, ver->vv->last_updt, PFS_ID_LEN);
+	  strncpy (pi->last_updt, ver->last_updt, PFS_ID_LEN);
 	}
 	else {
 	  for (i = 0; i < entry->ver_cnt; i ++) {
-	    if (memcmp (pi->last_updt, entry->ver[i]->vv->last_updt, PFS_ID_LEN) == 0)
+	    if (memcmp (pi->last_updt, entry->ver[i]->last_updt, PFS_ID_LEN) == 0)
 	      ver = entry->ver[i];
 	  }
 	}

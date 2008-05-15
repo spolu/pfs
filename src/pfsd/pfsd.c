@@ -47,7 +47,7 @@ start_write_back (void * tid)
 {
   while (1) {
     sleep (30);
-    pfs_sync_cache (pfs);
+    pfs_sync (pfs);
   }
 }
 
