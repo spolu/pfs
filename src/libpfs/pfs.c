@@ -1833,6 +1833,8 @@ pfs_group_create (struct pfs_instance * pfs,
   if (pfs_create_dir (pfs, grp_id) != 0)
     return -1;
 
+  printf ("added dir %s for grp_name %s\n", grp_id, grp_name);
+
   pfs_group_add (pfs, grp_name, grp_id);
   return 0;
 }

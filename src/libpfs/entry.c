@@ -783,7 +783,7 @@ pfs_read_vv (int rd)
   vv->value = (uint64_t *) malloc (vv->len * sizeof (uint64_t));
   ASSERT (vv->sd_id != NULL && vv->value != NULL);
   for (i = 0; i < vv->len; i ++) {
-    vv->sd_id[i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
+    vv->sd_id[i] = (char *) malloc (PFS_ID_LEN);
     ASSERT (vv->sd_id[i] != NULL);
     readn (rd, vv->sd_id[i], PFS_ID_LEN);
     readn (rd, &vv->value[i], sizeof (uint64_t));    

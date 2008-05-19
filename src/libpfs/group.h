@@ -30,6 +30,7 @@ struct pfs_sd
   char sd_id [PFS_ID_LEN];
   char sd_owner [PFS_NAME_LEN];
   char sd_name [PFS_NAME_LEN];
+
   struct pfs_vv * sd_sv;
 
   struct pfs_sd * next;
