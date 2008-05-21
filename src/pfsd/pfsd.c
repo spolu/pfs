@@ -55,6 +55,6 @@ int
 updt_cb (struct pfs_instance * pfs,
 	 struct pfs_updt * updt)
 {
-  //pfs_print_updt (updt);
+  pfs_print_updt (updt);
   return 0;
 }

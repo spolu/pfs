@@ -1598,7 +1598,7 @@ int pfs_link (struct pfs_instance * pfs,
       
       ver->st_mode = pi_to.st_mode;
       
-      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
+      if (pfs_set_entry (pfs, pi.grp_id, pi.dst_id,
 			 file_name, 1, ver) != 0) {
 	retval = -EIO;
 	goto error;

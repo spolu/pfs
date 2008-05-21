@@ -98,7 +98,7 @@ void pfs_print_updt (struct pfs_updt * updt)
 {
   int j;
 
-  printf ("SET_ENTRY\n%.*s\n%.*s\n%s (", PFS_ID_LEN, updt->grp_id, PFS_ID_LEN, updt->dir_id, updt->name);
+  printf ("*---*\nSET_ENTRY\n%.*s\n%.*s\n%.*s\n%s (", PFS_ID_LEN, updt->grp_id, PFS_ID_LEN, updt->dir_id, PFS_ID_LEN, updt->ver->dst_id, updt->name);
   switch (updt->ver->type) {
   case PFS_DIR:
     printf ("DIR");
@@ -113,8 +113,13 @@ void pfs_print_updt (struct pfs_updt * updt)
     printf ("DEL");
     break;
   }
-  printf (") reclaim : %d\nlast_updt : %.*s \n", updt->reclaim, PFS_ID_LEN, updt->ver->last_updt);
+  printf (") reclaim : %d\n LU : %.2s \n", updt->reclaim, updt->ver->last_updt);
+  printf ("MV : < ");
   for (j = 0; j < updt->ver->mv->len; j ++) {
-    printf ("  %.*s : %d\n", PFS_ID_LEN, updt->ver->mv->sd_id[j], (int) updt->ver->mv->value[j]);
+    printf ("%.2s:%d", updt->ver->mv->sd_id[j], (int) updt->ver->mv->value[j]);
+    if (j < updt->ver->mv->len - 1)
+      printf (", ");
   }
+  printf (">\n");
+  printf ("CS : %.2s:%d\n", updt->ver->sd_orig, (int) updt->ver->cs);
 }
