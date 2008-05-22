@@ -179,7 +179,7 @@ int pfs_write_back_info (struct pfs_instance * pfs)
   pfs->info_dirty = 0;
   pfs_mutex_unlock (&pfs->info_lock);
 
-  printf ("*---*");
+  printf ("*---*\n");
   printf ("wrote info : %d %d\n", (int) pfs->uid_cnt, (int) pfs->updt_cnt);
 
   close (fd);

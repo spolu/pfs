@@ -46,19 +46,6 @@ struct pfsd_state * pfsd;
  * GLOBAL STATE used for propagation knwoledge
  */
 
-/* sd knowledge: known updt cnts. */
-struct sd_k
-{
-  char sd_id [PFS_ID_LEN];
-
-  uint32_t cur_cnt;
-  uint8_t conn;
-  uint8_t dirty;
-
-  struct sd_k * next;
-};
-
-
 /* sd_sate. */
 struct pfsd_sd
 {
@@ -66,7 +53,6 @@ struct pfsd_sd
 
   uint8_t conn;
   uint8_t dirty;
-  struct sd_k * K;
 
   struct pfsd_sd * next;
 };
