@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -std=gnu99 -DPFS_PTHREAD_LOCK -D_FILE_OFFSET_BITS=64
 
 LIB = lib
-LIB_SRC = lib/io.c lib/debug.c lib/hashtable.c lib/lock.c
+LIB_SRC = lib/io.c lib/debug.c lib/hashtable.c lib/lock.c lib/sha1.c
 PFS_SRC = entry.c instance.c file.c pfs.c updt.c dir_cache.c path.c group.c
 
 pfs_obj = $(PFS_SRC:.c=.o)

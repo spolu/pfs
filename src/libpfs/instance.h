@@ -38,12 +38,14 @@ struct pfs_instance
   uint64_t uid_cnt;
   uint64_t updt_cnt;
   int (*updt_cb)(struct pfs_instance *, struct pfs_updt *);
+  uint8_t info_dirty;
 
   struct pfs_mutex open_lock;
   struct pfs_open_file * open_file;
 
   struct pfs_mutex group_lock;
   uint32_t grp_cnt;
+  uint8_t grp_dirty;
   struct pfs_group * group;
 };
 
@@ -76,6 +78,8 @@ int pfs_destroy_instance (struct pfs_instance * pfs);
 int pfs_write_back_info (struct pfs_instance * pfs);
 
 int pfs_mk_id (struct pfs_instance * pfs, char * id);
+int pfs_incr_updt_cnt (struct pfs_instance * pfs);
+
 char * pfs_mk_file_path (struct pfs_instance * pfs, const char * id);
 char * pfs_mk_dir_path (struct pfs_instance * pfs, const char * id);
 

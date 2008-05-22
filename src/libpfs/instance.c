@@ -12,12 +12,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <openssl/md5.h>
 #include <sys/file.h>
 
 #include "instance.h"
 #include "entry.h"
 #include "group.h"
+#include "lib/sha1.h"
 
 static void mk_hash (char * from, size_t len, char * to);
 
@@ -77,6 +77,8 @@ pfs_init_instance (const char * root_path)
   buf = readline (fd);
   pfs->updt_cnt = atoi (buf);
   free (buf);
+
+  pfs->info_dirty = 0;
 
   close (fd);
 
@@ -149,6 +151,13 @@ int pfs_write_back_info (struct pfs_instance * pfs)
   char buf[64];
   int fd;
 
+  pfs_mutex_lock (&pfs->info_lock);
+  if (pfs->info_dirty == 0) {
+    pfs_mutex_unlock (&pfs->info_lock);
+    return 0;
+  }
+  pfs_mutex_unlock (&pfs->info_lock);
+
   info_path = (char *) malloc (strlen (pfs->root_path) + 
 			       strlen (PFS_INFO_PATH) + 1);
   sprintf (info_path, "%s%s", pfs->root_path, PFS_INFO_PATH);
@@ -167,7 +176,11 @@ int pfs_write_back_info (struct pfs_instance * pfs)
   writeline (fd, buf, strlen (buf));
   sprintf (buf, "%d", (int) pfs->updt_cnt);
   writeline (fd, buf, strlen (buf));
+  pfs->info_dirty = 0;
   pfs_mutex_unlock (&pfs->info_lock);
+
+  printf ("*---*");
+  printf ("wrote info : %d %d\n", (int) pfs->uid_cnt, (int) pfs->updt_cnt);
 
   close (fd);
 
@@ -189,6 +202,7 @@ int pfs_mk_id (struct pfs_instance * pfs,
 
   pfs_mutex_lock (&pfs->info_lock);
   pfs->uid_cnt++;
+  pfs->info_dirty = 1;
   memcpy (data, pfs->sd_id, PFS_ID_LEN);
   sprintf (data + PFS_ID_LEN, "%d", (int) pfs->uid_cnt);
   pfs_mutex_unlock (&pfs->info_lock);
@@ -196,6 +210,26 @@ int pfs_mk_id (struct pfs_instance * pfs,
   return 0;
 }
 
+
+/*---------------------------------------------------------------------
+ * Method: pfs_incr_updt_cnt
+ * Scope:  Global
+ *
+ * Increase and returns updt_cnt
+ *
+ *---------------------------------------------------------------------*/
+
+int
+pfs_incr_updt_cnt (struct pfs_instance * pfs)
+{
+  int retval;
+  pfs_mutex_lock (&pfs->info_lock);
+  pfs->updt_cnt ++;
+  pfs->info_dirty = 1;
+  retval = pfs->updt_cnt;
+  pfs_mutex_unlock (&pfs->info_lock);
+  return retval;
+}
 
 
 /*---------------------------------------------------------------------
@@ -288,7 +322,8 @@ int pfs_bootstrap_inst (const char * root_path,
   pfs->updt_cnt = 0;
   snprintf (data, 2 * PFS_NAME_LEN + 2, "%s%s%d", 
 	    pfs->sd_owner, pfs->sd_name, (int) pfs->uid_cnt);
-  mk_hash (data, strlen (data), pfs->sd_id);  
+  mk_hash (data, strlen (data), pfs->sd_id); 
+  pfs->info_dirty = 1;
 
   ASSERT ((fd = open (info_path, O_WRONLY|O_TRUNC|O_APPEND|O_CREAT)) >= 0);
   fchmod (fd, S_IRUSR | S_IWUSR);
@@ -333,6 +368,7 @@ int pfs_bootstrap_inst (const char * root_path,
   /* Setting up group info. */
   pfs->grp_cnt = 0;
   pfs->group = NULL;
+  pfs->grp_dirty = 1;
   
   /* Writing back info. */
   pfs_write_back_info (pfs);
@@ -362,25 +398,22 @@ int pfs_bootstrap_inst (const char * root_path,
  *
  *---------------------------------------------------------------------*/
 
-void
+static void
 mk_hash (char * from, size_t len, char * to)
 {
-  MD5_CTX c;
-  MD5_Init(&c);  
-  MD5_Update(&c,from,len);
-  unsigned char ph[MD5_DIGEST_LENGTH];
-  MD5_Final(ph,&c);
-  
-  char buf[3];
-  for(int i=0; i<MD5_DIGEST_LENGTH; i++) {
-    sprintf(buf,"%x",ph[i]);
-    if(buf[1]=='\0') {
-      to[2*i]='0';
-      to[2*i+1]=buf[0];
-    }
-    else {
-      to[2*i]=buf[0];
-      to[2*i+1]=buf[1];
-    }
+  int i;
+  unsigned char ht [20];
+  unsigned int val;
+  static char hex[] = "0123456789abcdef";
+  SHA_CTX c;
+
+  SHA1_Init (&c);
+  SHA1_Update (&c, from, len);
+  SHA1_Final (ht, &c);
+
+  for (i = 0; i < 20; i ++) {
+    val = ht[i];
+    *to++ = hex[val >> 4];
+    *to++ = hex[val & 0xf];
   }
 }

@@ -122,53 +122,6 @@ int pfs_open (struct pfs_instance * pfs,
       prt_path = NULL;
     }
   
-  else if (pi.type == PFS_DEL && !(flags & O_CREAT))
-    {
-      retval = -ENOENT;
-      goto error;
-    }
-
-  else if (pi.type == PFS_DEL && (flags & O_CREAT) && pi.is_main == 0)
-    {
-      retval = -EACCES;
-      goto error;
-    }
-
-  /* If O_CREAT and pi.is_main, we have to create the
-     file if it is a DEL entry. */
-  else if (pi.type == PFS_DEL && (flags & O_CREAT) && pi.is_main == 1)
-    {
-      if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
-	retval = -ENOENT;
-	goto error;
-      }
-      open_file->ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
-      pfs_free_entry (entry);
-      entry = NULL;
-
-      open_file->ver->type = PFS_FIL;
-      if ((open_file->fd = pfs_file_create (pfs, open_file->ver->dst_id, flags)) <= 0 ||
-	  pfs_vv_incr (pfs, open_file->ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-      
-      open_file->ver->st_mode = mode | S_IFREG;
-
-      strncpy (open_file->id, open_file->ver->dst_id, PFS_ID_LEN);
-      strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
-      strncpy (open_file->dir_id, pi.dir_id, PFS_ID_LEN);
-      strncpy (open_file->file_name, pi.name, PFS_NAME_LEN);
-      open_file->dirty = 2;
-
-      /* We call pfs_set_entry here to make the newly created file visible. */
-      if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id,
-			 open_file->file_name, 1, open_file->ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-    }
-
   else if ((flags & O_CREAT) && (flags & O_EXCL)) {
     retval = -EEXIST;
     goto error;
@@ -498,11 +451,6 @@ int pfs_stat (struct pfs_instance * pfs,
       return 0;
     }
 
-  if (pi.type == PFS_DEL) {
-    retval = -ENOENT;
-    goto error;
-  }
-
   if (pi.type == PFS_FIL || pi.type == PFS_SML)
     file_path = pfs_mk_file_path (pfs, pi.dst_id);
   if (pi.type == PFS_DIR)
@@ -726,8 +674,7 @@ char ** pfs_readdir (struct pfs_instance * pfs,
   entry_cnt = 0;
   for (i = 0; i < dir->entry_cnt; i ++) {
     for (j = 0; j < dir->entry[i]->ver_cnt; j ++) {
-      if (dir->entry[i]->ver[j]->type != PFS_DEL)
-	entry_cnt ++;
+      entry_cnt ++;
     }
   }
   
@@ -743,31 +690,29 @@ char ** pfs_readdir (struct pfs_instance * pfs,
   k = 2;
   for (i = 0; i < dir->entry_cnt; i ++) {
     for (j = 0; j < dir->entry[i]->ver_cnt; j ++) {
-      if (dir->entry[i]->ver[j]->type != PFS_DEL) {
-	if (pfs_get_sd_info (pfs, pi.grp_id, 
-			     dir->entry[i]->ver[j]->last_updt,
-			     sd_owner, sd_name) != 0)
-	  goto error;       
-	if (j != dir->entry[i]->main_idx) {
-	  entry_list[k] = (char *) malloc (sizeof (char) * 
-					   (strlen (dir->entry[i]->name) +
-					    strlen (sd_owner) +
-					    strlen (sd_name) +
-					    3));
-	  sprintf (entry_list[k], "%s.%s:%s", 
-		   sd_owner, sd_name, dir->entry[i]->name);
-	}	
-	else {
-	  entry_list[k] = (char *) malloc (sizeof (char) * 
-					   (strlen (dir->entry[i]->name) + 1));
-	  strncpy (entry_list[k], dir->entry[i]->name, 
-		   strlen (dir->entry[i]->name) + 1);
-	}
-	k ++;
+      if (pfs_get_sd_info (pfs, pi.grp_id, 
+			   dir->entry[i]->ver[j]->last_updt,
+			   sd_owner, sd_name) != 0)
+	goto error;       
+      if (j != dir->entry[i]->main_idx) {
+	entry_list[k] = (char *) malloc (sizeof (char) * 
+					 (strlen (dir->entry[i]->name) +
+					  strlen (sd_owner) +
+					  strlen (sd_name) +
+					  3));
+	sprintf (entry_list[k], "%s.%s:%s", 
+		 sd_owner, sd_name, dir->entry[i]->name);
+      }	
+      else {
+	entry_list[k] = (char *) malloc (sizeof (char) * 
+					 (strlen (dir->entry[i]->name) + 1));
+	strncpy (entry_list[k], dir->entry[i]->name, 
+		 strlen (dir->entry[i]->name) + 1);
       }
+      k ++;
     }
   }
-
+  
   pfs_unlock_dir_cache (pfs, dir);
   entry_list [k] = 0;
 
@@ -822,40 +767,8 @@ int pfs_mkdir (struct pfs_instance * pfs,
   /* The entry already exists. */
   if ((retval = pfs_get_path_info (pfs, path, &pi)) == 0)
     {
-      if (pi.is_main != 1) {
-	retval = -EACCES;
-	goto error;
-      }
-
-      if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
-	retval = -EIO;
-	goto error;
-      }
-      
-      if (entry->ver[entry->main_idx]->type != PFS_DEL) {
-	retval = -EEXIST;
-	goto error;
-      }
-
-      ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
-      pfs_free_entry (entry);
-      entry = NULL;
-
-      ver->type = PFS_DIR;
-      ver->st_mode = mode | S_IFDIR;
-      pfs_vv_incr (pfs, ver);
-      
-      if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
-	  pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-			 pi.name, 1, ver) != 0) {
-	pfs_dir_rmdir (pfs, ver->dst_id);
-	retval = -EIO;
-	goto error;
-      }
-
-      pfs_free_ver (ver);
-      ver = NULL;
-      return 0; 
+      retval = -EEXIST;
+      goto error;
     }
 
   /* No entry. We have to create it. */
@@ -1140,7 +1053,7 @@ int pfs_rename (struct pfs_instance * pfs,
 
       if (pi_new.type == PFS_GRP ||
 	  pi_new.is_main != 1 ||
-	  (pi_new.type != PFS_DEL && ((pi_new.st_mode & S_IWUSR) == 0))) {
+	  ((pi_new.st_mode & S_IWUSR) == 0)) {
 	retval = -EACCES;
 	goto error;
       }
@@ -1439,55 +1352,6 @@ int pfs_symlink (struct pfs_instance * pfs,
       prt_path = NULL;
     }
   
-  /* if DEL and pi.is_main. */
-  else if (pi.type == PFS_DEL && pi.is_main == 1)
-    {
-      if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
-	retval = -ENOENT;
-	goto error;
-      }
-      ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
-      pfs_free_entry (entry);
-      entry = NULL;
-
-      ver->type = PFS_SML;
-      if ((fd = pfs_file_create (pfs, ver->dst_id, 
-				 O_CREAT | O_WRONLY | O_TRUNC)) <= 0) {
-	retval = -EIO;
-	goto error;
-      }       
-      len = strlen (to);
-      write (fd, &len, sizeof (size_t));
-      write (fd, to, len);
-      close (fd);
-
-      ver->st_mode =  
-	S_IRWXU | 
-	S_IRGRP | S_IXGRP | 
-	S_IROTH | S_IXOTH | 
-	S_IFLNK;
-
-      if (pfs_vv_incr (pfs, ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-      
-      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-			 pi.name, 1, ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-
-      pfs_free_ver (ver);
-      ver = NULL;
-    }
-
-  else if (pi.type == PFS_DEL && pi.is_main == 0)
-    {
-      retval = -EACCES;
-      goto error;
-    }
-
   else  {
     retval = -EEXIST;
     goto error;
@@ -1608,45 +1472,6 @@ int pfs_link (struct pfs_instance * pfs,
       ver = NULL;
       free (prt_path);
       prt_path = NULL;
-    }
-  
-  else if (pi.type == PFS_DEL && pi.is_main == 1)
-    {
-      if ((entry = pfs_get_entry (pfs, pi.dir_id, pi.name)) == NULL) {
-	retval = -ENOENT;
-	goto error;
-      }
-      ver = pfs_cpy_ver (entry->ver[entry->main_idx]);
-      pfs_free_entry (entry);
-      entry = NULL;
- 
-      ver->type = PFS_FIL;
-      if (pfs_file_copy_id (pfs, pi_to.dst_id, ver->dst_id) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-
-      ver->st_mode = pi_to.st_mode;
-
-      if (pfs_vv_incr (pfs, ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-      
-      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-			 pi.name, 1, ver) != 0) {
-	retval = -EIO;
-	goto error;
-      }
-
-      pfs_free_ver (ver);
-      ver = NULL;
-    }
-
-  else if (pi.type == PFS_DEL && pi.is_main == 0)
-    {
-      retval = -EACCES;
-      goto error;
     }
   
   else  {

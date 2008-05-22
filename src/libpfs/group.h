@@ -17,8 +17,6 @@ struct pfs_group
   char grp_id [PFS_ID_LEN];      
   char grp_name [PFS_NAME_LEN];  
 
-  struct pfs_vv * grp_sv;
-
   uint32_t sd_cnt;
   struct pfs_sd * sd;
   struct pfs_group * next;
@@ -54,9 +52,15 @@ int pfs_get_sd_info (struct pfs_instance * pfs,
 		     char * sd_owner,
 		     char * sd_name);
 
-int pfs_group_updt_sv (struct pfs_instance * pfs,
-		       const char * grp_id,
-		       const struct pfs_vv * mv);
+int
+pfs_group_updt_sv (struct pfs_instance * pfs,
+		   const char * grp_id,
+		   const char * sd_id,
+		   const struct pfs_vv * mv);
+struct pfs_vv *
+pfs_group_get_sv (struct pfs_instance * pfs,
+		  const char * grp_id,
+		  const char * sd_id);
 
 int pfs_group_add (struct pfs_instance * pfs,
 		   const char * grp_name,

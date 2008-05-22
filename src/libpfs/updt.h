@@ -20,12 +20,12 @@ struct pfs_updt
 };
 
 
-int pfs_push_log_entry (struct pfs_instance * pfs,
-			const char * grp_id,
-			const char * dir_id,
-			const char * name,
-			const uint8_t reclaim,
-			const struct pfs_ver * ver);
+int pfs_push_updt (struct pfs_instance * pfs,
+		   const char * grp_id,
+		   const char * dir_id,
+		   const char * name,
+		   const uint8_t reclaim,
+		   const struct pfs_ver * ver);
 
 void pfs_write_updt (int fd,
 		     const struct pfs_updt * updt);

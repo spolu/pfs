@@ -14,7 +14,7 @@
 #include <sys/statvfs.h>
 
 #define PFS_NAME_LEN 255
-#define PFS_ID_LEN 32
+#define PFS_ID_LEN 40
 
 struct pfs_instance;
 struct pfs_updt;

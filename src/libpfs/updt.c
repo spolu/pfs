@@ -28,17 +28,17 @@
  *
  *---------------------------------------------------------------------*/
 
-int pfs_push_log_entry (struct pfs_instance *pfs,
-			const char * grp_id,
-			const char * dir_id,
-			const char * name,
-			const uint8_t reclaim,
-			const struct pfs_ver * ver)
+int pfs_push_updt (struct pfs_instance *pfs,
+		   const char * grp_id,
+		   const char * dir_id,
+		   const char * name,
+		   const uint8_t reclaim,
+		   const struct pfs_ver * ver)
 {
   struct pfs_updt * updt;
-
+  
   updt = (struct pfs_updt *) malloc (sizeof (struct pfs_updt));
-
+  
   strncpy (updt->grp_id, grp_id, PFS_ID_LEN);
   strncpy (updt->dir_id, dir_id, PFS_ID_LEN);
   strncpy (updt->name, name, PFS_NAME_LEN);
@@ -96,8 +96,6 @@ struct pfs_updt * pfs_cpy_updt (const struct pfs_updt * updt)
 
 void pfs_print_updt (struct pfs_updt * updt)
 {
-  int j;
-
   printf ("*---*\nSET_ENTRY\n%.*s\n%.*s\n%.*s\n%s (", PFS_ID_LEN, updt->grp_id, PFS_ID_LEN, updt->dir_id, PFS_ID_LEN, updt->ver->dst_id, updt->name);
   switch (updt->ver->type) {
   case PFS_DIR:
@@ -114,12 +112,7 @@ void pfs_print_updt (struct pfs_updt * updt)
     break;
   }
   printf (") reclaim : %d\n LU : %.2s \n", updt->reclaim, updt->ver->last_updt);
-  printf ("MV : < ");
-  for (j = 0; j < updt->ver->mv->len; j ++) {
-    printf ("%.2s:%d", updt->ver->mv->sd_id[j], (int) updt->ver->mv->value[j]);
-    if (j < updt->ver->mv->len - 1)
-      printf (", ");
-  }
-  printf (">\n");
+  printf ("NV : ");
+  pfs_print_vv (updt->ver->mv);
   printf ("CS : %.2s:%d\n", updt->ver->sd_orig, (int) updt->ver->cs);
 }

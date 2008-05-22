@@ -114,6 +114,7 @@ pfs_dir_empty (struct pfs_instance *pfs,
  * errval : -1 dir_id does not exist or is a file
  * errval : -2 ver dominated
  * errval : -3 ver dominate non empty dir
+ * errval : -4 other error
  *
  * EVERYTHING HAPPENS HERE
  *
@@ -137,7 +138,8 @@ pfs_set_entry (struct pfs_instance * pfs,
   struct pfs_entry * new_entry = NULL;
   struct pfs_entry * entry = NULL;
   struct pfs_dir * dir;
-  int retval = 0;
+  int retval = -4;
+  struct pfs_vv * sv;
 
   /* get struct pfs_dir. */
   dir = pfs_get_dir_cache (pfs, dir_id);
@@ -154,8 +156,32 @@ pfs_set_entry (struct pfs_instance * pfs,
     }
   }
 
+  /* We check if it is actually a new version. */
+  if (entry == NULL)
+    {
+      sv = pfs_group_get_sv (pfs, grp_id, pfs->sd_id);
+      if (sv == NULL)
+	goto error;
+      cmp_val = pfs_vv_cmp (ver->mv, sv);
+      if (cmp_val <= 0) {
+	for (i = 0; i < sv->len; i ++) {
+	  if (strncmp (sv->sd_id[i], ver->sd_orig, PFS_ID_LEN) == 0) {
+	    if (ver->cs <= sv->value[i]) {
+	      printf ("PFS_SET_ENTRY : IGNORING ENTRY\n");
+	      pfs_free_vv (sv);
+	      goto done_no_updt;
+	    }
+	  }
+	}
+      }
+      pfs_free_vv (sv);
+    }
+
   /* Count new ver_cnt. */
-  ver_cnt = 1;
+  if (ver->type == PFS_DEL)
+    ver_cnt = 0;
+  else
+    ver_cnt = 1;
   if (entry != NULL) {
     for (i = 0; i < entry->ver_cnt; i ++) {
       cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
@@ -173,19 +199,75 @@ pfs_set_entry (struct pfs_instance * pfs,
 	}
       }
       if (cmp_val == 2) {
-	pfs_unlock_dir_cache (pfs, dir);
-	return 0;
+	goto done_no_updt;
       }
     }
   }
 
-  /* Update sync vector. */
-  if (pfs_group_updt_sv (pfs, grp_id, ver->mv) != 0)
-    goto error;
+  /* 
+   * OKAY ! we commit the new entry. 
+   * From now on it's goto done if we're done. 
+   */
 
-  /* log the set_entry. */
-  if (pfs_push_log_entry (pfs, grp_id, dir_id, name, reclaim, ver) != 0)
-    goto error;
+  /* We cleanup back storage data */
+  j = 0;
+  for (i = 0; entry != NULL && i < entry->ver_cnt; i ++) {
+    cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
+    if (cmp_val == 1 && reclaim) {
+      switch (entry->ver[i]->type)
+	{
+	case PFS_DIR:
+	  {
+	    retval = pfs_dir_rmdir (pfs, entry->ver[i]->dst_id);
+	    /*
+	     * Failed Reclamation will only happen in the case of network
+	     * updates. We increase our DIR and retart the two set_entry.
+	     */
+	    if (retval == -ENOTEMPTY) {
+	      replay_ver = pfs_cpy_ver (entry->ver[i]);
+	      pfs_unlock_dir_cache (pfs, dir);
+	      /* restart */
+	      pfs_vv_incr (pfs, replay_ver);
+	      if ((i = pfs_set_entry (pfs, grp_id, 
+				      dir_id, name, 
+				      0, replay_ver)) < 0) {
+		pfs_free_ver (replay_ver);
+		return i;
+	      }
+	      pfs_free_ver (replay_ver);
+	      if ((i = pfs_set_entry (pfs, grp_id, 
+				      dir_id, name, 
+				      reclaim, ver)) < 0)
+		return i;
+	      return 0;
+	    }
+	  }
+	  break;	  
+	case PFS_FIL:
+	  pfs_file_unlink (pfs, entry->ver[i]->dst_id);
+	  break;
+	case PFS_SML:
+	  pfs_file_unlink (pfs, entry->ver[i]->dst_id);
+	  break;
+	}
+    }
+  }
+
+
+  /* The file is to be deleted. */
+  if (ver_cnt == 0) {
+    if (entry == NULL) {
+      goto done;
+    }    
+    dir->entry_cnt --;
+    for (i = entry_idx; i < dir->entry_cnt; i ++) {
+      dir->entry[i] = dir->entry[i+1];
+    }
+    pfs_free_entry (entry);
+    dir->entry = (struct pfs_entry **) realloc (dir->entry, (dir->entry_cnt) * sizeof (void *));
+    goto done;
+  }
+
 
   /* Create new_entry. */
   new_entry = (struct pfs_entry *) malloc (sizeof (struct pfs_entry));
@@ -194,6 +276,7 @@ pfs_set_entry (struct pfs_instance * pfs,
   new_entry->ver = (struct pfs_ver **) malloc (ver_cnt * sizeof (void *));
   for (i = 0; i < new_entry->ver_cnt; i ++)
     new_entry->ver[i] = NULL;
+
   
   /* Populate new_entry with copy vers. */
   j = 0;
@@ -206,55 +289,6 @@ pfs_set_entry (struct pfs_instance * pfs,
 	trans_main_idx = j;
       new_entry->ver[j] = pfs_cpy_ver (entry->ver[i]);
       j ++;
-    }
-    if (cmp_val == 1 && reclaim) {
-      switch (entry->ver[i]->type) {
-
-      case PFS_DIR:
-	{
-	  retval = pfs_dir_rmdir (pfs, entry->ver[i]->dst_id);
-	  /*
-	   * Failed Reclamation will only happen in the case of network
-	   * updates. We increase our DIR and retart the two set_entry.
-	   */
-	  if (retval == -ENOTEMPTY) {
-	    
-	    replay_ver = pfs_cpy_ver (entry->ver[i]);
-
-	    /* cleanup */
-	    for (i = 0; i < new_entry->ver_cnt; i ++) {
-	      if (new_entry->ver[i] != NULL) {
-		free (new_entry->ver[i]);
-	      }
-	      free (new_entry);
-	    }
-	    pfs_unlock_dir_cache (pfs, dir);
-
-	    /* restart */
-	    pfs_vv_incr (pfs, replay_ver);
-	    if ((i = pfs_set_entry (pfs, grp_id, 
-				    dir_id, name, 
-				    0, replay_ver)) < 0) {
-	      pfs_free_ver (replay_ver);
-	      return i;
-	    }
-	    pfs_free_ver (replay_ver);
-	    if ((i = pfs_set_entry (pfs, grp_id, 
-				    dir_id, name, 
-				    reclaim, ver)) < 0)
-	      return i;
-	    return 0;
-	  }
-	}
-	break;
-
-      case PFS_FIL:
-	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
-	break;
-      case PFS_SML:
-	pfs_file_unlink (pfs, entry->ver[i]->dst_id);
-	break;
-      }
     }
   }
   new_entry->ver[j] = pfs_cpy_ver (ver); 
@@ -308,9 +342,22 @@ pfs_set_entry (struct pfs_instance * pfs,
     dir->entry_cnt ++;     
   }
  
+ done:
+  /* log the set_entry. */
+  if (pfs_push_updt (pfs, grp_id, dir_id, name, reclaim, ver) != 0)
+    goto error;
+  /* Update sync vector. */
+  if (pfs_group_updt_sv (pfs, grp_id, pfs->sd_id, ver->mv) != 0)
+    goto error;
   pfs_unlock_dir_cache (pfs, dir);
   pfs_dirty_dir_cache (pfs, dir_id);
-
+  return 0;
+  
+ done_no_updt:
+  /* Update sync vector. */
+  if (pfs_group_updt_sv (pfs, grp_id, pfs->sd_id, ver->mv) != 0)
+    goto error;
+  pfs_unlock_dir_cache (pfs, dir);
   return 0;
 
  error:
@@ -593,10 +640,7 @@ int pfs_vv_incr (struct pfs_instance * pfs,
   for (i = 0; i < ver->mv->len; i ++) {
     cmp_val = strncmp (ver->mv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
     if (cmp_val == 0) {
-      pfs_mutex_lock (&pfs->info_lock);
-      pfs->updt_cnt ++;
-      ver->mv->value[i] = pfs->updt_cnt;
-      pfs_mutex_unlock (&pfs->info_lock);
+      ver->mv->value[i] = pfs_incr_updt_cnt (pfs);
       strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
       return 0;
     }
@@ -622,10 +666,7 @@ int pfs_vv_incr (struct pfs_instance * pfs,
   ver->mv->sd_id [i] = (char *) malloc (PFS_ID_LEN * sizeof (char));
   ASSERT (ver->mv->sd_id[i] != NULL);
   memcpy (ver->mv->sd_id[i], pfs->sd_id, PFS_ID_LEN);
-  pfs_mutex_lock (&pfs->info_lock);
-  pfs->updt_cnt ++;
-  ver->mv->value[i] = pfs->updt_cnt;
-  pfs_mutex_unlock (&pfs->info_lock);
+  ver->mv->value[i] = pfs_incr_updt_cnt (pfs);
   strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
   
   return 0;
@@ -643,10 +684,7 @@ pfs_gen_vv (struct pfs_instance * pfs,
   ver->mv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
   strncpy (ver->mv->sd_id[0], pfs->sd_id, PFS_ID_LEN);
   ver->mv->value = (uint64_t *) malloc (sizeof (uint64_t));
-  pfs_mutex_lock (&pfs->info_lock);
-  pfs->updt_cnt ++;
-  ver->mv->value[0] = pfs->updt_cnt;
-  pfs_mutex_unlock (&pfs->info_lock);
+  ver->mv->value[0] = pfs_incr_updt_cnt (pfs);
   strncpy (ver->sd_orig, pfs->sd_id, PFS_ID_LEN);
   ver->cs = ver->mv->value[0];
   
@@ -789,4 +827,19 @@ pfs_read_vv (int rd)
     readn (rd, &vv->value[i], sizeof (uint64_t));    
   }
   return vv;
+}
+
+
+int
+pfs_print_vv (struct pfs_vv * vv)
+{
+  int j;
+  printf ("< ");
+  for (j = 0; j < vv->len; j ++) {
+    printf ("%.2s:%d", vv->sd_id[j], (int) vv->value[j]);
+    if (j < vv->len - 1)
+      printf (", ");
+  }
+  printf (">\n");
+  return 0;
 }
