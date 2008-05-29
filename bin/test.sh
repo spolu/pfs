@@ -1,5 +1,5 @@
 #!/bin/sh
 
-fusermount -u pfs
+mount -u pfs
 ./pfsd back/ pfs -f
 

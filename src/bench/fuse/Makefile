@@ -8,7 +8,7 @@ TARGET_NOPFS_FUSE = nopfs_fuse
 nopfs_fuse_obj = $(NOPFS_FUSE_SRC:.c=.o)
 
 nopfs_fuse: $(nopfs_fuse_obj)
-	$(CC) $(CFLAGS) -o ../../../bin/bench/fuse/$(TARGET_NOPFS_FUSE) -lfuse -lcrypto -lrt -ldl $(nopfs_fuse_obj)
+	$(CC) $(CFLAGS) -o ../../../bin/bench/fuse/$(TARGET_NOPFS_FUSE) -lfuse -lcrypto -ldl $(nopfs_fuse_obj)
 
 clean: 
 	@rm -f ../../../bin/bench/fuse/$(TARGET_NOPFS_FUSE) *.o *~

@@ -425,7 +425,7 @@ int pfs_stat (struct pfs_instance * pfs,
 
   memset (stbuf, 0, sizeof (struct stat));
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0) {
-    stbuf->st_mode = S_IFDIR | 0555;
+    stbuf->st_mode = S_IFDIR | 0777;
     stbuf->st_nlink = 2;
     return 0;
   }

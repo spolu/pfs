@@ -184,6 +184,8 @@ handle_status (int cli_sd)
 
   int i;
 
+  writeline (cli_sd, OK, strlen (OK));
+
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (grp_id, in_buf, PFS_ID_LEN);
@@ -219,7 +221,7 @@ handle_status (int cli_sd)
       for (i = 0; i < sd->sd_sv->len; i ++)
 	{
 	  writeline (cli_sd, sd->sd_sv->sd_id[i], PFS_ID_LEN);
-	  sprintf (out_buf, "%ld", sd->sd_sv->value[i]);
+	  sprintf (out_buf, "%llud", sd->sd_sv->value[i]);
 	  writeline (cli_sd, out_buf, strlen (out_buf));	  
 	}
       sd = sd->next;
@@ -269,8 +271,6 @@ handle_online (int cli_sd)
   strncpy (new_sd->sd_name, in_buf, PFS_NAME_LEN);
   free (in_buf);
   
-  writeline (cli_sd, OK, strlen (OK));
-
   /* Received an sd connection, we add it to pfsd->sd */
 
   pfs_mutex_lock (&pfsd->sd_lock);
@@ -295,6 +295,22 @@ handle_online (int cli_sd)
 
  done:
   pfs_mutex_unlock (&pfsd->sd_lock);
+
+  printf ("\nNEW CLIENT : %s:%s : %.*s ",
+	  new_sd->sd_owner,
+	  new_sd->sd_name,
+	  PFS_ID_LEN,
+	  new_sd->sd_id);
+
+  if (new_sd->tun_conn == LAN_CONN)
+    printf ("(LAN:");
+
+  if (new_sd->tun_conn == BTH_CONN)
+    printf ("(BTH:");
+
+  printf ("%d)\n", new_sd->tun_port);
+
+  writeline (cli_sd, OK, strlen (OK));
   return 0;
  error:
   return -1;
@@ -321,8 +337,6 @@ handle_offline (int cli_sd)
   sprintf (sd_id, in_buf, PFS_ID_LEN);
   free (in_buf);
   
-  writeline (cli_sd, OK, strlen (OK));
-
   /* Received an sd disconnection, we remove it */
   
   pfs_mutex_lock (&pfsd->sd_lock);
@@ -333,6 +347,20 @@ handle_offline (int cli_sd)
     {
       if (strncmp (sd_id, next->sd_id, PFS_ID_LEN) == 0 &&
 	  tun_conn == next->tun_conn) {
+	printf ("\nCLIENT OFFLINE : %s:%s : %.*s ",
+		next->sd_owner,
+		next->sd_name,
+		PFS_ID_LEN,
+		next->sd_id);
+	
+	if (next->tun_conn == LAN_CONN)
+	  printf ("(LAN:");
+	
+	if (next->tun_conn == BTH_CONN)
+	  printf ("(BTH:");
+	
+	printf ("%d)\n", next->tun_port);
+	
 	if (prev == NULL) {
 	  pfsd->sd = next->next;
 	  free (next);
@@ -351,6 +379,8 @@ handle_offline (int cli_sd)
     }
   
   pfs_mutex_unlock (&pfsd->sd_lock);
+
+  writeline (cli_sd, OK, strlen (OK));
   return 0;
  error:
   return -1;
@@ -445,12 +475,101 @@ handle_updt (int cli_sd)
 
 
 
+/*
+ * NOTE : For now we do not revoke log entries
+ * when propagated so adding an sd is really
+ * easy : we just have to create the group.
+ */
+
 int
 handle_add_sd (int cli_sd)
 {
-  /*
-   * TODO : sd addition todo in blocking fashion here.
-   */
+  char * in_buf;
+  char sd_owner[PFS_NAME_LEN];
+  char sd_name[PFS_NAME_LEN];
+  char grp_id [PFS_ID_LEN];
+  char grp_name [PFS_NAME_LEN];
+
+  int tun_port = -1;
+  uint8_t tun_conn = 0x09;
+  struct pfsd_sd * sd;
+
+  int tun_sd = -1;
+  struct hostent *he;
+  struct sockaddr_in tun_addr;
+
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (grp_name, in_buf, PFS_NAME_LEN);
+  free (in_buf);
+
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (sd_owner, in_buf, PFS_NAME_LEN);
+  free (in_buf);
+
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (sd_name, in_buf, PFS_NAME_LEN);
+  free (in_buf);
+  
+
+  /* Go fetch the grp_id. */
+
+  
+
+  /* Go fetch the id. */
+
+  pfs_mutex_lock (&pfsd->sd_lock);
+  sd = pfsd->sd;
+  while (sd != NULL)
+    {
+      if (strncmp (sd_owner, sd->sd_owner, PFS_NAME_LEN) == 0 &&
+	  strncmp (sd_name, sd->sd_name, PFS_NAME_LEN) == 0 &&
+	  sd->tun_conn < tun_conn) {
+	tun_port = sd->tun_port;
+	tun_conn = sd->tun_conn;
+      }
+      sd = sd->next;
+    }
+  
+  if (tun_port == -1)
+    goto error;
+  pfs_mutex_unlock (&pfsd->sd_lock);
+  
+  
+  
+  /* We try to connect to the sd. */
+  
+  if ((tun_sd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+    goto error;
+  if ((he = gethostbyname ("localhost")) == NULL)
+    goto error;
+  
+  bzero (&tun_addr, sizeof (tun_addr));
+  tun_addr.sin_family = AF_INET;
+  tun_addr.sin_port = htons (tun_port);
+  tun_addr.sin_addr = *((struct in_addr *) he->h_addr);
+  
+  if (connect(tun_sd, (struct sockaddr *)&tun_addr,
+	      sizeof (tun_addr)) < 0)
+    goto error;
+  
+  in_buf = readline (tun_sd);
+  if (in_buf == NULL) goto error;
+  if (strcmp (in_buf, OK) != 0) goto error;
+  free (in_buf);
+  
+  writeline (tun_sd, ADD_GRP, strlen (ADD_GRP));
+  
+  
+  
+  close (tun_sd);
+  pfsd->update = 1;
+
+ error:  
+  if (tun_sd != -1)
+    close (tun_sd);
   return -1;
 }
 
@@ -474,6 +593,8 @@ handle_list_sd (int cli_sd)
 {
   char out_buf [512];
   struct pfsd_sd * sd;
+
+  writeline (cli_sd, OK, strlen (OK));
 
   pfs_mutex_lock (&pfsd->sd_lock);
   
