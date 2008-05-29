@@ -291,6 +291,8 @@ handle_online (int cli_sd)
   pfsd->sd = new_sd;
   pfsd->sd_cnt ++;
 
+  pfsd->update = 1;
+
  done:
   pfs_mutex_unlock (&pfsd->sd_lock);
   return 0;

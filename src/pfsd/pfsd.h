@@ -15,6 +15,7 @@
 
 #define PFSD_LOG_PATH "pfsd_log"
 #define WRITE_BACK_SLEEP 20
+#define COMMIT_UPDT_SLEEP 1
 
 struct pfsd_state * pfsd;
 
@@ -23,7 +24,7 @@ struct pfsd_state
   struct pfs_instance * pfs;
   
   char * log_path;
-  int adm_sock;
+  uint8_t update;
   
   struct pfsd_log * log;
   struct pfs_mutex log_lock;
@@ -52,6 +53,8 @@ struct pfsd_sd
 
 
 void * start_write_back (void * tid);
+void * commit_updt (void * tid);
+
 int updt_cb (struct pfs_instance * pfs,
 	     struct pfs_updt * updt);
 

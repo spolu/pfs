@@ -20,6 +20,7 @@ main (int argc, char ** argv)
 {
   pthread_t wb_thread;
   pthread_t srv_thread;
+  pthread_t updt_thread;
   struct pfs_instance * pfs;
   char root_path [PFS_NAME_LEN];  
 
@@ -42,6 +43,11 @@ main (int argc, char ** argv)
     exit (1);
   }  
 
+  if (pthread_create (&updt_thread, NULL, commit_updt, (void *)0) != 0) {
+    printf ("Could not spawn commit updt thread.\n");
+    exit (1);
+  }  
+
   if (pthread_create (&srv_thread, NULL, start_srv, (void *)0) != 0) {
     printf ("Could not spawn pfsd_srv thread.\n");
     exit (1);
@@ -59,9 +65,23 @@ start_write_back (void * tid)
   while (1) {
     sleep (WRITE_BACK_SLEEP);
     pfs_sync (pfsd->pfs);
-    pfsd_updt_log (pfsd);
-    pfsd_write_back_log (pfsd);
-    pfsd_print_log (pfsd);
+  }
+}
+
+
+void *
+commit_updt (void * tid)
+{
+  while (1) {
+    sleep (COMMIT_UPDT_SLEEP);
+    if (pfsd->update == 1)
+      pfsd->update = 2;
+    if (pfsd->update == 2) {
+      pfsd_updt_log (pfsd);
+      pfsd_write_back_log (pfsd);
+      pfsd_print_log (pfsd);
+      pfsd->update = 0;
+    }
   }
 }
 
@@ -77,6 +97,8 @@ updt_cb (struct pfs_instance * pfs,
   pfsd->updt = new_updt;  
   pfsd->updt_cnt += 1;
   pfs_mutex_unlock (&pfsd->log_lock);
+
+  pfsd->update = 1;
 
   pfs_print_updt (pfsd->updt);
 
@@ -94,6 +116,8 @@ pfsd_init (struct pfs_instance * pfs)
   pfs_mutex_init (&pfsd->sd_lock);
 
   pfsd->pfs = pfs;
+
+  pfsd->update = 0;
 
   pfsd->updt_cnt = 0;
   pfsd->updt = NULL;
