@@ -843,3 +843,34 @@ pfs_print_vv (struct pfs_vv * vv)
   printf (">\n");
   return 0;
 }
+
+
+struct pfs_ver *
+pfs_read_ver (int rd)
+{
+  struct pfs_ver * ver = NULL;
+  ver = (struct pfs_ver *) malloc (sizeof (struct pfs_ver));
+  ASSERT (ver != NULL);
+  readn (rd, &ver->type, sizeof (uint8_t));
+  readn (rd, &ver->st_mode, sizeof (mode_t));
+  readn (rd, ver->dst_id, PFS_ID_LEN);
+  readn (rd, ver->last_updt, PFS_ID_LEN);
+  readn (rd, ver->sd_orig, PFS_ID_LEN);
+  readn (rd, &ver->cs, sizeof (uint64_t));
+  ver->mv = pfs_read_vv (rd);
+  return ver;
+}
+
+void 
+pfs_write_ver (int wd, 
+	       const struct pfs_ver * ver)
+{
+  writen (wd, &ver->type, sizeof (uint8_t));
+  writen (wd, &ver->st_mode, sizeof (mode_t));
+  writen (wd, ver->dst_id, PFS_ID_LEN);
+  writen (wd, ver->last_updt, PFS_ID_LEN);
+  writen (wd, ver->sd_orig, PFS_ID_LEN);
+  writen (wd, &ver->cs, sizeof (uint64_t));
+  pfs_write_vv (wd, ver->mv);
+}
+

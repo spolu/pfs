@@ -44,6 +44,7 @@ int pfs_push_updt (struct pfs_instance *pfs,
   strncpy (updt->name, name, PFS_NAME_LEN);
   updt->reclaim = reclaim;
   updt->ver = pfs_cpy_ver (ver);  
+  updt->next = NULL;
 
   if (pfs->updt_cb != NULL)
     pfs->updt_cb (pfs, updt);
@@ -82,6 +83,7 @@ struct pfs_updt * pfs_cpy_updt (const struct pfs_updt * updt)
   strncpy (new_updt->name, updt->name, PFS_NAME_LEN);
   new_updt->reclaim = updt->reclaim;
   new_updt->ver = pfs_cpy_ver (updt->ver);
+  new_updt->next = updt->next;
 
   return new_updt;
 }
@@ -115,4 +117,31 @@ void pfs_print_updt (struct pfs_updt * updt)
   printf ("NV : ");
   pfs_print_vv (updt->ver->mv);
   printf ("CS : %.2s:%d\n", updt->ver->sd_orig, (int) updt->ver->cs);
+}
+
+
+struct pfs_updt *
+pfs_read_updt (int fd)
+{
+  struct pfs_updt * updt = (struct pfs_updt *) malloc (sizeof (struct pfs_updt));
+  readn (fd, updt->grp_id, PFS_ID_LEN);
+  readn (fd, updt->dir_id, PFS_ID_LEN);
+  readn (fd, updt->name, PFS_NAME_LEN);
+  readn (fd, &updt->reclaim, sizeof (uint8_t));
+  updt->ver = pfs_read_ver (fd);
+  updt->next = NULL;
+  return updt;
+}
+
+
+int
+pfs_write_updt (int fd,
+		const struct pfs_updt * updt)
+{
+  writen (fd, updt->grp_id, PFS_ID_LEN);
+  writen (fd, updt->dir_id, PFS_ID_LEN);
+  writen (fd, updt->name, PFS_NAME_LEN);
+  writen (fd, &updt->reclaim, sizeof (uint8_t));
+  pfs_write_ver (fd, updt->ver);
+  return 0;
 }

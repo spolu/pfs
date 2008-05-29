@@ -8,59 +8,34 @@
 #ifndef _PFSD_LOG_H
 #define _PFSD_LOG_H
 
+#include "../libpfs/updt.h"
+#include "pfsd.h"
 
 /*
  * LOG STRUCTURE
  */
 
-
-
-/* Log entry. */
-struct pfsd_log_entry
-{
-  char sd_orig [PFS_ID_LEN];
-  uint32_t orig_cnt;
-  struct pfs_updt * updt;
-
-  struct pfsd_log_entry * next;
-};
-
-
-
-/* Latest updt for a given sd in a given dir. */
-struct pfsd_log_sd_cnt
-{
-  uint32_t last;
-  char sd_id [PFS_ID_LEN];
-
-  struct pfsd_log_sd * next;
-};
-
-
-
-/* Updates and sd_cnt within a dir. */
-struct pfsd_log_dir
-{
-  char dir_id [PFS_ID_LEN];
-  struct pfsd_log_sd_cnt * sd_cnt;
-  struct pfsd_log_entry * log;
-
-  struct pfsd_log_dir * next;
-};
-
-
-
 /* grp log. */
-struct pfsd_log_grp
+struct pfsd_grp_log
 {
   char grp_id [PFS_ID_LEN];
-  struct pfsd_log_sd_cnt * sd_cnt;
-  struct pfsd_log_dir * dir_log;
 
-  struct pfs_mutex g_lock;
-
-  struct pfsd_log_grp * next;
+  uint32_t log_cnt;
+  struct pfs_updt * log;  
+  struct pfsd_grp_log * next;
 };
 
+
+/* log. */
+struct pfsd_log
+{
+  uint32_t grp_cnt;
+  struct pfsd_grp_log * grp_log;
+};
+
+int pfsd_print_log (struct pfsd_state * pfsd);
+int pfsd_updt_log (struct pfsd_state * pfsd);
+int pfsd_write_back_log (struct pfsd_state * pfsd);
+int pfsd_read_log (struct pfsd_state * pfsd);
 
 #endif

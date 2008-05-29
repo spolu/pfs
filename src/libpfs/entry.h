@@ -121,6 +121,9 @@ void pfs_free_entry (struct pfs_entry * entry);
 void pfs_free_dir (struct pfs_dir * dir);
 void pfs_write_vv (int wd, 
 		   struct pfs_vv * vv);
+
+void pfs_write_ver (int wd, const struct pfs_ver * ver);
+struct pfs_ver * pfs_read_ver (int rd);
 struct pfs_vv * pfs_read_vv (int rd);
 int pfs_print_vv (struct pfs_vv * vv);
 

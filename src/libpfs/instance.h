@@ -21,6 +21,7 @@
 #define PFS_INFO_PATH "info"
 
 
+struct pfsd_state;
 struct pfs_ver;
 
 struct pfs_instance

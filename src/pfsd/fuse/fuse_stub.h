@@ -8,7 +8,7 @@
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
-#include "../state.h"
+#include "../pfsd.h"
 
 int pfs_fuse_getattr (const char *path, struct stat *stbuf);
 int pfs_fuse_readdir (const char *path, void *buf, fuse_fill_dir_t filler,
