@@ -21,7 +21,7 @@ struct pfsd_grp_log
   char grp_id [PFS_ID_LEN];
 
   uint32_t log_cnt;
-  struct pfs_updt * log;  
+  struct pfs_updt * log;       /* Ordered by arrival. */
   struct pfsd_grp_log * next;
 };
 

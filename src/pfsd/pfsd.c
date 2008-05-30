@@ -90,12 +90,22 @@ updt_cb (struct pfs_instance * pfs,
 	 struct pfs_updt * updt)
 {
   struct pfs_updt * new_updt;
+  struct pfs_updt * next;
   new_updt = pfs_cpy_updt (updt);
   
   pfs_mutex_lock (&pfsd->log_lock);
-  new_updt->next = pfsd->updt;
-  pfsd->updt = new_updt;  
+  
+  new_updt->next = NULL;
+  if (pfsd->updt == NULL)
+    pfsd->updt = new_updt; 
+  else {
+    next = pfsd->updt;
+    while (next->next != NULL)
+      next = next->next;
+    next->next = new_updt;
+  }
   pfsd->updt_cnt += 1;
+
   pfs_mutex_unlock (&pfsd->log_lock);
 
   pfsd->update = 1;

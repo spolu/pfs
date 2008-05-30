@@ -86,8 +86,18 @@ pfsd_updt_log (struct pfsd_state * pfsd)
 	next = next->next;
       }
       
-      updt->next = grp_log->log;
-      grp_log->log = updt;
+      updt->next = NULL;
+      if (grp_log->log == NULL) {
+	grp_log->log = updt;
+      }
+      else {
+	next = grp_log->log;
+	while (next->next != NULL) {
+	  next = next->next;
+	}
+	next->next = updt;
+      }
+	
       grp_log->log_cnt ++;
       printf ("ADDING UPDATE : updt_cnt %d\n", grp_log->log_cnt);
       goto done;
@@ -253,6 +263,7 @@ pfsd_read_log (struct pfsd_state * pfsd)
   int i,j;
   struct pfsd_grp_log * grp_log;
   struct pfs_updt * log;
+  struct pfs_updt * next;
 
   pfs_mutex_lock (&pfsd->log_lock);
 
@@ -270,11 +281,18 @@ pfsd_read_log (struct pfsd_state * pfsd)
       grp_log->next = pfsd->log->grp_log;
       pfsd->log->grp_log = grp_log;
 
+      next = NULL;
       for (j = 0; j < grp_log->log_cnt; j ++) 
 	{
 	  log = pfs_read_updt (fd);
-	  log->next = grp_log->log;
-	  grp_log->log = log;
+
+	  /* We keep the order. */
+	  log->next = NULL;
+	  if (next == NULL)
+	    grp_log->log = log;
+	  else
+	    next->next = log;
+	  next = log;
 	}      
     }
 
