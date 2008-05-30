@@ -184,15 +184,15 @@ handle_status (int cli_sd)
 
   int i;
 
-  writeline (cli_sd, OK, strlen (OK));
-
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (grp_id, in_buf, PFS_ID_LEN);
   free (in_buf);
 
-  pfs_mutex_lock (&pfsd->pfs->group_lock);
-  
+  writeline (cli_sd, OK, strlen (OK));
+
+  pfs_mutex_lock (&pfsd->pfs->group_lock);  
+
   grp = pfsd->pfs->group;
   while (grp != NULL)
     {
@@ -221,7 +221,7 @@ handle_status (int cli_sd)
       for (i = 0; i < sd->sd_sv->len; i ++)
 	{
 	  writeline (cli_sd, sd->sd_sv->sd_id[i], PFS_ID_LEN);
-	  sprintf (out_buf, "%llud", sd->sd_sv->value[i]);
+	  sprintf (out_buf, "%llu", sd->sd_sv->value[i]);
 	  writeline (cli_sd, out_buf, strlen (out_buf));	  
 	}
       sd = sd->next;
@@ -452,12 +452,13 @@ handle_updt (int cli_sd)
   free (file_path);
   
  done:
-  pfs_set_entry (pfsd->pfs,
-		 updt->grp_id,
-		 updt->dir_id,
-		 updt->name,
-		 updt->reclaim,
-		 updt->ver);
+  if (pfs_set_entry (pfsd->pfs,
+		     updt->grp_id,
+		     updt->dir_id,
+		     updt->name,
+		     updt->reclaim,
+		     updt->ver) != 0)
+    goto error;
 
   pfs_free_updt (updt);
   writeline (cli_sd, OK, strlen (OK));
@@ -489,6 +490,7 @@ handle_add_sd (int cli_sd)
   char sd_name[PFS_NAME_LEN];
   char grp_id [PFS_ID_LEN];
   char grp_name [PFS_NAME_LEN];
+  char sd_id [PFS_ID_LEN];
 
   int tun_port = -1;
   uint8_t tun_conn = 0x09;
@@ -498,16 +500,19 @@ handle_add_sd (int cli_sd)
   struct hostent *he;
   struct sockaddr_in tun_addr;
 
+  memset (grp_name, 0, PFS_NAME_LEN);
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (grp_name, in_buf, PFS_NAME_LEN);
   free (in_buf);
 
+  memset (sd_owner, 0, PFS_NAME_LEN);
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (sd_owner, in_buf, PFS_NAME_LEN);
   free (in_buf);
 
+  memset (sd_name, 0, PFS_NAME_LEN);
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (sd_name, in_buf, PFS_NAME_LEN);
@@ -516,7 +521,9 @@ handle_add_sd (int cli_sd)
 
   /* Go fetch the grp_id. */
 
-  
+  if (pfs_get_grp_id (pfsd->pfs, grp_name, grp_id) != 0)
+    goto error;
+
 
   /* Go fetch the id. */
 
@@ -529,6 +536,7 @@ handle_add_sd (int cli_sd)
 	  sd->tun_conn < tun_conn) {
 	tun_port = sd->tun_port;
 	tun_conn = sd->tun_conn;
+	strncpy (sd_id, sd->sd_id, PFS_ID_LEN);
       }
       sd = sd->next;
     }
@@ -538,8 +546,9 @@ handle_add_sd (int cli_sd)
   pfs_mutex_unlock (&pfsd->sd_lock);
   
   
-  
-  /* We try to connect to the sd. */
+  /* 
+   * We try to connect to the sd. 
+   */
   
   if ((tun_sd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     goto error;
@@ -561,11 +570,33 @@ handle_add_sd (int cli_sd)
   free (in_buf);
   
   writeline (tun_sd, ADD_GRP, strlen (ADD_GRP));
+  writeline (tun_sd, grp_name, strlen (grp_name));
+  writeline (tun_sd, grp_id, PFS_ID_LEN);
   
-  
-  
+  /* 
+   * We do not propagate data here.
+   * For now we keep all log updates.
+   */
+
+  in_buf = readline (tun_sd);
+  if (in_buf == NULL) goto error;
+  if (strcmp (in_buf, OK) != 0) {
+    free (in_buf);
+    goto error;
+  }
+  free (in_buf);
+
   close (tun_sd);
+
+  /* We add the sd to our local state. */
+
+  if (pfs_group_add_sd (pfsd->pfs, grp_id, sd_id,
+			sd_owner, sd_name) != 0)
+    goto error;
   pfsd->update = 1;
+
+  writeline (cli_sd, OK, strlen (OK));
+  return 0;
 
  error:  
   if (tun_sd != -1)
@@ -579,9 +610,29 @@ handle_add_sd (int cli_sd)
 int
 handle_add_grp (int cli_sd)
 {
-  /*
-   * TODO : other side of add_sd
-   */
+  char grp_name [PFS_NAME_LEN];
+  char grp_id [PFS_NAME_LEN];
+  char * in_buf;
+
+  memset (grp_name, 0, PFS_NAME_LEN);
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (grp_name, in_buf, PFS_NAME_LEN);
+  free (in_buf);
+
+  memset (grp_id, 0, PFS_ID_LEN);
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (grp_id, in_buf, PFS_ID_LEN);
+  free (in_buf);
+
+  if (pfs_group_add (pfsd->pfs, grp_name, grp_id) != 0)
+    goto error;
+  
+  writeline (cli_sd, OK, strlen (OK));
+  return 0;
+  
+ error:
   return -1;
 }
 

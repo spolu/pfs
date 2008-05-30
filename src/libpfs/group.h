@@ -53,6 +53,12 @@ int pfs_get_sd_info (struct pfs_instance * pfs,
 		     char * sd_name);
 
 int
+pfs_group_add_sd (struct pfs_instance * pfs,
+		  const char * grp_id,
+		  const char * sd_id,
+		  const char * sd_owner,
+		  const char * sd_name);
+int
 pfs_group_updt_sv (struct pfs_instance * pfs,
 		   const char * grp_id,
 		   const char * sd_id,

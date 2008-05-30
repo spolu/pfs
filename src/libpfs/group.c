@@ -236,6 +236,66 @@ pfs_group_get_sv (struct pfs_instance * pfs,
 }
 
 
+int
+pfs_group_add_sd (struct pfs_instance * pfs,
+		  const char * grp_id,
+		  const char * sd_id,
+		  const char * sd_owner,
+		  const char * sd_name)
+{
+  struct pfs_group * next_grp;
+  struct pfs_sd * new_sd;
+  struct pfs_sd * next_sd;
+
+  if (pfs->group == NULL)
+    return -1;
+  
+  pfs_mutex_lock (&pfs->group_lock);
+  next_grp = pfs->group;
+  
+  while (next_grp != NULL) {
+    if (strncmp (grp_id, next_grp->grp_id, PFS_ID_LEN) == 0) 
+      {
+	/* We check that the sd does not already exist. */
+	next_sd = next_grp->sd;
+	while (next_sd != NULL) {
+	  next_sd = next_sd->next;
+	  if (strncmp (next_sd->sd_id, sd_id, PFS_ID_LEN) == 0) {
+	    pfs_mutex_unlock (&pfs->group_lock);
+	    return 0;	    
+	  }
+	}
+
+	/* We can add it. */
+	new_sd = (struct pfs_sd *) malloc (sizeof (struct pfs_sd));
+	strncpy (new_sd->sd_id, sd_id, PFS_ID_LEN);
+	strncpy (new_sd->sd_owner, sd_owner, PFS_NAME_LEN);
+	strncpy (new_sd->sd_name, sd_name, PFS_NAME_LEN);
+	
+	new_sd->sd_sv = (struct pfs_vv *) malloc (sizeof (struct pfs_vv));
+	new_sd->sd_sv->len = 1;
+	new_sd->sd_sv->sd_id = (char **) malloc (sizeof (char *));
+	new_sd->sd_sv->sd_id[0] = (char *) malloc (PFS_ID_LEN);
+	strncpy (new_sd->sd_sv->sd_id[0], sd_id, PFS_ID_LEN);
+	new_sd->sd_sv->value = (uint64_t *) malloc (sizeof (uint64_t));
+	new_sd->sd_sv->value[0] = 0;
+	
+	new_sd->next = next_grp->sd;
+	next_grp->sd = new_sd;
+
+	pfs->grp_dirty = 1;
+	next_grp->sd_cnt ++;
+
+	pfs_mutex_unlock (&pfs->group_lock);
+	return 0;
+      }
+    next_grp = next_grp->next;
+  }
+  pfs_mutex_unlock (&pfs->group_lock);
+  return -1;
+}
+
+
 /*---------------------------------------------------------------------
  * Method: pfs_group_add
  * Scope:  Global
@@ -284,6 +344,7 @@ pfs_group_add (struct pfs_instance * pfs,
 
   return 0;
 }
+
 
 /*---------------------------------------------------------------------
  * Method: pfs_(read|free|write)_group_info

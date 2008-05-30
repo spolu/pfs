@@ -20,7 +20,7 @@
 #define GET_DATA "GET_DATA"  /* dst_id */
 #define DATA     "DATA"      /* len data */
 #define OK       "OK"        /* */
-#define ADD_SD   "ADD_SD"    /* grp_id sd_owner sd_name */
+#define ADD_SD   "ADD_SD"    /* grp_name sd_owner sd_name */
 #define CLOSE    "CLOSE"     /* */
 #define LIST_SD  "LIST_SD"   /* */
 #define ADD_GRP  "ADD_GRP"   /* grp_id ... */

@@ -14,6 +14,7 @@
 #include "fuse/pfs_fuse.h"
 #include "log.h"
 #include "srv.h"
+#include "prop.h"
 
 int
 main (int argc, char ** argv)
@@ -73,15 +74,16 @@ void *
 commit_updt (void * tid)
 {
   while (1) {
-    sleep (COMMIT_UPDT_SLEEP);
     if (pfsd->update == 1)
       pfsd->update = 2;
     if (pfsd->update == 2) {
       pfsd_updt_log (pfsd);
       pfsd_write_back_log (pfsd);
       pfsd_print_log (pfsd);
+      show_time ();
       pfsd->update = 0;
     }
+    sleep (COMMIT_UPDT_SLEEP);
   }
 }
 
@@ -93,7 +95,7 @@ updt_cb (struct pfs_instance * pfs,
   struct pfs_updt * next;
   new_updt = pfs_cpy_updt (updt);
   
-  pfs_mutex_lock (&pfsd->log_lock);
+  pfs_mutex_lock (&pfsd->updt_lock);
   
   new_updt->next = NULL;
   if (pfsd->updt == NULL)
@@ -106,7 +108,7 @@ updt_cb (struct pfs_instance * pfs,
   }
   pfsd->updt_cnt += 1;
 
-  pfs_mutex_unlock (&pfsd->log_lock);
+  pfs_mutex_unlock (&pfsd->updt_lock);
 
   pfsd->update = 1;
 
