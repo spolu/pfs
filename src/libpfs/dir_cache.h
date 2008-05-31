@@ -47,6 +47,9 @@ int pfs_dirty_dir_cache (struct pfs_instance * pfs,
 int pfs_create_dir_cache (struct pfs_instance * pfs,
 			  char * dir_id);
 
+int pfs_create_dir_cache_with_id (struct pfs_instance * pfs,
+				  const char * dir_id);
+
 int pfs_remove_dir_cache (struct pfs_instance * pfs,
 			  const char * dir_id);
 

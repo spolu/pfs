@@ -79,7 +79,7 @@ commit_updt (void * tid)
     if (pfsd->update == 2) {
       pfsd_updt_log (pfsd);
       pfsd_write_back_log (pfsd);
-      pfsd_print_log (pfsd);
+      //pfsd_print_log (pfsd);
       show_time ();
       pfsd->update = 0;
     }
@@ -107,12 +107,9 @@ updt_cb (struct pfs_instance * pfs,
     next->next = new_updt;
   }
   pfsd->updt_cnt += 1;
-
   pfs_mutex_unlock (&pfsd->updt_lock);
 
   pfsd->update = 1;
-
-  pfs_print_updt (pfsd->updt);
 
   return 0;
 }

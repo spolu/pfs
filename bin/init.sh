@@ -1,9 +1,9 @@
 #!/bin/sh
 
-fusermount -u pfs
+mount -u pfs
 rm -Rf back
 rm -Rf pfs
 mkdir back
 mkdir pfs
-./pfs_init back/ spolu bench
+./pfs_init back spolu imac
 

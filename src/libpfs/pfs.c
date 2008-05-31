@@ -425,7 +425,7 @@ int pfs_stat (struct pfs_instance * pfs,
 
   memset (stbuf, 0, sizeof (struct stat));
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0) {
-    stbuf->st_mode = S_IFDIR | 0777;
+    stbuf->st_mode = S_IFDIR | 0555;
     stbuf->st_nlink = 2;
     return 0;
   }
@@ -785,9 +785,7 @@ int pfs_mkdir (struct pfs_instance * pfs,
       name = prt_path + (i + 1);
            
       if (i == 0) {
-	retval = pfs_group_create (pfs, name);
-	free (prt_path);
-	return retval;
+	retval = -EACCES;
       }
 
       if (strstr (name, ":") != NULL) {
@@ -1126,18 +1124,18 @@ int pfs_rename (struct pfs_instance * pfs,
   ver_old->st_mode = 0;
   pfs_vv_incr (pfs, ver_old);
    
-  if (pfs_set_entry (pfs, pi_old.grp_id, pi_old.dir_id,
-		     pi_old.name, 0, ver_old) != 0) {
-    retval = -EIO;
-    goto error;
-  }
-   
   if (pfs_set_entry (pfs, pi_new.grp_id, pi_new.dir_id,
 		     pi_new.name, 1, ver_new) != 0) {
     retval = -EIO;
     goto error;
   }
-  
+
+  if (pfs_set_entry (pfs, pi_old.grp_id, pi_old.dir_id,
+		     pi_old.name, 0, ver_old) != 0) {
+    retval = -EIO;
+    goto error;
+  }
+     
   pfs_free_ver (ver_old);
   pfs_free_ver (ver_new);
   
@@ -1658,9 +1656,12 @@ pfs_group_create (struct pfs_instance * pfs,
   if (pfs_create_dir (pfs, grp_id) != 0)
     return -1;
 
-  printf ("added dir %s for grp_name %s\n", grp_id, grp_name);
-
   pfs_group_add (pfs, grp_name, grp_id);
+
+#ifdef DEBUG
+  printf ("*** PFS_GRP_CREATE %.*s : %s\n", PFS_ID_LEN, grp_id, grp_name);
+#endif
+
   return 0;
 }
 

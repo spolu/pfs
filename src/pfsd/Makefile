@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -std=gnu99 -D_FILE_OFFSET_BITS=64 -DPFS_PTHREAD_LOCK -I/usr/include/fuse
+CFLAGS = -Wall -std=gnu99 -D_FILE_OFFSET_BITS=64 -DPFS_PTHREAD_LOCK -I/usr/include/fuse -DDEBUG
 MAKE = make
 
 FUSE = fuse

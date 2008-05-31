@@ -352,6 +352,62 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
 }
 
 /*---------------------------------------------------------------------
+ * Method: pfs_create_dir_cache_with_id
+ * Scope: Global
+ *
+ * Does not acquire the lock on the newly created dir
+ *
+ *---------------------------------------------------------------------*/
+
+int pfs_create_dir_cache_with_id (struct pfs_instance * pfs,
+				  const char * dir_id)
+{
+  pdce_t * val;
+  char * dir_path;
+  int fd;
+  struct timeval tv;
+
+  val = (pdce_t *) malloc (sizeof (pdce_t));
+  val->dir = (struct pfs_dir *) malloc (sizeof (struct pfs_dir));
+  val->dirty = 0;
+
+  gettimeofday (&tv, NULL);
+  val->atime = time (NULL);
+  val->usec = tv.tv_usec;
+
+  pfs_mutex_init (&val->dir->lock);
+  
+  strncpy (val->dir->id, dir_id, PFS_ID_LEN);
+  val->dir->entry_cnt = 0;
+  val->dir->entry = NULL;
+
+  dir_path = pfs_mk_dir_path (pfs, val->dir->id);
+  if ((fd = open (dir_path, 
+		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT,
+		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+    free (dir_path);
+    pfs_free_pdce (val);
+    return -EIO;
+  }  
+  free (dir_path);
+
+  flock (fd, LOCK_EX);
+  pfs_write_dir (fd, val->dir);
+  flock (fd, LOCK_UN);
+  if (close (fd) < 0) {
+    pfs_free_pdce (val);    
+    return -errno;
+  }
+  
+  pfs_mutex_lock (&pfs->dir_cache->lock);  
+  pfs_dir_cache_evict (pfs);
+  ht_put (pfs->dir_cache->ht, val->dir->id, val);
+  pfs_mutex_unlock (&pfs->dir_cache->lock);  
+  
+  return 0;
+}
+
+/*---------------------------------------------------------------------
  * Method: pfs_remove_dir_cache
  * Scope: Global
  *

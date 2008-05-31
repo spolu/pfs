@@ -10,7 +10,7 @@ FUSE_NOPFS = bench/fuse
 
 all:
 	$(MAKE) -C $(PFSD)
-	$(MAKE) -C $(UTILS)
+	$(MAKE) -C $(UTILS) all
 	$(MAKE) -C $(BENCH_LFS)
 	$(MAKE) -C $(FUSE_NOPFS)
 

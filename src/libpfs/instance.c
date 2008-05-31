@@ -44,13 +44,23 @@ pfs_init_instance (const char * root_path)
   pfs_mutex_init (&pfs->group_lock);
   
   /* Set up the paths. */
-  pfs->root_path = (char *) malloc ((strlen (root_path) + 1));
-  strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
-  pfs->data_path = (char *) malloc ((strlen (root_path) + 
+  if (root_path[strlen (root_path) - 1] != '/') 
+    {
+      pfs->root_path = (char *) malloc (strlen (root_path) + 2);
+      strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
+      pfs->root_path[strlen (root_path)] = '/';
+      pfs->root_path[strlen (root_path) + 1] = 0;
+    }
+  else 
+    {
+      pfs->root_path = (char *) malloc (strlen (root_path) + 1);
+      strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
+    }
+  pfs->data_path = (char *) malloc ((strlen (pfs->root_path) + 
 				     strlen (PFS_DATA_PATH) + 1));
-  sprintf (pfs->data_path, "%s%s", root_path, PFS_DATA_PATH);
-  info_path = (char *) malloc ((strlen (root_path) + strlen (PFS_INFO_PATH) + 1));
-  sprintf (info_path, "%s%s", root_path, PFS_INFO_PATH);
+  sprintf (pfs->data_path, "%s%s", pfs->root_path, PFS_DATA_PATH);
+  info_path = (char *) malloc ((strlen (pfs->root_path) + strlen (PFS_INFO_PATH) + 1));
+  sprintf (info_path, "%s%s", pfs->root_path, PFS_INFO_PATH);
 
   /* Reading info. */
   ASSERT ((fd = open (info_path, O_RDONLY)) >= 0);
@@ -179,9 +189,6 @@ int pfs_write_back_info (struct pfs_instance * pfs)
   pfs->info_dirty = 0;
   pfs_mutex_unlock (&pfs->info_lock);
 
-  printf ("*---*\n");
-  printf ("wrote info : %d %d\n", (int) pfs->uid_cnt, (int) pfs->updt_cnt);
-
   close (fd);
 
   return 0;
@@ -303,17 +310,30 @@ int pfs_bootstrap_inst (const char * root_path,
   pfs_mutex_init (&pfs->group_lock);
 
   /* Setting up paths. */
-  pfs->root_path = (char *) malloc (strlen (root_path) + 1);
-  strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
+
+  if (root_path[strlen (root_path) - 1] != '/') 
+    {
+      pfs->root_path = (char *) malloc (strlen (root_path) + 2);
+      strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
+      pfs->root_path[strlen (root_path)] = '/';
+      pfs->root_path[strlen (root_path) + 1] = 0;
+    }
+  else 
+    {
+      pfs->root_path = (char *) malloc (strlen (root_path) + 1);
+      strncpy (pfs->root_path, root_path, strlen (root_path) + 1);
+    }
+
+  printf ("root_path : %s\n", pfs->root_path);
   pfs->data_path = (char *) malloc (strlen (pfs->root_path) + 
 				    strlen (PFS_DATA_PATH) + 1);
   sprintf (pfs->data_path, "%s%s", pfs->root_path, PFS_DATA_PATH);
-  info_path = (char *) malloc (strlen (root_path) + 
+  info_path = (char *) malloc (strlen (pfs->root_path) + 
 			       strlen (PFS_INFO_PATH) + 1);
-  sprintf (info_path, "%s%s", root_path, PFS_INFO_PATH);
-  group_path = (char *) malloc (strlen (root_path) + 
+  sprintf (info_path, "%s%s", pfs->root_path, PFS_INFO_PATH);
+  group_path = (char *) malloc (strlen (pfs->root_path) + 
 			       strlen (PFS_GROUP_PATH) + 1);
-  sprintf (group_path, "%s%s", root_path, PFS_GROUP_PATH);
+  sprintf (group_path, "%s%s", pfs->root_path, PFS_GROUP_PATH);
 
   /* Setting up info */
   strncpy (pfs->sd_owner, sd_owner, PFS_NAME_LEN);

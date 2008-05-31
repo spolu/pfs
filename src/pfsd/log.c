@@ -99,11 +99,9 @@ pfsd_updt_log (struct pfsd_state * pfsd)
       }
 	
       grp_log->log_cnt ++;
-      printf ("ADDING UPDATE : updt_cnt %d\n", grp_log->log_cnt);
       goto done;
       
     abort:
-      printf ("ABORTING ADD, dominated\n");
       pfs_free_updt (updt);
 
     done:

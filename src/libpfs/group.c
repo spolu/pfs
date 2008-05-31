@@ -182,6 +182,11 @@ pfs_group_updt_sv (struct pfs_instance * pfs,
 	      next_sd->sd_sv = sv;
 	      pfs->grp_dirty = 1;
 	      pfs_mutex_unlock (&pfs->group_lock);
+	      
+	      printf ("*** UPDT_SV : %.2s sd : ", next_sd->sd_id);
+	      pfs_print_vv (next_sd->sd_sv);
+	      printf ("\n");
+
 	      return 0;
 	    }
 	    next_sd = next_sd->next;
@@ -473,15 +478,11 @@ pfs_write_back_group (struct pfs_instance * pfs)
 
   writen (fd, &pfs->grp_cnt, sizeof (uint32_t));
 
-  printf ("*---*\n");
-
   for (i = 0; i < pfs->grp_cnt; i ++)
     {      
       writen (fd, new_grp->grp_id, PFS_ID_LEN);
       writen (fd, new_grp->grp_name, PFS_NAME_LEN);
       writen (fd, &new_grp->sd_cnt, sizeof (uint32_t));
-
-      printf ("wrote group : %s:%.*s\n", new_grp->grp_name, PFS_ID_LEN, new_grp->grp_id);
       
       new_sd = new_grp->sd;
 
@@ -492,10 +493,6 @@ pfs_write_back_group (struct pfs_instance * pfs)
 	  writen (fd, new_sd->sd_name, PFS_NAME_LEN);
 	  pfs_write_vv (fd, new_sd->sd_sv);
 	  
-	  printf ("wrote sd : %.*s:%s:%s\n", PFS_ID_LEN, new_sd->sd_id, new_sd->sd_owner, new_sd->sd_name);
-	  printf ("SV : ");
-	  pfs_print_vv (new_sd->sd_sv);
-
 	  new_sd = new_sd->next;
 	}
 

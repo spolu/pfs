@@ -101,7 +101,9 @@ handle_client (void * sd_arg)
   cli_sd = ((struct sd_arg *) sd_arg)->sd;
   free (sd_arg);
 
-  printf ("Spawning pfsd_srv thread\n");
+#ifdef DEBUG
+  printf ("*** HANDLE_CLIENT : new client\n");
+#endif
 
   while (1) {
 
@@ -120,37 +122,66 @@ handle_client (void * sd_arg)
       goto error;
 
     if (strcmp (GRP_STAT, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", GRP_STAT);
+#endif
       if (handle_status (cli_sd) != 0)
 	goto error;
     }
     
     else if (strcmp (ONLINE, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", ONLINE);
+#endif
       if (handle_online (cli_sd) != 0)
 	goto error;
     }
 
     else if (strcmp (OFFLINE, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", OFFLINE);
+#endif
       if (handle_offline (cli_sd) != 0)
 	goto error;
     }
     
     else if (strcmp (UPDT, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", UPDT);
+#endif
       if (handle_updt (cli_sd) != 0)
 	goto error;
     }
 
     else if (strcmp (ADD_SD, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", ADD_SD);
+#endif
       if (handle_add_sd (cli_sd) != 0)
 	goto error;
     }
 
     else if (strcmp (ADD_GRP, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", ADD_GRP);
+#endif
       if (handle_add_grp (cli_sd) != 0)
 	goto error;
     }
 
     else if (strcmp (LIST_SD, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", LIST_SD);
+#endif
       if (handle_list_sd (cli_sd) != 0)
+	goto error;
+    }
+
+    else if (strcmp (CREAT_GRP, buf) == 0) {
+#ifdef DEBUG
+      printf ("*** HANDLE_CLIENT : cmd %s\n", CREAT_GRP);
+#endif
+      if (handle_creat_grp (cli_sd) != 0)
 	goto error;
     }
 
@@ -164,7 +195,9 @@ handle_client (void * sd_arg)
   
  error:
  done:
-  printf ("Closing connection to client\n");
+#ifdef DEBUG
+  printf ("*** HANDLE_CLIENT : client closed\n");
+#endif
   writeline (cli_sd, CLOSE, strlen (CLOSE));
   close (cli_sd);  
   return 0;
@@ -296,19 +329,18 @@ handle_online (int cli_sd)
  done:
   pfs_mutex_unlock (&pfsd->sd_lock);
 
-  printf ("\nNEW CLIENT : %s:%s : %.*s ",
+#ifdef DEBUG
+  printf ("*** HANDLE_ONLINE : %s:%s : %.*s ",
 	  new_sd->sd_owner,
 	  new_sd->sd_name,
 	  PFS_ID_LEN,
 	  new_sd->sd_id);
-
   if (new_sd->tun_conn == LAN_CONN)
     printf ("(LAN:");
-
   if (new_sd->tun_conn == BTH_CONN)
     printf ("(BTH:");
-
   printf ("%d)\n", new_sd->tun_port);
+#endif
 
   writeline (cli_sd, OK, strlen (OK));
   return 0;
@@ -347,30 +379,31 @@ handle_offline (int cli_sd)
     {
       if (strncmp (sd_id, next->sd_id, PFS_ID_LEN) == 0 &&
 	  tun_conn == next->tun_conn) {
-	printf ("\nCLIENT OFFLINE : %s:%s : %.*s ",
+#ifdef DEBUG
+	printf ("*** HANDLE_OFFLINE : %s:%s : %.*s ",
 		next->sd_owner,
 		next->sd_name,
 		PFS_ID_LEN,
 		next->sd_id);
-	
 	if (next->tun_conn == LAN_CONN)
 	  printf ("(LAN:");
-	
 	if (next->tun_conn == BTH_CONN)
 	  printf ("(BTH:");
-	
 	printf ("%d)\n", next->tun_port);
+#endif
 	
 	if (prev == NULL) {
 	  pfsd->sd = next->next;
 	  free (next);
 	  next = pfsd->sd;
+	  pfsd->sd_cnt --;
 	  continue;
 	}
 	else {
 	  prev->next = next->next;
 	  free (next);
 	  next = prev->next;
+	  pfsd->sd_cnt --;
 	  continue;
 	}
       }
@@ -595,6 +628,10 @@ handle_add_sd (int cli_sd)
     goto error;
   pfsd->update = 1;
 
+#ifdef DEBUG
+  
+#endif
+
   writeline (cli_sd, OK, strlen (OK));
   return 0;
 
@@ -626,9 +663,15 @@ handle_add_grp (int cli_sd)
   strncpy (grp_id, in_buf, PFS_ID_LEN);
   free (in_buf);
 
+  if (pfs_create_dir_with_id (pfsd->pfs, grp_id) != 0)
+    goto error;
   if (pfs_group_add (pfsd->pfs, grp_name, grp_id) != 0)
     goto error;
-  
+
+#ifdef DEBUG  
+  printf ("*** PFS_GRP_CREATE %.*s : %s\n", PFS_ID_LEN, grp_id, grp_name);
+#endif
+
   writeline (cli_sd, OK, strlen (OK));
   return 0;
   
@@ -637,6 +680,28 @@ handle_add_grp (int cli_sd)
 }
 
 
+
+int
+handle_creat_grp (int cli_sd)
+{
+  char grp_name [PFS_NAME_LEN];
+  char * in_buf;
+
+  memset (grp_name, 0, PFS_NAME_LEN);
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (grp_name, in_buf, PFS_NAME_LEN);
+  free (in_buf);
+  
+  if (pfs_group_create (pfsd->pfs, grp_name) != 0)
+    goto error;
+  
+  writeline (cli_sd, OK, strlen (OK));
+  return 0;
+
+ error:
+  return -1;
+}
 
 
 int

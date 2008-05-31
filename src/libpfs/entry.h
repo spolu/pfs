@@ -70,6 +70,9 @@ struct pfs_vv
 int pfs_create_dir (struct pfs_instance * pfs,
 		    char * dir_id);
 
+int pfs_create_dir_with_id (struct pfs_instance * pfs, 
+			    const char * dir_id);
+
 int pfs_dir_rmdir (struct pfs_instance *pfs,
 		   const char * dir_id);
   

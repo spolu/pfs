@@ -29,12 +29,26 @@
  *
  *---------------------------------------------------------------------*/
 
-
 int
 pfs_create_dir (struct pfs_instance * pfs, 
 		char * dir_id)
 {
   return pfs_create_dir_cache (pfs, dir_id);
+}
+
+/*---------------------------------------------------------------------
+ * Method: pfs_create_dir_wit_id
+ * Scope:  Global
+ *
+ * Create a new dir file with given id.
+ *
+ *---------------------------------------------------------------------*/
+
+int
+pfs_create_dir_with_id (struct pfs_instance * pfs, 
+			const char * dir_id)
+{
+  return pfs_create_dir_cache_with_id (pfs, dir_id);
 }
 
 /*---------------------------------------------------------------------
@@ -156,18 +170,35 @@ pfs_set_entry (struct pfs_instance * pfs,
     }
   }
 
+  if (entry != NULL) {
+#ifdef DEBUG
+    printf ("*** PFS_SET_ENTRY %s %d", name, (int) ver->type);
+    printf (" mv : ");
+    pfs_print_vv (ver->mv);
+    printf (" last_updt : %.2s cs : %d\n", ver->sd_orig, (int) ver->cs);
+#endif
+  }
+  
   /* We check if it is actually a new version. */
   if (entry == NULL)
     {
       sv = pfs_group_get_sv (pfs, grp_id, pfs->sd_id);
       if (sv == NULL)
 	goto error;
+#ifdef DEBUG
+      printf ("*** PFS_SET_ENTRY %s %d", name, (int) ver->type);
+      printf (" sv : ");
+      pfs_print_vv (sv);
+      printf (" mv : ");
+      pfs_print_vv (ver->mv);
+      printf (" last_updt : %.2s cs : %d\n", ver->sd_orig, (int) ver->cs);
+#endif
       cmp_val = pfs_vv_cmp (ver->mv, sv);
       if (cmp_val <= 0) {
 	for (i = 0; i < sv->len; i ++) {
 	  if (strncmp (sv->sd_id[i], ver->sd_orig, PFS_ID_LEN) == 0) {
 	    if (ver->cs <= sv->value[i]) {
-	      printf ("PFS_SET_ENTRY : IGNORING ENTRY\n");
+	      printf ("*** PFS_SET_ENTRY : IGNORING ENTRY cs : %d sv : %d\n", (int) ver->cs, (int) sv->value[i]);
 	      pfs_free_vv (sv);
 	      goto done_no_updt;
 	    }
@@ -834,13 +865,13 @@ int
 pfs_print_vv (struct pfs_vv * vv)
 {
   int j;
-  printf ("< ");
+  printf ("<");
   for (j = 0; j < vv->len; j ++) {
     printf ("%.2s:%d", vv->sd_id[j], (int) vv->value[j]);
     if (j < vv->len - 1)
       printf (", ");
   }
-  printf (">\n");
+  printf (">");
   return 0;
 }
 

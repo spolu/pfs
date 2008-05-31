@@ -19,14 +19,23 @@ pfsd_bootstrap (const char * root_path)
   int fd;
   uint32_t zero = 0;
 
-  log_path = (char *) malloc (strlen (root_path) + 
-			      strlen (PFSD_LOG_PATH) + 1);
-  sprintf (log_path, "%s%s", root_path, PFSD_LOG_PATH);
-
-  fd = open (log_path, O_WRONLY|O_TRUNC|O_APPEND|O_CREAT);
-  fchmod (fd, S_IRUSR | S_IWUSR);
-  write (fd, &zero, sizeof (uint32_t));
-  close (fd);
+  if (root_path[strlen (root_path) - 1] != '/') 
+    {
+      log_path = (char *) malloc (strlen (root_path) + 
+				  strlen (PFSD_LOG_PATH) + 2);
+      sprintf (log_path, "%s/%s", root_path, PFSD_LOG_PATH);
+    }
+  else
+    {
+      log_path = (char *) malloc (strlen (root_path) + 
+				  strlen (PFSD_LOG_PATH) + 2);
+      sprintf (log_path, "%s%s", root_path, PFSD_LOG_PATH);
+    }
+      
+      fd = open (log_path, O_WRONLY|O_TRUNC|O_APPEND|O_CREAT);
+      fchmod (fd, S_IRUSR | S_IWUSR);
+      write (fd, &zero, sizeof (uint32_t));
+      close (fd);
 
   return 0;
 }
@@ -40,7 +49,7 @@ int main (int argc, char ** argv)
   
   if (argc != 4) {
     printf ("usage : ./pfs_init root_path sd_owner sd_name\n");
-    exit (1);
+    exit (-1);
   }
 
   strncpy (root_path, argv[1], PFS_NAME_LEN);
