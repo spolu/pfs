@@ -195,11 +195,11 @@ handle_client (void * sd_arg)
   
  error:
  done:
+  writeline (cli_sd, CLOSE, strlen (CLOSE));
+  close (cli_sd);  
 #ifdef DEBUG
   printf ("*** HANDLE_CLIENT : client closed\n");
 #endif
-  writeline (cli_sd, CLOSE, strlen (CLOSE));
-  close (cli_sd);  
   return 0;
 }
 

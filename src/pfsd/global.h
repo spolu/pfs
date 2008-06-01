@@ -8,7 +8,7 @@
 #define LAN_TUN_SPORT 10000 /* LAN tun start port. */
 #define BTH_TUN_SPORT 10100 /* BTH tun start port. */
 
-#define TIMEOUT 5000000
+#define TIMEOUT 900000
 #define LISTENQ 20
 
 

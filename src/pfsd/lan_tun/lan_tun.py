@@ -243,6 +243,7 @@ class SDevice (Thread):
         
         try:
             srv_sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+            srv_sock.setsockopt (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             srv_sock.bind (('', self.local_port))
             srv_sock.listen (5)
         except:
@@ -300,7 +301,7 @@ class SDService (Thread):
     def run (self):        
         global pfsd_port
         try:
-            self.tun_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.tun_sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
             self.tun_sock.connect ((self.remote_ip, self.remote_port))                
 
             tun = Connect ('', 0)
@@ -313,15 +314,13 @@ class SDService (Thread):
                 print 'Connection to tun ', self.remote_sd_id
 
             while not self.kill:
-                ready = select.select ([self.client, self.tun_sock], [], [], 1)
+                ready = select.select ([self.client, self.tun_sock], [], [], 0.5)
                 if self.client in ready[0]:
                     data = self.client.recv (4096)
                     self.tun_sock.send (data)
                 elif self.tun_sock in ready[0]:
                     data = self.tun_sock.recv (4096)
                     self.client.send (data)
-                else:
-                    break
         except:
             pass
 
@@ -351,6 +350,7 @@ class TUNServer(Thread):
 
         try:
             srv_sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+            srv_sock.setsockopt (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             srv_sock.bind (('', tun_port))
             srv_sock.listen (5)
         except:
@@ -368,6 +368,7 @@ class TUNServer(Thread):
             srv.stop ()
         for srv in self.threads:
             srv.join ()
+        print 'Closing TUNServer'
         srv_sock.close ()
 
     def stop (self):
@@ -409,17 +410,17 @@ class TUNService (Thread):
                     self.stop ()
                 cli.writeline ('OK')
                 
-                while not self.kill:
-                    ready = select.select ([self.client, self.pfsd_sock], [], [], 1)
-                    if self.client in ready[0]:
-                        data = self.client.recv (4096)
-                        self.pfsd_sock.send (data)
-                    elif self.pfsd_sock in ready[0]:
-                        data = self.pfsd_sock.recv (4096)
-                        self.client.send (data)
-                    else:
-                        break
-
+                try:
+                    while not self.kill:
+                        ready = select.select ([self.client, self.pfsd_sock], [], [], 0.5)
+                        if self.client in ready[0]:
+                            data = self.client.recv (4096)
+                            self.pfsd_sock.send (data)
+                        elif self.pfsd_sock in ready[0]:
+                            data = self.pfsd_sock.recv (4096)
+                            self.client.send (data)
+                except:
+                    pass
                 self.pfsd_sock.close ()
         except:
             pass
@@ -434,6 +435,10 @@ class TUNService (Thread):
 
 if __name__ == "__main__":
 
+    tun_srv_thread = TUNServer ()
+    threads.append (tun_srv_thread)
+    tun_srv_thread.start ()
+
     name = sd_owner + '.' + sd_name
     reg_thread = DNSReg (name, '_pfs._tcp', tun_port)
     threads.append (reg_thread)
@@ -443,12 +448,9 @@ if __name__ == "__main__":
     threads.append (browse_thread)
     browse_thread.start ()
 
-    tun_srv_thread = TUNServer ()
-    threads.append (tun_srv_thread)
-    tun_srv_thread.start ()
-
     try:
         while True:
+            time.sleep (1)
             pass
     except KeyboardInterrupt:
         pass
