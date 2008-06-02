@@ -457,6 +457,10 @@ handle_updt (int cli_sd)
     {
       file_path = pfs_mk_file_path (pfsd->pfs,
 				    updt->ver->dst_id);
+      if (stat (file_path, &st_buf) == 0) {
+	free (file_path);
+	goto done;
+      }
     }
   else
     goto done;
@@ -498,7 +502,7 @@ handle_updt (int cli_sd)
 			       updt->dir_id,
 			       updt->name,
 			       updt->reclaim,
-			       updt->ver)) != 0) {
+			       updt->ver, 1)) != 0) {
     printf ("PFS_SET_ENTRY failed with value %d\n", retval);
     goto error;
   }

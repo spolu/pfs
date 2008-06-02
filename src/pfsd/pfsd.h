@@ -15,7 +15,7 @@
 
 #define PFSD_LOG_PATH "pfsd_log"
 #define WRITE_BACK_SLEEP 20
-#define COMMIT_UPDT_SLEEP 1
+#define COMMIT_UPDT_SLEEP 2
 
 struct pfsd_state * pfsd;
 

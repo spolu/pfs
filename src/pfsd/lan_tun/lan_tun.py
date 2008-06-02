@@ -313,7 +313,11 @@ class SDService (Thread):
             tun.setsock (self.tun_sock)
             tun.writeline ('CONNECT')
             line = tun.readline ()
-            if not line == 'OK':
+            if not line == 'OK':                
+                cli = Connect ('', 0)
+                cli.setsock (self.client)
+                cli.writeline ('FAIL')
+                cli.readline ()
                 self.stop ()
             else:
                 cli = Connect ('', 0)

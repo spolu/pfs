@@ -140,7 +140,8 @@ pfs_set_entry (struct pfs_instance * pfs,
 	       const char * dir_id,
 	       const char * name,
 	       const uint8_t reclaim,
-	       const struct pfs_ver * ver)
+	       const struct pfs_ver * ver,
+	       const uint8_t log)
 {
   int m_upt_num, m_sd_upt_num, upt_num, sd_upt_num;
   int ver_cnt;
@@ -237,7 +238,7 @@ pfs_set_entry (struct pfs_instance * pfs,
 	  pfs_reset_gen_vv (pfs, replay_ver);
 	  if ((i = pfs_set_entry (pfs, grp_id, 
 				  dir_id, name, 
-				  0, replay_ver)) < 0) {
+				  0, replay_ver, 1)) < 0) {
 	    pfs_free_ver (replay_ver);
 	    return i;
 	  }
@@ -291,14 +292,14 @@ pfs_set_entry (struct pfs_instance * pfs,
 	      pfs_reset_gen_vv (pfs, replay_ver);
 	      if ((i = pfs_set_entry (pfs, grp_id, 
 				      dir_id, name, 
-				      0, replay_ver)) < 0) {
+				      0, replay_ver, 1)) < 0) {
 		pfs_free_ver (replay_ver);
 		return i;
 	      }
 	      pfs_free_ver (replay_ver);
 	      if ((i = pfs_set_entry (pfs, grp_id, 
 				      dir_id, name, 
-				      reclaim, ver)) < 0)
+				      reclaim, ver, 1)) < 0)
 		return i;
 	      return 0;
 	    }
@@ -407,8 +408,10 @@ pfs_set_entry (struct pfs_instance * pfs,
  
  done:
   /* log the set_entry. */
-  if (pfs_push_updt (pfs, grp_id, dir_id, name, reclaim, ver) != 0)
-    goto error;
+  if (log) {
+    if (pfs_push_updt (pfs, grp_id, dir_id, name, reclaim, ver) != 0)
+      goto error;
+  }
   /* Update sync vector. */
   if (pfs_group_updt_sv (pfs, grp_id, pfs->sd_id, ver->mv) != 0)
     goto error;

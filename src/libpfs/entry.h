@@ -84,7 +84,8 @@ int pfs_set_entry (struct pfs_instance * pfs,
 		   const char * dir_id,
 		   const char * name,
 		   const uint8_t reclaim,
-		   const struct pfs_ver * ver);
+		   const struct pfs_ver * ver,
+		   const uint8_t log);
 
 struct pfs_entry * pfs_get_entry (struct pfs_instance * pfs,
 				  char * dir_id,

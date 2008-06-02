@@ -112,7 +112,7 @@ int pfs_open (struct pfs_instance * pfs,
 
       /* We call pfs_set_entry here to make the newly created file visible. */
       if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id,
-			 open_file->file_name, 1, open_file->ver) != 0) {
+			 open_file->file_name, 1, open_file->ver, 0) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -379,9 +379,9 @@ int pfs_close (struct pfs_instance * pfs,
   if (open_file->dirty == 2) {
   }
   else if (open_file->dirty == 3) {
-    pfs_vv_incr (pfs, open_file->ver);
+    pfs_reset_gen_vv (pfs, open_file->ver);
     if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
-		       open_file->file_name, 0, open_file->ver) != 0) {
+		       open_file->file_name, 0, open_file->ver, 1) != 0) {
       pfs_free_ver (open_file->ver);
       free (open_file);
       return -EIO;
@@ -390,7 +390,7 @@ int pfs_close (struct pfs_instance * pfs,
   else if (open_file->dirty == 1) {
     pfs_vv_incr (pfs, open_file->ver);
     if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
-		       open_file->file_name, 1, open_file->ver) != 0) {
+		       open_file->file_name, 1, open_file->ver, 1) != 0) {
       pfs_free_ver (open_file->ver);
       free (open_file);
       return -EIO;
@@ -589,7 +589,7 @@ int pfs_truncate (struct pfs_instance * pfs,
   free (file_path);
 
   if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-		     pi.name, 1, ver) != 0) {
+		     pi.name, 1, ver, 1) != 0) {
     retval = -EIO;
     goto error;
   }
@@ -817,7 +817,7 @@ int pfs_mkdir (struct pfs_instance * pfs,
 
       if (pfs_create_dir (pfs, ver->dst_id) != 0 ||
 	  pfs_set_entry (pfs, pi.grp_id, pi.dst_id, 
-			 name, 1, ver) != 0) {
+			 name, 1, ver, 1) != 0) {
 	pfs_dir_rmdir (pfs, ver->dst_id);
 	retval = -EIO;
 	goto error;
@@ -895,7 +895,7 @@ int pfs_unlink (struct pfs_instance * pfs,
   pfs_vv_incr (pfs, ver);
 
   if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-		     pi.name, 1, ver) != 0) {
+		     pi.name, 1, ver, 1) != 0) {
     retval = -EIO;
     goto error;
   }
@@ -972,7 +972,7 @@ int pfs_rmdir (struct pfs_instance * pfs,
   pfs_vv_incr (pfs, ver);
 
   if ((retval = pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-			       pi.name, 1, ver)) != 0) {
+			       pi.name, 1, ver, 1)) != 0) {
     retval = -EIO;
     goto error;
   }
@@ -1129,13 +1129,13 @@ int pfs_rename (struct pfs_instance * pfs,
   pfs_vv_incr (pfs, ver_old);
    
   if (pfs_set_entry (pfs, pi_new.grp_id, pi_new.dir_id,
-		     pi_new.name, 1, ver_new) != 0) {
+		     pi_new.name, 1, ver_new, 1) != 0) {
     retval = -EIO;
     goto error;
   }
 
   if (pfs_set_entry (pfs, pi_old.grp_id, pi_old.dir_id,
-		     pi_old.name, 0, ver_old) != 0) {
+		     pi_old.name, 0, ver_old, 1) != 0) {
     retval = -EIO;
     goto error;
   }
@@ -1343,7 +1343,7 @@ int pfs_symlink (struct pfs_instance * pfs,
 	S_IFLNK;
 
       if (pfs_set_entry (pfs, pi.grp_id, pi.dst_id,
-			 file_name, 1, ver) != 0) {
+			 file_name, 1, ver, 1) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -1466,7 +1466,7 @@ int pfs_link (struct pfs_instance * pfs,
       ver->st_mode = pi_to.st_mode;
       
       if (pfs_set_entry (pfs, pi.grp_id, pi.dst_id,
-			 file_name, 1, ver) != 0) {
+			 file_name, 1, ver, 1) != 0) {
 	retval = -EIO;
 	goto error;
       }
@@ -1615,7 +1615,7 @@ int pfs_chmod (struct pfs_instance * pfs,
   pfs_vv_incr (pfs, ver);
   
   if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
-		     pi.name, 0, ver) != 0) {
+		     pi.name, 0, ver, 1) != 0) {
     retval = -EIO;
     goto error;
   }

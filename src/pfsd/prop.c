@@ -196,14 +196,8 @@ updater (struct prop_arg * prop_arg)
   log = grp_log->log;
   
   while (log != NULL) {
-    printf ("prop comp : ");
-    pfs_print_vv (sd_sv);
-    printf (" ");
-    pfs_print_vv (log->ver->mv);
-    printf ("\n");
     if (pfs_vv_cmp (sd_sv, log->ver->mv) <= 0)
       {
-	printf ("propapgation !\n");
 	if (net_prop_updt (tun_sd, grp_id, sd_id, log) != 0) {
 	  pfs_mutex_unlock (&pfsd->log_lock);
 	  goto error;
