@@ -263,6 +263,7 @@ handle_grp_stat (int cli_sd)
 
  done:
   pfs_mutex_unlock (&pfsd->pfs->group_lock);
+  pfsd->update = 1;
   return 0;
  error:
   return -1;
@@ -481,6 +482,7 @@ handle_updt (int cli_sd)
   b_done = 0;
   while (b_left > 0)
     {
+      printf ("received %s : %d / %d\n", updt->name, b_done, len);
       len = read (cli_sd, buf, ((b_left > 4096) ? 4096 : b_left));
       if (len == -1) {
 	close (fd);

@@ -138,8 +138,10 @@ updater (struct prop_arg * prop_arg)
   tun_port = prop_arg->tun_port;
   free (prop_arg);
 
+#ifdef DEBUG
   printf ("STARTING UPDATER FOR : %.*s:%.*s\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
+#endif
   
   if ((tun_sd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     goto error;
@@ -158,6 +160,13 @@ updater (struct prop_arg * prop_arg)
   in_buf = readline (tun_sd);
   if (in_buf == NULL) goto error;
   if (strcmp (in_buf, OK) != 0) {
+    if (strcmp (in_buf, "FAIL") == 0) {
+      free (in_buf);
+#ifdef DEBUG
+      printf ("SD OFFLINE\n");
+#endif
+      goto done;
+    }
     free (in_buf);
     goto error;
   }
@@ -171,8 +180,10 @@ updater (struct prop_arg * prop_arg)
   
   /* Push the non-propagated updates. */
 
+#ifdef DEBUG
   printf ("PUSHING UPDATES for %.*s:%.*s...\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
+#endif
   
   sd_sv = pfs_group_get_sv (pfsd->pfs, grp_id, sd_id);
   if (sd_sv == NULL)
@@ -217,8 +228,10 @@ updater (struct prop_arg * prop_arg)
   return 0;
 
  error:
+#ifdef DEBUG
   printf ("ERROR DURING TRANSFER WITH %.*s:%.*s...\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
+#endif
   if (sd_sv != NULL)
     pfs_free_vv (sd_sv);
   writeline (tun_sd, CLOSE, strlen (CLOSE));
@@ -378,6 +391,7 @@ net_prop_updt (int tun_sd,
 	  b_done = 0;
 	  while (b_left > 0)
 	    {
+	      printf ("sent %s : %d / %d\n", updt->name, b_done, (int) st_buf.st_size);
 	      len = readn (fd, out_buf, ((b_left > 4096) ? 4096 : b_left));
 	      writen (tun_sd, out_buf, len);
 	      b_done += len;

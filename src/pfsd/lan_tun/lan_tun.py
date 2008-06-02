@@ -95,7 +95,6 @@ class DNSBrowse (Thread):
                                                           regtype,
                                                           replyDomain)
                     self.services[serviceName].start ()
-        
 
     def stop (self):
         self.kill = True
@@ -110,6 +109,7 @@ class Connect:
 
     def connect (self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.settimeout (10.0)
         self.s.connect ((self.host,self.port))                
 
     def setsock (self, s):
@@ -229,6 +229,7 @@ class SDevice (Thread):
             self.remote_sd_name = tun.readline ()
             tun.close ()
         except:
+            self.stop ()
             return
 
         pfsd = Connect ('localhost', pfsd_port)
@@ -306,53 +307,62 @@ class SDService (Thread):
     def run (self):        
         global pfsd_port
         try:
-            self.tun_sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
-            self.tun_sock.connect ((self.remote_ip, self.remote_port))                
-
-            tun = Connect ('', 0)
-            tun.setsock (self.tun_sock)
-            tun.writeline ('CONNECT')
-            line = tun.readline ()
-            if not line == 'OK':                
+            try:
+                self.tun_sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+                self.tun_sock.settimeout (5.0)
+                self.tun_sock.connect ((self.remote_ip, self.remote_port))
+            except:
                 cli = Connect ('', 0)
                 cli.setsock (self.client)
                 cli.writeline ('FAIL')
                 cli.readline ()
                 self.stop ()
-            else:
-                cli = Connect ('', 0)
-                cli.setsock (self.client)
-                cli.writeline ('OK')
-                print 'Connection to tun ', self.remote_sd_id
-                
-            try:
-                while not self.kill:
-                    ready_r = select.select ([self.client, self.tun_sock], [], [], 1)
-                    if (self.client in ready_r[0]):
-                        ready_w = select.select ([], [self.tun_sock], [], 1)
-                        if (self.tun_sock in ready_w[1]):
-                            data = self.client.recv (4096)
-                            len = self.tun_sock.send (data)
-                        else:
-                            print 'not ready 1'
-                            self.stop ()
-                    elif (self.tun_sock in ready_r[0]):
-                        ready_w = select.select ([], [self.client], [], 1)
-                        if (self.client in ready_w[1]):
-                            data = self.tun_sock.recv (4096)
-                            len = self.client.send (data)
-                        else:
-                            print 'not ready 2'
-                            self.stop ()
-                    else:
-                        print 'not ready 3'
-                        self.stop ()
-                    if (len == 0):
-                        print 'len = 0'
-                        self.stop ()
 
-            except:
-                pass
+            if not self.kill:
+                tun = Connect ('', 0)
+                tun.setsock (self.tun_sock)
+                tun.writeline ('CONNECT')
+                line = tun.readline ()
+                if not line == 'OK':                
+                    cli = Connect ('', 0)
+                    cli.setsock (self.client)
+                    cli.writeline ('FAIL')
+                    cli.readline ()
+                    self.stop ()
+                else:
+                    cli = Connect ('', 0)
+                    cli.setsock (self.client)
+                    cli.writeline ('OK')
+                    print 'Connection to tun ', self.remote_sd_id
+                
+                    try:
+                        while not self.kill:
+                            ready_r = select.select ([self.client, self.tun_sock], [], [], 1)
+                            if (self.client in ready_r[0]):
+                                ready_w = select.select ([], [self.tun_sock], [], 1)
+                                if (self.tun_sock in ready_w[1]):
+                                    data = self.client.recv (4096)
+                                    len = self.tun_sock.send (data)
+                                else:
+                                    print 'not ready 1'
+                                    self.stop ()
+                            elif (self.tun_sock in ready_r[0]):
+                                ready_w = select.select ([], [self.client], [], 1)
+                                if (self.client in ready_w[1]):
+                                    data = self.tun_sock.recv (4096)
+                                    len = self.client.send (data)
+                                else:
+                                    print 'not ready 2'
+                                    self.stop ()
+                            else:
+                                print 'not ready 3'
+                                self.stop ()
+                            if (len == 0):
+                                print 'len = 0'
+                                self.stop ()
+
+                    except:
+                        pass
         except:
             pass
 
@@ -437,6 +447,7 @@ class TUNService (Thread):
             if cmd == 'CONNECT':
                 try:
                     self.pfsd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.pfsd_sock.settimeout (10.0)
                     self.pfsd_sock.connect (('localhost', pfsd_port))
                 except:
                     cli.writeline ('FAIL')

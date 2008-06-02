@@ -94,16 +94,16 @@ void *
 commit_updt (void * tid)
 {
   while (1) {
-    if (pfsd->update == 1) {
-      pfsd->update = 2;
+    if (pfsd->update == 2) {
       pfsd_updt_log (pfsd);
       pfsd_write_back_log (pfsd);
       //pfsd_print_log (pfsd);
       show_time ();
       if (pfsd->update == 2)
 	pfsd->update = 0;
-      if (pfsd->update == 3)
-	pfsd->update = 1;
+    } 
+    if (pfsd->update == 1) {
+      pfsd->update = 2;
     }
     sleep (COMMIT_UPDT_SLEEP);
   }
@@ -131,10 +131,7 @@ updt_cb (struct pfs_instance * pfs,
   pfsd->updt_cnt += 1;
   pfs_mutex_unlock (&pfsd->updt_lock);
 
-  if (pfsd->update == 0)
-    pfsd->update = 1;
-  if (pfsd->update == 2)
-    pfsd->update = 3;
+  pfsd->update = 1;
 
   return 0;
 }
