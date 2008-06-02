@@ -327,14 +327,14 @@ class SDService (Thread):
                     ready_w = select.select ([], [self.client, self.tun_sock], [], 1)
                     if (self.client in ready_r[0] and self.tun_sock in ready_w[1]):
                         data = self.client.recv (4096)
-                        res = self.tun_sock.sendall (data)
+                        len = self.tun_sock.send (data)
                     elif (self.tun_sock in ready_r[0] and self.client in ready_w[1]):
                         data = self.tun_sock.recv (4096)
-                        res = self.client.sendall (data)
+                        len = self.client.send (data)
                     else:
                         self.stop ()
-                    if (res is not None):
-                        print 'sendall failed'
+                    if (len == 0):
+                        print 'len = 0'
                         self.stop ()
 
             except:
@@ -436,14 +436,14 @@ class TUNService (Thread):
                         ready_w = select.select ([], [self.client, self.pfsd_sock], [], 1)
                         if (self.client in ready_r[0] and self.pfsd_sock in ready_w[1]):
                             data = self.client.recv (4096)
-                            res = self.pfsd_sock.sendall (data)
+                            len = self.pfsd_sock.send (data)
                         elif (self.pfsd_sock in ready_r[0] and self.client in ready_w[1]):
                             data = self.pfsd_sock.recv (4096)
-                            res = self.client.sendall (data)
+                            len = self.client.send (data)
                         else:
                             self.stop ()
-                        if (res is not None):
-                            print 'sendall error'
+                        if (len == 0):
+                            print 'len = 0'
                             self.stop ()
 
                 except:
