@@ -332,6 +332,7 @@ class SDService (Thread):
                         data = self.tun_sock.recv (4096)
                         len = self.client.send (data)
                     else:
+                        print 'not ready'
                         self.stop ()
                     if (len == 0):
                         print 'len = 0'
@@ -441,6 +442,7 @@ class TUNService (Thread):
                             data = self.pfsd_sock.recv (4096)
                             len = self.client.send (data)
                         else:
+                            print 'not ready'
                             self.stop ()
                         if (len == 0):
                             print 'len = 0'
