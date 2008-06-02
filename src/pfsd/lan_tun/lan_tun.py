@@ -324,15 +324,24 @@ class SDService (Thread):
             try:
                 while not self.kill:
                     ready_r = select.select ([self.client, self.tun_sock], [], [], 1)
-                    ready_w = select.select ([], [self.client, self.tun_sock], [], 1)
-                    if (self.client in ready_r[0] and self.tun_sock in ready_w[1]):
-                        data = self.client.recv (4096)
-                        len = self.tun_sock.send (data)
-                    elif (self.tun_sock in ready_r[0] and self.client in ready_w[1]):
-                        data = self.tun_sock.recv (4096)
-                        len = self.client.send (data)
+                    if (self.client in ready_r[0]):
+                        ready_w = select.select ([], [self.tun_sock], [], 1)
+                        if (self.tun_sock in ready_w[1]):
+                            data = self.client.recv (4096)
+                            len = self.tun_sock.send (data)
+                        elif:
+                            print 'not ready 1'
+                            self.stop ()
+                    elif (self.tun_sock in ready_r[0]):
+                        ready_w = select.select ([], [self.client], [], 1)
+                        if (self.client in ready_w[1]):
+                            data = self.tun_sock.recv (4096)
+                            len = self.client.send (data)
+                        elif:
+                            print 'not ready 2'
+                            self.stop ()
                     else:
-                        print 'not ready'
+                        print 'not ready 3'
                         self.stop ()
                     if (len == 0):
                         print 'len = 0'
@@ -434,20 +443,28 @@ class TUNService (Thread):
                 try:
                     while not self.kill:
                         ready_r = select.select ([self.client, self.pfsd_sock], [], [], 1)
-                        ready_w = select.select ([], [self.client, self.pfsd_sock], [], 1)
-                        if (self.client in ready_r[0] and self.pfsd_sock in ready_w[1]):
-                            data = self.client.recv (4096)
-                            len = self.pfsd_sock.send (data)
-                        elif (self.pfsd_sock in ready_r[0] and self.client in ready_w[1]):
-                            data = self.pfsd_sock.recv (4096)
-                            len = self.client.send (data)
+                        if (self.client in ready_r[0]):
+                            ready_w = select.select ([], [self.pfsd_sock], [], 1)
+                            if (self.pfsd_sock in ready_w[1]):
+                                data = self.client.recv (4096)
+                                len = self.pfsd_sock.send (data)
+                            elif:
+                                print 'not ready 1'
+                                self.stop ()
+                        elif (self.pfsd_sock in ready_r[0]):
+                            ready_w = select.select ([], [self.client], [], 1)
+                            if (self.client in ready_w[1]):
+                                data = self.pfsd_sock.recv (4096)
+                                len = self.client.send (data)
+                            elif:
+                                print 'not ready 2'
+                                self.stop ()
                         else:
-                            print 'not ready'
+                            print 'not ready 3'
                             self.stop ()
                         if (len == 0):
                             print 'len = 0'
                             self.stop ()
-
                 except:
                     pass
                 self.pfsd_sock.close ()
