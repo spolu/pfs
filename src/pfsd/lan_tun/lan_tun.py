@@ -329,7 +329,7 @@ class SDService (Thread):
                         if (self.tun_sock in ready_w[1]):
                             data = self.client.recv (4096)
                             len = self.tun_sock.send (data)
-                        elif:
+                        else:
                             print 'not ready 1'
                             self.stop ()
                     elif (self.tun_sock in ready_r[0]):
@@ -337,7 +337,7 @@ class SDService (Thread):
                         if (self.client in ready_w[1]):
                             data = self.tun_sock.recv (4096)
                             len = self.client.send (data)
-                        elif:
+                        else:
                             print 'not ready 2'
                             self.stop ()
                     else:
@@ -448,7 +448,7 @@ class TUNService (Thread):
                             if (self.pfsd_sock in ready_w[1]):
                                 data = self.client.recv (4096)
                                 len = self.pfsd_sock.send (data)
-                            elif:
+                            else:
                                 print 'not ready 1'
                                 self.stop ()
                         elif (self.pfsd_sock in ready_r[0]):
@@ -456,7 +456,7 @@ class TUNService (Thread):
                             if (self.client in ready_w[1]):
                                 data = self.pfsd_sock.recv (4096)
                                 len = self.client.send (data)
-                            elif:
+                            else:
                                 print 'not ready 2'
                                 self.stop ()
                         else:
