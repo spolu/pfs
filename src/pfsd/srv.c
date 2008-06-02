@@ -435,6 +435,7 @@ handle_updt (int cli_sd)
   int fd;
   char buf[4096];
   int retval;
+  struct stat st_buf;
 
   updt = net_read_updt (cli_sd);
   if (updt == NULL)
@@ -442,7 +443,12 @@ handle_updt (int cli_sd)
   
   /* Do we need data. */
   if (updt->ver->type == PFS_DIR) {
-    pfs_create_dir_with_id (pfsd->pfs, updt->ver->dst_id);
+    file_path = pfs_mk_dir_path (pfsd->pfs,
+				 updt->ver->dst_id);
+    if (stat (file_path, &st_buf) != 0)
+      pfs_create_dir_with_id (pfsd->pfs, updt->ver->dst_id);
+    free (file_path);
+    file_path = NULL;
     goto done;
   }
 
