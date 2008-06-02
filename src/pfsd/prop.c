@@ -376,6 +376,7 @@ net_prop_updt (int tun_sd,
 	  sprintf (out_buf, "%d", 3);
 	  writeline (tun_sd, out_buf, strlen (out_buf));
 	  writen (tun_sd, "DEL", 3);
+	  b_tot = 3;
 	}
       else
 	{
@@ -400,23 +401,21 @@ net_prop_updt (int tun_sd,
 	      b_left -= len;
 	      printf ("sent %s : %d / %d\n", updt->name, b_done, b_tot);
 	    }
+	  close (fd);
 	  if (b_left != 0) {
-	    close (fd);
 	    goto error;
 	  }
-	  
-	  len = 0;
-	  while (len != b_tot) {
-	    in_buf = readline (tun_sd);
-	    if (in_buf == NULL) goto error;
-	    len = atoi (in_buf);
-	    printf ("acked %s : %d / %d", updt->name, len, b_tot);
-	    free (in_buf);
-	  }
- 
-	  close (fd);
 	}
-	  
+      
+      len = 0;
+      while (len != b_tot) {
+	in_buf = readline (tun_sd);
+	if (in_buf == NULL) goto error;
+	len = atoi (in_buf);
+	printf ("acked %s : %d / %d", updt->name, len, b_tot);
+	free (in_buf);
+      }
+   
       in_buf = readline (tun_sd);
       if (in_buf == NULL) goto error;
       if (strcmp (in_buf, OK) != 0) {
