@@ -226,7 +226,7 @@ int pfs_mk_id (struct pfs_instance * pfs,
  *
  *---------------------------------------------------------------------*/
 
-int
+uint64_t
 pfs_incr_updt_cnt (struct pfs_instance * pfs)
 {
   int retval;

@@ -22,7 +22,10 @@ struct pfsd_state * pfsd;
 struct pfsd_state
 {
   struct pfs_instance * pfs;
+  int tun_pid;
+  int pfsd_port;
   
+
   char * log_path;
   uint8_t update;
   
@@ -58,7 +61,7 @@ void * commit_updt (void * tid);
 int updt_cb (struct pfs_instance * pfs,
 	     struct pfs_updt * updt);
 
-int pfsd_init (struct pfs_instance * pfs);
+int pfsd_init (struct pfs_instance * pfs, int pfsd_port);
 int pfsd_destroy ();
 
 #endif

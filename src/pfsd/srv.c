@@ -28,6 +28,7 @@
 #include "../libpfs/entry.h"
 #include "../libpfs/updt.h"
 #include "../libpfs/entry.h"
+#include "prop.h"
 
 struct sd_arg
 {
@@ -57,7 +58,7 @@ start_srv (void * v)
 
   bzero (&srv_addr, sizeof (srv_addr));
   srv_addr.sin_family = AF_INET;
-  srv_addr.sin_port = htons (PFSD_PORT);
+  srv_addr.sin_port = htons (pfsd->pfsd_port);
   srv_addr.sin_addr.s_addr = INADDR_ANY;
 
   if (bind (srv_sd, (struct sockaddr *) &srv_addr, sizeof srv_addr) < 0) {
@@ -125,7 +126,7 @@ handle_client (void * sd_arg)
 #ifdef DEBUG
       printf ("*** HANDLE_CLIENT : cmd %s\n", GRP_STAT);
 #endif
-      if (handle_status (cli_sd) != 0)
+      if (handle_grp_stat (cli_sd) != 0)
 	goto error;
     }
     
@@ -194,9 +195,9 @@ handle_client (void * sd_arg)
   }
   
  error:
- done:
-  writeline (cli_sd, CLOSE, strlen (CLOSE));
+  writeline (cli_sd, ERROR, strlen (ERROR));
   close (cli_sd);  
+ done:
 #ifdef DEBUG
   printf ("*** HANDLE_CLIENT : client closed\n");
 #endif
@@ -206,7 +207,7 @@ handle_client (void * sd_arg)
 
 
 int
-handle_status (int cli_sd)
+handle_grp_stat (int cli_sd)
 {
   char out_buf[512];
   char * in_buf;
@@ -425,31 +426,31 @@ handle_offline (int cli_sd)
 int
 handle_updt (int cli_sd)
 {
-  struct pfs_updt * updt;
+  struct pfs_updt * updt = NULL;
   char * file_path = NULL;
-  struct stat st_buf;
   char * in_buf;
   int len;
   int b_done;
   int b_left;
   int fd;
   char buf[4096];
+  int retval;
 
   updt = net_read_updt (cli_sd);
   if (updt == NULL)
     goto error;
   
-  
   /* Do we need data. */
+  if (updt->ver->type == PFS_DIR) {
+    pfs_create_dir_with_id (pfsd->pfs, updt->dir_id);
+    goto done;
+  }
+
   if (updt->ver->type == PFS_SML ||
       updt->ver->type == PFS_FIL) 
     {
       file_path = pfs_mk_file_path (pfsd->pfs,
 				    updt->ver->dst_id);
-      if (stat (file_path, &st_buf) == 0) {
-	free (file_path);
-	goto done;
-      }
     }
   else
     goto done;
@@ -462,7 +463,7 @@ handle_updt (int cli_sd)
   free (in_buf);
   
   if ((fd = open (file_path, 
-		  O_CREAT | O_WRONLY | O_APPEND, 
+		  O_CREAT | O_WRONLY | O_APPEND | O_TRUNC, 
 		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
     goto error;
   
@@ -470,7 +471,7 @@ handle_updt (int cli_sd)
   b_done = 0;
   while (b_left > 0)
     {
-      len = read (cli_sd, buf, ((b_left > 4096) ? 4069 : b_left));
+      len = read (cli_sd, buf, ((b_left > 4096) ? 4096 : b_left));
       if (len == -1) {
 	close (fd);
 	unlink (file_path);
@@ -483,15 +484,18 @@ handle_updt (int cli_sd)
 
   close (fd);
   free (file_path);
+  file_path = NULL;
   
  done:
-  if (pfs_set_entry (pfsd->pfs,
-		     updt->grp_id,
-		     updt->dir_id,
-		     updt->name,
-		     updt->reclaim,
-		     updt->ver) != 0)
+  if ((retval = pfs_set_entry (pfsd->pfs,
+			       updt->grp_id,
+			       updt->dir_id,
+			       updt->name,
+			       updt->reclaim,
+			       updt->ver)) != 0) {
+    printf ("PFS_SET_ENTRY failed with value %d\n", retval);
     goto error;
+  }
 
   pfs_free_updt (updt);
   writeline (cli_sd, OK, strlen (OK));
@@ -526,7 +530,7 @@ handle_add_sd (int cli_sd)
   char sd_id [PFS_ID_LEN];
 
   int tun_port = -1;
-  uint8_t tun_conn = 0x09;
+  uint8_t tun_conn = 100;
   struct pfsd_sd * sd;
 
   int tun_sd = -1;
@@ -562,11 +566,14 @@ handle_add_sd (int cli_sd)
 
   pfs_mutex_lock (&pfsd->sd_lock);
   sd = pfsd->sd;
+  printf ("Search %s.%s\n", sd_owner, sd_name);
   while (sd != NULL)
     {
+      printf ("Compare %s.%s\n", sd->sd_owner, sd->sd_name);
       if (strncmp (sd_owner, sd->sd_owner, PFS_NAME_LEN) == 0 &&
 	  strncmp (sd_name, sd->sd_name, PFS_NAME_LEN) == 0 &&
 	  sd->tun_conn < tun_conn) {
+	printf ("Found %s.%s %d\n", sd_owner, sd_name, sd->tun_port);
 	tun_port = sd->tun_port;
 	tun_conn = sd->tun_conn;
 	strncpy (sd_id, sd->sd_id, PFS_ID_LEN);
@@ -574,8 +581,10 @@ handle_add_sd (int cli_sd)
       sd = sd->next;
     }
   
-  if (tun_port == -1)
+  if (tun_port == -1) {
+    pfs_mutex_unlock (&pfsd->sd_lock);
     goto error;
+  }
   pfs_mutex_unlock (&pfsd->sd_lock);
   
   
@@ -605,11 +614,30 @@ handle_add_sd (int cli_sd)
   writeline (tun_sd, ADD_GRP, strlen (ADD_GRP));
   writeline (tun_sd, grp_name, strlen (grp_name));
   writeline (tun_sd, grp_id, PFS_ID_LEN);
+  writeline (tun_sd, pfsd->pfs->sd_id, PFS_ID_LEN);
   
+  if (pfs_group_add_sd (pfsd->pfs, grp_id, sd_id,
+			sd_owner, sd_name) != 0)
+    goto error;
+
   /* 
    * We do not propagate data here.
    * For now we keep all log updates.
    */
+
+  /*
+   * We update the remote grp_sate.
+   */
+
+  in_buf = readline (tun_sd);
+  if (in_buf == NULL) goto error;
+  if (strcmp (in_buf, GRP_STAT) != 0) {
+    free (in_buf);
+    goto error;
+  }
+  free (in_buf);
+
+  handle_grp_stat (tun_sd);
 
   in_buf = readline (tun_sd);
   if (in_buf == NULL) goto error;
@@ -619,18 +647,13 @@ handle_add_sd (int cli_sd)
   }
   free (in_buf);
 
+  writeline (tun_sd, CLOSE, strlen (CLOSE));
+
   close (tun_sd);
 
   /* We add the sd to our local state. */
 
-  if (pfs_group_add_sd (pfsd->pfs, grp_id, sd_id,
-			sd_owner, sd_name) != 0)
-    goto error;
   pfsd->update = 1;
-
-#ifdef DEBUG
-  
-#endif
 
   writeline (cli_sd, OK, strlen (OK));
   return 0;
@@ -649,6 +672,7 @@ handle_add_grp (int cli_sd)
 {
   char grp_name [PFS_NAME_LEN];
   char grp_id [PFS_NAME_LEN];
+  char sd_id [PFS_ID_LEN];
   char * in_buf;
 
   memset (grp_name, 0, PFS_NAME_LEN);
@@ -663,6 +687,12 @@ handle_add_grp (int cli_sd)
   strncpy (grp_id, in_buf, PFS_ID_LEN);
   free (in_buf);
 
+  memset (sd_id, 0, PFS_ID_LEN);
+  in_buf = readline (cli_sd);
+  if (in_buf == NULL) goto error;
+  strncpy (sd_id, in_buf, PFS_ID_LEN);
+  free (in_buf);
+
   if (pfs_create_dir_with_id (pfsd->pfs, grp_id) != 0)
     goto error;
   if (pfs_group_add (pfsd->pfs, grp_name, grp_id) != 0)
@@ -672,6 +702,9 @@ handle_add_grp (int cli_sd)
   printf ("*** PFS_GRP_CREATE %.*s : %s\n", PFS_ID_LEN, grp_id, grp_name);
 #endif
 
+  if (update_status (cli_sd, grp_id, sd_id) != 0)
+    goto error;
+		     
   writeline (cli_sd, OK, strlen (OK));
   return 0;
   
@@ -782,6 +815,7 @@ net_read_updt (int cli_sd)
   updt->ver->st_mode = (int) atoi (in_buf);
   free (in_buf);
 
+  memset (updt->ver->dst_id, 0, PFS_ID_LEN);
   in_buf = readline (cli_sd);
   if (in_buf == NULL) goto error;
   strncpy (updt->ver->dst_id, in_buf, PFS_ID_LEN);

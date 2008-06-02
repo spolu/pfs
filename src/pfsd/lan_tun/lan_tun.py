@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import select
 import sys
 import pybonjour
@@ -66,7 +68,7 @@ class DNSBrowse (Thread):
             s.stop ()
         for n, s in self.services.iteritems():
             s.join ()
-            print n, 'removed'
+            #print n, 'removed'
             
         self.browse_sdRef.close ()
 
@@ -77,18 +79,22 @@ class DNSBrowse (Thread):
         
         if not (flags & pybonjour.kDNSServiceFlagsAdd):
             if not (serviceName == (sd_owner + '.' + sd_name)):
-                self.services[serviceName].stop ()
-                self.services[serviceName].join ()
-                del self.services[serviceName]
-                print serviceName, 'removed'
+                try:
+                    self.services[serviceName].stop ()
+                    self.services[serviceName].join ()
+                    del self.services[serviceName]
+                    #print serviceName, 'removed'
+                except:
+                    pass
             
         else:
             if not (serviceName == (sd_owner + '.' + sd_name)):
-                self.services[serviceName] = SDevice (interfaceIndex,
-                                                      serviceName,
-                                                      regtype,
-                                                      replyDomain)
-                self.services[serviceName].start ()
+                if not self.services.has_key(serviceName):
+                    self.services[serviceName] = SDevice (interfaceIndex,
+                                                          serviceName,
+                                                          regtype,
+                                                          replyDomain)
+                    self.services[serviceName].start ()
         
 
     def stop (self):
@@ -114,19 +120,19 @@ class Connect:
         data = self.s.recv (1)
         while data is not None:
             if data.startswith ('\n'):
-                print '<< ', buffer
+                #print '<< ', buffer
                 return buffer
             if data.startswith ('\r'):
                 data = self.s.recv (1)
-                print '<< ', buffer
+                #print '<< ', buffer
                 return buffer
             buffer += str (data)
             data = self.s.recv (1)
-        print '<< ', buffer
+        #print '<< ', buffer
         return buffer
 
     def writeline (self, str):
-        print '>> ', str
+        #print '>> ', str
         self.s.send (str)
         self.s.send ('\n')
 
@@ -234,8 +240,8 @@ class SDevice (Thread):
             pfsd.writeline (self.remote_sd_id)
             pfsd.writeline (self.remote_sd_owner)
             pfsd.writeline (self.remote_sd_name)
-            pfsd.writeline ('CLOSE')
             ans = pfsd.readline ()
+            pfsd.writeline ('CLOSE')
             pfsd.close ()
             self.onlineSent = True
         except:
@@ -279,7 +285,6 @@ class SDevice (Thread):
                 pfsd.writeline (self.remote_sd_id)
                 ans = pfsd.readline ()
                 pfsd.writeline ('CLOSE')
-                ans = pfsd.readline ()
                 pfsd.close ()
         except:
             pass
@@ -311,21 +316,35 @@ class SDService (Thread):
             if not line == 'OK':
                 self.stop ()
             else:
+                cli = Connect ('', 0)
+                cli.setsock (self.client)
+                cli.writeline ('OK')
                 print 'Connection to tun ', self.remote_sd_id
+                
+            try:
+                while not self.kill:
+                    ready_r = select.select ([self.client, self.tun_sock], [], [], 1)
+                    ready_w = select.select ([], [self.client, self.tun_sock], [], 1)
+                    if (self.client in ready_r[0] and self.tun_sock in ready_w[1]):
+                        data = self.client.recv (4096)
+                        len = self.tun_sock.send (data)
+                    elif (self.tun_sock in ready_r[0] and self.client in ready_w[1]):
+                        data = self.tun_sock.recv (4096)
+                        len = self.client.send (data)
+                    else:
+                        self.stop ()
+                    if (len == 0):
+                        print 'len = 0'
+                        self.stop ()
 
-            while not self.kill:
-                ready = select.select ([self.client, self.tun_sock], [], [], 0.5)
-                if self.client in ready[0]:
-                    data = self.client.recv (4096)
-                    self.tun_sock.send (data)
-                elif self.tun_sock in ready[0]:
-                    data = self.tun_sock.recv (4096)
-                    self.client.send (data)
+            except:
+                pass
         except:
             pass
 
         self.tun_sock.close ()
         self.client.close ()                
+        print 'SDService closed'
 
     def stop (self):
         self.kill = True
@@ -408,23 +427,32 @@ class TUNService (Thread):
                 except:
                     cli.writeline ('FAIL')
                     self.stop ()
-                cli.writeline ('OK')
+                if (not self.kill):
+                    cli.writeline ('OK')
                 
                 try:
                     while not self.kill:
-                        ready = select.select ([self.client, self.pfsd_sock], [], [], 0.5)
-                        if self.client in ready[0]:
+                        ready_r = select.select ([self.client, self.pfsd_sock], [], [], 1)
+                        ready_w = select.select ([], [self.client, self.pfsd_sock], [], 1)
+                        if (self.client in ready_r[0] and self.pfsd_sock in ready_w[1]):
                             data = self.client.recv (4096)
-                            self.pfsd_sock.send (data)
-                        elif self.pfsd_sock in ready[0]:
+                            len = self.pfsd_sock.send (data)
+                        elif (self.pfsd_sock in ready_r[0] and self.client in ready_w[1]):
                             data = self.pfsd_sock.recv (4096)
-                            self.client.send (data)
+                            len = self.client.send (data)
+                        else:
+                            self.stop ()
+                        if (len == 0):
+                            print 'len = 0'
+                            self.stop ()
+
                 except:
                     pass
                 self.pfsd_sock.close ()
         except:
             pass
-        self.client.close ()                
+        self.client.close ()
+        print 'TUNService Closed'
 
     def stop (self):
         self.kill = True
@@ -458,5 +486,5 @@ if __name__ == "__main__":
     for t in threads:
         t.stop ()
         t.join ()
-    
+    exit ()
 

@@ -4,11 +4,7 @@
 #define LAN_CONN 0x01
 #define BTH_CONN 0x02
 
-#define PFSD_PORT 9999
-#define LAN_TUN_SPORT 10000 /* LAN tun start port. */
-#define BTH_TUN_SPORT 10100 /* BTH tun start port. */
-
-#define TIMEOUT 900000
+#define TIMEOUT 500000
 #define LISTENQ 20
 
 
@@ -25,5 +21,6 @@
 #define LIST_SD  "LIST_SD"    /* */
 #define ADD_GRP  "ADD_GRP"    /* grp_id ... */
 #define CREAT_GRP "CREAT_GRP" /* grp_name */
+#define ERROR "ERROR"         /* */
 
 #endif

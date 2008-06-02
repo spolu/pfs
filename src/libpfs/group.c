@@ -264,11 +264,12 @@ pfs_group_add_sd (struct pfs_instance * pfs,
 	/* We check that the sd does not already exist. */
 	next_sd = next_grp->sd;
 	while (next_sd != NULL) {
-	  next_sd = next_sd->next;
 	  if (strncmp (next_sd->sd_id, sd_id, PFS_ID_LEN) == 0) {
+	    printf ("sd already present\n");
 	    pfs_mutex_unlock (&pfs->group_lock);
 	    return 0;	    
 	  }
+	  next_sd = next_sd->next;
 	}
 
 	/* We can add it. */

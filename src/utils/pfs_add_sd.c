@@ -29,6 +29,8 @@ int
 main (int argc, char ** argv)
 {
   char grp_name [PFS_NAME_LEN];
+  char sd_owner [PFS_NAME_LEN];
+  char sd_name [PFS_NAME_LEN];
 
   int pfsd_sd = -1;
   struct hostent *he;
@@ -36,16 +38,20 @@ main (int argc, char ** argv)
   
   char * in_buf;
 
-  if (argc != 2) {
-    printf ("usage : pfs_add_grp grp_name\n");
+  if (argc != 4) {
+    printf ("usage : pfs_add_sd grp_name sd_owner sd_name\n");
     exit (-1);
   }
 
-  if (strlen (argv[1]) > PFS_NAME_LEN - 1) {
-    printf ("grp_name must be %d character max\n", PFS_NAME_LEN - 1);
+  if (strlen (argv[1]) > PFS_NAME_LEN - 1 &&
+      strlen (argv[2]) > PFS_NAME_LEN - 1 &&
+      strlen (argv[3]) > PFS_NAME_LEN - 1) {
+    printf ("grp_name, sd_owner, sd_name must be %d character max\n", PFS_NAME_LEN - 1);
   }
 
   strncpy (grp_name, argv[1], PFS_NAME_LEN);
+  strncpy (sd_owner, argv[2], PFS_NAME_LEN);
+  strncpy (sd_name, argv[3], PFS_NAME_LEN);
   
   /* 
    * We try to connect to the local pfsd server. 
@@ -65,26 +71,29 @@ main (int argc, char ** argv)
 	      sizeof (pfsd_addr)) < 0)
     goto error;
   
-  writeline (pfsd_sd, CREAT_GRP, strlen (CREAT_GRP));
+  writeline (pfsd_sd, ADD_SD, strlen (CREAT_GRP));
   writeline (pfsd_sd, grp_name, strlen (grp_name));
+  writeline (pfsd_sd, sd_owner, strlen (sd_owner));
+  writeline (pfsd_sd, sd_name, strlen (sd_name));
   
   in_buf = readline (pfsd_sd);
   if (in_buf == NULL) goto error;
+  printf ("received : %s\n", in_buf);
   if (strcmp (in_buf, OK) != 0) {
     free (in_buf);
     goto error;
   }
   free (in_buf);
-
-  writeline (pfsd_sd, CLOSE, strlen (CLOSE));
   
+  writeline (pfsd_sd, CLOSE, strlen (CLOSE));
+
   close (pfsd_sd);
 
-  printf ("group %s created.\n", grp_name);
+  printf ("sd %s.%s added to group %s.\n", sd_owner, sd_name,  grp_name);
 
   return 0;
 
  error:
-  printf ("could not create group.\n");
+  printf ("could not add sd.\n");
   return -1;
 }

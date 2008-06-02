@@ -28,25 +28,19 @@
 int 
 main (int argc, char ** argv)
 {
-  char grp_name [PFS_NAME_LEN];
-
   int pfsd_sd = -1;
   struct hostent *he;
   struct sockaddr_in pfsd_addr;
   
   char * in_buf;
+  int sd_cnt;
+  int i;
 
-  if (argc != 2) {
-    printf ("usage : pfs_add_grp grp_name\n");
+  if (argc != 1) {
+    printf ("usage : pfs_list_sd\n");
     exit (-1);
   }
 
-  if (strlen (argv[1]) > PFS_NAME_LEN - 1) {
-    printf ("grp_name must be %d character max\n", PFS_NAME_LEN - 1);
-  }
-
-  strncpy (grp_name, argv[1], PFS_NAME_LEN);
-  
   /* 
    * We try to connect to the local pfsd server. 
    */
@@ -65,9 +59,9 @@ main (int argc, char ** argv)
 	      sizeof (pfsd_addr)) < 0)
     goto error;
   
-  writeline (pfsd_sd, CREAT_GRP, strlen (CREAT_GRP));
-  writeline (pfsd_sd, grp_name, strlen (grp_name));
+  writeline (pfsd_sd, LIST_SD, strlen (CREAT_GRP));
   
+
   in_buf = readline (pfsd_sd);
   if (in_buf == NULL) goto error;
   if (strcmp (in_buf, OK) != 0) {
@@ -76,15 +70,40 @@ main (int argc, char ** argv)
   }
   free (in_buf);
 
-  writeline (pfsd_sd, CLOSE, strlen (CLOSE));
-  
-  close (pfsd_sd);
+  in_buf = readline (pfsd_sd);
+  if (in_buf == NULL) goto error;
+  sd_cnt = atoi (in_buf);
+  free (in_buf);
 
-  printf ("group %s created.\n", grp_name);
+  for (i = 0; i < sd_cnt; i ++) {
+    in_buf = readline (pfsd_sd);
+    if (in_buf == NULL) goto error;
+    //printf ("%s : ", in_buf);
+    free (in_buf);
+
+    in_buf = readline (pfsd_sd);
+    if (in_buf == NULL) goto error;
+    printf ("%s.", in_buf);
+    free (in_buf);
+
+    in_buf = readline (pfsd_sd);
+    if (in_buf == NULL) goto error;
+    printf ("%s ", in_buf);
+    free (in_buf);
+
+    in_buf = readline (pfsd_sd);
+    if (in_buf == NULL) goto error;
+    printf ("(%s)\n", in_buf);
+    free (in_buf);
+  }
+  
+  writeline (pfsd_sd, CLOSE, strlen (CLOSE));
+
+  close (pfsd_sd);
 
   return 0;
 
  error:
-  printf ("could not create group.\n");
+  printf ("could not list sd.\n");
   return -1;
 }

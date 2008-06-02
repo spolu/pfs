@@ -15,11 +15,14 @@ TARGET_PFSD = pfsd
 pfsd: $(pfsd_obj) libpfs
 	$(MAKE) -C $(FUSE)
 	$(CC) $(CFLAGS) -o ../../bin/$(TARGET_PFSD) -lfuse -ldl $(pfsd_obj) $(fuse_obj) ../../lib/libpfs.a 
+	cp lan_tun/lan_tun.py ../../bin/
+	chmod +x ../../bin/lan_tun.py
 
 libpfs:
 	$(MAKE) -C $(LIBPFS)
 
 clean: 
+	@rm -f ../../bin/lan_tun.py
 	@rm -f ../../bin/$(TARGET_PFSD) *.o *~ 
 	@$(MAKE) -C $(FUSE) clean
 	@$(MAKE) -C $(LIBPFS) clean

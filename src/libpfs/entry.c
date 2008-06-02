@@ -158,7 +158,11 @@ pfs_set_entry (struct pfs_instance * pfs,
   /* get struct pfs_dir. */
   dir = pfs_get_dir_cache (pfs, dir_id);
   if (dir == NULL) {
-    return -1;
+    pfs_create_dir_cache_with_id (pfs, dir_id);
+    dir = pfs_get_dir_cache (pfs, dir_id);
+    if (dir == NULL) {    
+      return -1;
+    }
   }
   
   /* Lookup for this entry. */
@@ -172,7 +176,7 @@ pfs_set_entry (struct pfs_instance * pfs,
 
   if (entry != NULL) {
 #ifdef DEBUG
-    printf ("*** PFS_SET_ENTRY %s %d", name, (int) ver->type);
+    printf ("*** PFS_SET_ENTRY %s %d 0x%x", name, (int) ver->type, ver->st_mode);
     printf (" mv : ");
     pfs_print_vv (ver->mv);
     printf (" last_updt : %.2s cs : %d\n", ver->sd_orig, (int) ver->cs);
@@ -186,7 +190,7 @@ pfs_set_entry (struct pfs_instance * pfs,
       if (sv == NULL)
 	goto error;
 #ifdef DEBUG
-      printf ("*** PFS_SET_ENTRY %s %d", name, (int) ver->type);
+      printf ("*** PFS_SET_ENTRY %s %d 0x%x", name, (int) ver->type, ver->st_mode);
       printf (" sv : ");
       pfs_print_vv (sv);
       printf (" mv : ");
@@ -215,18 +219,44 @@ pfs_set_entry (struct pfs_instance * pfs,
     ver_cnt = 1;
   if (entry != NULL) {
     for (i = 0; i < entry->ver_cnt; i ++) {
+      printf ("set_entry comp : ");
+      pfs_print_vv (ver->mv);
+      printf (" ");
+      pfs_print_vv (entry->ver[i]->mv);
+      printf ("\n");
       cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
-      if (cmp_val == 0)
+      if (cmp_val == 0) {
+	if (ver->type == PFS_DEL) {
+	  /*
+	   * we have to replay the insertion so that the update
+	   * is not ignored when retransmitted due to old cs
+	   */
+	  replay_ver = pfs_cpy_ver (entry->ver[i]);
+	  pfs_unlock_dir_cache (pfs, dir);
+	  /* restart */
+	  pfs_reset_gen_vv (pfs, replay_ver);
+	  if ((i = pfs_set_entry (pfs, grp_id, 
+				  dir_id, name, 
+				  0, replay_ver)) < 0) {
+	    pfs_free_ver (replay_ver);
+	    return i;
+	  }
+	  pfs_free_ver (replay_ver);
+	  return 0;
+	}
+	printf ("kept !\n");
 	ver_cnt ++;
+      }
       if (cmp_val == -1) {
 	retval = -2;
 	goto error;
       }
       if (cmp_val == 1 && reclaim) {
+	printf ("not kept !\n");
 	if (entry->ver[i]->type == PFS_DIR) {
-	    /*
-	     * Nothing to do cf. replay in next loop
-	     */
+	  /*
+	   * Nothing to do cf. replay in next loop
+	   */
 	}
       }
       if (cmp_val == 2) {
@@ -234,7 +264,7 @@ pfs_set_entry (struct pfs_instance * pfs,
       }
     }
   }
-
+  
   /* 
    * OKAY ! we commit the new entry. 
    * From now on it's goto done if we're done. 
@@ -258,7 +288,7 @@ pfs_set_entry (struct pfs_instance * pfs,
 	      replay_ver = pfs_cpy_ver (entry->ver[i]);
 	      pfs_unlock_dir_cache (pfs, dir);
 	      /* restart */
-	      pfs_vv_incr (pfs, replay_ver);
+	      pfs_reset_gen_vv (pfs, replay_ver);
 	      if ((i = pfs_set_entry (pfs, grp_id, 
 				      dir_id, name, 
 				      0, replay_ver)) < 0) {
@@ -322,8 +352,10 @@ pfs_set_entry (struct pfs_instance * pfs,
       j ++;
     }
   }
-  new_entry->ver[j] = pfs_cpy_ver (ver); 
-  ASSERT (j == new_entry->ver_cnt - 1);
+  if (ver->type != PFS_DEL) {
+    new_entry->ver[j] = pfs_cpy_ver (ver); 
+    ASSERT (j == new_entry->ver_cnt - 1);
+  }
 
 
   /* Determine new_entry->main_idx. */
@@ -384,7 +416,7 @@ pfs_set_entry (struct pfs_instance * pfs,
   pfs_dirty_dir_cache (pfs, dir_id);
   return 0;
   
- done_no_updt:
+done_no_updt:
   /* Update sync vector. */
   if (pfs_group_updt_sv (pfs, grp_id, pfs->sd_id, ver->mv) != 0)
     goto error;
@@ -700,6 +732,20 @@ int pfs_vv_incr (struct pfs_instance * pfs,
   ver->mv->value[i] = pfs_incr_updt_cnt (pfs);
   strncpy (ver->last_updt, pfs->sd_id, PFS_ID_LEN);
   
+  return 0;
+}
+
+int
+pfs_reset_gen_vv (struct pfs_instance * pfs,
+		  struct pfs_ver * ver)
+{
+  uint64_t cs;
+  pfs_vv_incr (pfs, ver);
+  pfs_mutex_lock (&pfs->info_lock);
+  cs = pfs->updt_cnt;
+  pfs_mutex_unlock (&pfs->info_lock);
+  strncpy (ver->sd_orig, pfs->sd_id, PFS_ID_LEN);
+  ver->cs = cs;
   return 0;
 }
 

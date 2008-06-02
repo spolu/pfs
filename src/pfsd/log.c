@@ -63,7 +63,8 @@ pfsd_updt_log (struct pfsd_state * pfsd)
 	if (strncmp (next->dir_id, updt->dir_id, PFS_ID_LEN) == 0 &&
 	    strncmp (next->name, updt->name, PFS_NAME_LEN) == 0)
 	  {
-	    if (pfs_vv_cmp (next->ver->mv, updt->ver->mv) == -1) {
+	    /* we keep the creation updates. */
+	    if (pfs_vv_cmp (next->ver->mv, updt->ver->mv) == -1 && 0) {
 	      grp_log->log_cnt --;
 	      if (prev == NULL) {
 		grp_log->log = next->next;

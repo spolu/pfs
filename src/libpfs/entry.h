@@ -102,9 +102,10 @@ struct pfs_vv * pfs_vv_merge (struct pfs_instance * pfs,
 int pfs_vv_incr (struct pfs_instance * pfs,
 		 struct pfs_ver * ver);
 
-int
-pfs_gen_vv (struct pfs_instance * pfs,
-	    struct pfs_ver * ver);
+int pfs_gen_vv (struct pfs_instance * pfs,
+		struct pfs_ver * ver);
+int pfs_reset_gen_vv (struct pfs_instance * pfs,
+		      struct pfs_ver * ver);
 
 /* DEBUG OPERATIONS */
 

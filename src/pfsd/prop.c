@@ -73,7 +73,7 @@ show_time (void)
 	if (strncmp (pfs_sd->sd_id, sd->sd_id, PFS_ID_LEN) == 0) {
 	  arg = (struct prop_arg *) malloc (sizeof (struct prop_arg));
 	  strncpy (arg->sd_id, sd->sd_id, PFS_ID_LEN);
-	  strncpy (arg->grp_id, pfs_grp->grp_id, PFS_NAME_LEN);
+	  strncpy (arg->grp_id, pfs_grp->grp_id, PFS_ID_LEN);
 	  arg->tun_port = sd->tun_port;
 	  arg->next = args;
 	  args = arg;
@@ -96,8 +96,9 @@ show_time (void)
    */ 
   
   while (args != NULL) {
-    updater (arg);
+    arg = args;
     args = args->next;
+    updater (arg);
   }
 
   return 0;
@@ -121,6 +122,7 @@ updater (struct prop_arg * prop_arg)
   char grp_id [PFS_ID_LEN];
   char sd_id [PFS_ID_LEN];
   int tun_port;
+  char * in_buf;
 
   int tun_sd = -1;
   struct hostent *he;
@@ -131,13 +133,13 @@ updater (struct prop_arg * prop_arg)
 
   struct pfs_vv * sd_sv = NULL;
 
-  printf ("STARTING UPDATER FOR : %.*s:%.*s\n",
-	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
-
   strncpy (grp_id, prop_arg->grp_id, PFS_ID_LEN);
   strncpy (sd_id, prop_arg->sd_id, PFS_ID_LEN);
   tun_port = prop_arg->tun_port;
   free (prop_arg);
+
+  printf ("STARTING UPDATER FOR : %.*s:%.*s\n",
+	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
   
   if ((tun_sd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     goto error;
@@ -153,6 +155,14 @@ updater (struct prop_arg * prop_arg)
 	      sizeof (tun_addr)) < 0)
     goto error;
   
+  in_buf = readline (tun_sd);
+  if (in_buf == NULL) goto error;
+  if (strcmp (in_buf, OK) != 0) {
+    free (in_buf);
+    goto error;
+  }
+  free (in_buf);
+
   /* Update local status with sd grp_stat. */
 
   if (update_status (tun_sd, grp_id, sd_id) != 0)
@@ -161,7 +171,7 @@ updater (struct prop_arg * prop_arg)
   
   /* Push the non-propagated updates. */
 
-  printf ("PUSHING UPDATES for %.*s:%.*s...",
+  printf ("PUSHING UPDATES for %.*s:%.*s...\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
   
   sd_sv = pfs_group_get_sv (pfsd->pfs, grp_id, sd_id);
@@ -177,15 +187,23 @@ updater (struct prop_arg * prop_arg)
     grp_log = grp_log->next;
   }
   
+  printf ("grp not found\n");
   pfs_mutex_unlock (&pfsd->log_lock);
-  goto error;
+  goto done;
   
  found_grp:
+  printf ("grp found\n");
   log = grp_log->log;
   
   while (log != NULL) {
+    printf ("prop comp : ");
+    pfs_print_vv (sd_sv);
+    printf (" ");
+    pfs_print_vv (log->ver->mv);
+    printf ("\n");
     if (pfs_vv_cmp (sd_sv, log->ver->mv) <= 0)
       {
+	printf ("propapgation !\n");
 	if (net_prop_updt (tun_sd, grp_id, sd_id, log) != 0) {
 	  pfs_mutex_unlock (&pfsd->log_lock);
 	  goto error;
@@ -197,8 +215,15 @@ updater (struct prop_arg * prop_arg)
   
   pfs_mutex_unlock (&pfsd->log_lock);
   
+ done:
+  if (sd_sv != NULL)
+    pfs_free_vv (sd_sv);
+  writeline (tun_sd, CLOSE, strlen (CLOSE));
+  close(tun_sd);
+  return 0;
+
  error:
-  printf ("ERROR DURING TRANSFER WITH %.*s:%.*s...",
+  printf ("ERROR DURING TRANSFER WITH %.*s:%.*s...\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
   if (sd_sv != NULL)
     pfs_free_vv (sd_sv);
@@ -230,9 +255,10 @@ update_status (int tun_sd,
   char * in_buf;
   int cnt;
 
-  printf ("UDPATING STATUS for %.*s:%.*s...",
+  printf ("UDPATING STATUS for %.*s:%.*s...\n",
 	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
  
+  writeline (tun_sd, GRP_STAT, strlen (GRP_STAT));
   writeline (tun_sd, grp_id, PFS_ID_LEN);
  
   in_buf = readline (tun_sd);
@@ -244,31 +270,31 @@ update_status (int tun_sd,
   free (in_buf);
 
   in_buf = readline (tun_sd);
-  if (in_buf != NULL) goto error;
+  if (in_buf == NULL) goto error;
   updt_sd_cnt = atoi (in_buf);
   free (in_buf);
 
   for (i = 0; i < updt_sd_cnt; i ++)
     {
       in_buf = readline (tun_sd);
-      if (in_buf != NULL) goto error;
+      if (in_buf == NULL) goto error;
       strncpy (updt_sd_id, in_buf, PFS_ID_LEN);
       free (in_buf);
 
       memset (updt_sd_owner, 0, PFS_NAME_LEN);
       in_buf = readline (tun_sd);
-      if (in_buf != NULL) goto error;
+      if (in_buf == NULL) goto error;
       strncpy (updt_sd_owner, in_buf, PFS_NAME_LEN);
       free (in_buf);
 
       memset (updt_sd_name, 0, PFS_NAME_LEN);
       in_buf = readline (tun_sd);
-      if (in_buf != NULL) goto error;
+      if (in_buf == NULL) goto error;
       strncpy (updt_sd_name, in_buf, PFS_NAME_LEN);
       free (in_buf);
 
       in_buf = readline (tun_sd);
-      if (in_buf != NULL) goto error;
+      if (in_buf == NULL) goto error;
       cnt = atoi (in_buf);
       free (in_buf);
 
@@ -282,12 +308,12 @@ update_status (int tun_sd,
       for (j = 0; j < cnt; j ++)
 	{
 	  in_buf = readline (tun_sd);
-	  if (in_buf != NULL) goto error;
+	  if (in_buf == NULL) goto error;
 	  strncpy (updt_sv->sd_id[j], in_buf, PFS_ID_LEN);
 	  free (in_buf);
 	  
 	  in_buf = readline (tun_sd);
-	  if (in_buf != NULL) goto error;
+	  if (in_buf == NULL) goto error;
 	  updt_sv->value[j] = atol (in_buf);
 	  free (in_buf);	  
 	}
@@ -300,6 +326,7 @@ update_status (int tun_sd,
     }
   
   printf ("done\n");
+  return 0;
 
  error:
   if (updt_sv != NULL)
@@ -321,7 +348,9 @@ net_prop_updt (int tun_sd,
   struct stat st_buf;
   int fd = -1;
   int len;
-  
+  int b_left;
+  int b_done;
+
   writeline (tun_sd, UPDT, strlen (UPDT));
   net_write_updt (tun_sd, updt);
   
@@ -335,21 +364,35 @@ net_prop_updt (int tun_sd,
 				    updt->ver->dst_id);
       
       if (stat (file_path, &st_buf) != 0)
-	goto error;
-      sprintf (out_buf, "%d\n", (int) st_buf.st_size);
-      writeline (tun_sd, out_buf, strlen (out_buf));
-      
-      if ((fd = open (file_path, O_RDONLY)) < 0)
-	goto error;
-      
-      free (file_path);
-      file_path = NULL;
-      
-      while ((len = readn (fd, out_buf, 4096)) > 0)
-	  writen (tun_sd, out_buf, len);
-     
-      close (fd);
-
+	{
+	  sprintf (out_buf, "%d", 3);
+	  writeline (tun_sd, out_buf, strlen (out_buf));
+	  writen (tun_sd, "DEL", 3);
+	}
+      else
+	{
+	  sprintf (out_buf, "%d", (int) st_buf.st_size);
+	  writeline (tun_sd, out_buf, strlen (out_buf));
+	  
+	  if ((fd = open (file_path, O_RDONLY)) < 0)
+	    goto error;
+	  
+	  free (file_path);
+	  file_path = NULL;
+	  
+	  b_left = (int) st_buf.st_size;
+	  b_done = 0;
+	  while (b_left > 0)
+	    {
+	      len = readn (fd, out_buf, ((b_left > 4096) ? 4096 : b_left));
+	      writen (tun_sd, out_buf, len);
+	      b_done += len;
+	      b_left -= len;
+	    }
+	  
+	  close (fd);
+	}
+	  
       in_buf = readline (tun_sd);
       if (in_buf == NULL) goto error;
       if (strcmp (in_buf, OK) != 0) {

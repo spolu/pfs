@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "pfsd.h"
 #include "fuse/pfs_fuse.h"
@@ -24,20 +25,22 @@ main (int argc, char ** argv)
   pthread_t updt_thread;
   struct pfs_instance * pfs;
   char root_path [PFS_NAME_LEN];  
+  int pfsd_port;
 
-  if (argc <= 2) {
-    printf ("usage : ./pfs root_path [FUSE ARGS]\n");
+  if (argc <= 3) {
+    printf ("usage : ./pfs port root_path [FUSE ARGS]\n");
     exit (1);
   }
 
-  strncpy (root_path, argv[1], PFS_NAME_LEN);
+  pfsd_port = atoi (argv[1]);
+  strncpy (root_path, argv[2], PFS_NAME_LEN);
   pfs = pfs_init (root_path);
-  strncpy (argv[1], argv[0], strlen (argv[1]));
-  argv ++;
-  argc --;
-
+  strncpy (argv[2], argv[0], strlen (argv[1]));
+  argv += 2;
+  argc -= 2;
+    
   pfs_set_updt_cb (pfs, updt_cb);
-  pfsd_init (pfs);
+  pfsd_init (pfs, pfsd_port);
 
   if (pthread_create (&wb_thread, NULL, start_write_back, (void *)0) != 0) {
     printf ("Could not spawn write back thread.\n");
@@ -54,6 +57,24 @@ main (int argc, char ** argv)
     exit (1);
   }  
 
+  
+  char * args[5];
+  args[0] = "lan_tun.py";
+  char str1[PFS_ID_LEN + 1];
+  sprintf (str1, "%.*s", PFS_ID_LEN, pfs->sd_id);
+  args[1] = str1;
+  args[2] = pfs->sd_owner;
+  args[3] = pfs->sd_name;
+  char str2 [10];
+  sprintf (str2, "%d", pfsd_port);
+  args[4] = str2;
+  
+  if ((pfsd->tun_pid = fork ()) == 0) {
+    execl ("./lan_tun.py", args[0], args[1], args[2], args[3], args[4], NULL);
+    exit (0);
+  }
+ 
+  
   fuse_main (argc, argv, &pfs_operations, NULL);
   
   exit (0);
@@ -116,7 +137,7 @@ updt_cb (struct pfs_instance * pfs,
 
 
 int
-pfsd_init (struct pfs_instance * pfs)
+pfsd_init (struct pfs_instance * pfs, int pfsd_port)
 {
   pfsd = (struct pfsd_state *) malloc (sizeof (struct pfsd_state));
 
@@ -125,6 +146,7 @@ pfsd_init (struct pfs_instance * pfs)
   pfs_mutex_init (&pfsd->sd_lock);
 
   pfsd->pfs = pfs;
+  pfsd->pfsd_port = pfsd_port;
 
   pfsd->update = 0;
 
@@ -151,12 +173,17 @@ int pfsd_destroy ()
   pfsd_updt_log (pfsd);
   pfsd_write_back_log (pfsd);
 
+  kill (SIGINT, pfsd->tun_pid);
+
+  sleep (2);
+
   pfs_mutex_destroy (&pfsd->log_lock);
   pfs_mutex_destroy (&pfsd->updt_lock);
   pfs_mutex_destroy (&pfsd->sd_lock);
 
   pfs_destroy (pfsd->pfs);
   
+
   return 0;
 }
 

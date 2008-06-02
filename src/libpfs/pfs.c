@@ -47,7 +47,6 @@ int pfs_open (struct pfs_instance * pfs,
   char * prt_path = NULL;
   char * file_name;
 
-
   if (strlen (path) == 1 && strncmp (path, "/", 1) == 0)
     return -EISDIR;
 
@@ -107,7 +106,7 @@ int pfs_open (struct pfs_instance * pfs,
       strncpy (open_file->grp_id, pi.grp_id, PFS_ID_LEN);
       strncpy (open_file->dir_id, pi.dst_id, PFS_ID_LEN);
       strncpy (open_file->file_name, file_name, PFS_NAME_LEN);
-      open_file->dirty = 2;
+      open_file->dirty = 3;
       pi.is_main = 1;
       pi.st_mode = open_file->ver->st_mode;
 
@@ -378,11 +377,16 @@ int pfs_close (struct pfs_instance * pfs,
   }
 
   if (open_file->dirty == 2) {
-    /*
-     * NOTHING TO DO
-     * The file was created ver is up to date
-     */
   }
+  else if (open_file->dirty == 3) {
+    pfs_vv_incr (pfs, open_file->ver);
+    if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
+		       open_file->file_name, 0, open_file->ver) != 0) {
+      pfs_free_ver (open_file->ver);
+      free (open_file);
+      return -EIO;
+    }
+   }
   else if (open_file->dirty == 1) {
     pfs_vv_incr (pfs, open_file->ver);
     if (pfs_set_entry (pfs, open_file->grp_id, open_file->dir_id, 
@@ -1338,7 +1342,7 @@ int pfs_symlink (struct pfs_instance * pfs,
 	S_IROTH | S_IXOTH | 
 	S_IFLNK;
 
-      if (pfs_set_entry (pfs, pi.grp_id, pi.dir_id,
+      if (pfs_set_entry (pfs, pi.grp_id, pi.dst_id,
 			 file_name, 1, ver) != 0) {
 	retval = -EIO;
 	goto error;
@@ -1398,6 +1402,7 @@ int pfs_link (struct pfs_instance * pfs,
   char * prt_path = NULL;
   char * file_name;
   struct pfs_path_info pi_to;
+
 
   /* First we fetch the "to" dst_id. */
   if (strlen (to) == 1 && strncmp (to, "/", 1) == 0)

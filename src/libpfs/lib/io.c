@@ -96,6 +96,9 @@ readline (int fd)
     return NULL;
   }
   line [len] = 0;
+#ifdef DEBUG
+  printf ("<< %s\n", line);
+#endif
   return line;
 }
 
@@ -105,5 +108,8 @@ writeline (int fd, char *ptr, size_t n)
   size_t r = 0;
   r += writen (fd, ptr, n);
   r += writen (fd, "\n", 1);
+#ifdef DEBUG
+  printf (">> %.*s\n", (int) n, ptr);
+#endif
   return r;
 }

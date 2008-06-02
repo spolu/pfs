@@ -79,7 +79,7 @@ int pfs_destroy_instance (struct pfs_instance * pfs);
 int pfs_write_back_info (struct pfs_instance * pfs);
 
 int pfs_mk_id (struct pfs_instance * pfs, char * id);
-int pfs_incr_updt_cnt (struct pfs_instance * pfs);
+uint64_t pfs_incr_updt_cnt (struct pfs_instance * pfs);
 
 char * pfs_mk_file_path (struct pfs_instance * pfs, const char * id);
 char * pfs_mk_dir_path (struct pfs_instance * pfs, const char * id);
