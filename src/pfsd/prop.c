@@ -400,21 +400,17 @@ net_prop_updt (int tun_sd,
 	      b_done += len;
 	      b_left -= len;
 	      printf ("sent %s : %d / %d\n", updt->name, b_done, b_tot);
+	      in_buf = readline (tun_sd);
+	      if (in_buf == NULL) goto error;
+	      len = atoi (in_buf);
+	      free (in_buf);
+	      printf ("acked %s : %d / %d\n", updt->name, len, b_tot);
 	    }
 	  close (fd);
 	  if (b_left != 0) {
 	    goto error;
 	  }
 	}
-      
-      len = -1;
-      while (len != b_tot && len != 0) {
-	in_buf = readline (tun_sd);
-	if (in_buf == NULL) goto error;
-	len = atoi (in_buf);
-	printf ("acked %s : %d / %d", updt->name, len, b_tot);
-	free (in_buf);
-      }
    
       in_buf = readline (tun_sd);
       if (in_buf == NULL) goto error;
