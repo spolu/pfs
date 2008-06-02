@@ -488,7 +488,11 @@ handle_updt (int cli_sd)
       writen (fd, buf, len);
       b_done += len;
       b_left -= len;
+#ifdef DEBUG
       printf ("received %s : %d / %d\n", updt->name, b_done, b_tot);
+#endif
+      sprintf (buf, "%d", b_done);
+      writeline (cli_sd, buf, strlen (buf));
     }
 
   if (b_left != 0) {

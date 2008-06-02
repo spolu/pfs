@@ -405,6 +405,15 @@ net_prop_updt (int tun_sd,
 	    goto error;
 	  }
 	  
+	  len = 0;
+	  while (len != b_tot) {
+	    in_buf = readline (tun_sd);
+	    if (in_buf == NULL) goto error;
+	    len = atoi (in_buf);
+	    printf ("acked %s : %d / %d", updt->name, len, b_tot);
+	    free (in_buf);
+	  }
+ 
 	  close (fd);
 	}
 	  
