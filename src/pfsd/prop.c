@@ -391,6 +391,7 @@ net_prop_updt (int tun_sd,
 	  b_left = (int) st_buf.st_size;
 	  b_tot = (int) st_buf.st_size;
 	  b_done = 0;
+	  len = 1;
 	  while (b_left > 0 && len > 0)
 	    {
 	      len = readn (fd, out_buf, ((b_left > 4096) ? 4096 : b_left));
