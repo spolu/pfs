@@ -400,12 +400,13 @@ net_prop_updt (int tun_sd,
 	      b_left -= len;
 	      printf ("sent %s : %d / %d\n", updt->name, b_done, b_tot);
 	    }
+	  if (b_left != 0) {
+	    close (fd);
+	    goto error;
+	  }
 	  
 	  close (fd);
 	}
-
-      if (b_left != 0)
-	goto error;
 	  
       in_buf = readline (tun_sd);
       if (in_buf == NULL) goto error;
