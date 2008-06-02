@@ -337,7 +337,7 @@ class SDService (Thread):
                 
                     try:
                         while not self.kill:
-                            ready_r = select.select ([self.client, self.tun_sock], [], [], 1)
+                            ready_r = select.select ([self.client, self.tun_sock], [], [], 10)
                             if (self.client in ready_r[0]):
                                 ready_w = select.select ([], [self.tun_sock], [], 1)
                                 if (self.tun_sock in ready_w[1]):
@@ -457,7 +457,7 @@ class TUNService (Thread):
                 
                 try:
                     while not self.kill:
-                        ready_r = select.select ([self.client, self.pfsd_sock], [], [], 1)
+                        ready_r = select.select ([self.client, self.pfsd_sock], [], [], 10)
                         if (self.client in ready_r[0]):
                             ready_w = select.select ([], [self.pfsd_sock], [], 1)
                             if (self.pfsd_sock in ready_w[1]):

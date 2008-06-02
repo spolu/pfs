@@ -407,8 +407,8 @@ net_prop_updt (int tun_sd,
 	  }
 	}
       
-      len = 0;
-      while (len != b_tot) {
+      len = -1;
+      while (len != b_tot && len != 0) {
 	in_buf = readline (tun_sd);
 	if (in_buf == NULL) goto error;
 	len = atoi (in_buf);
