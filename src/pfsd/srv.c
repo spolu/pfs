@@ -442,7 +442,7 @@ handle_updt (int cli_sd)
   
   /* Do we need data. */
   if (updt->ver->type == PFS_DIR) {
-    pfs_create_dir_with_id (pfsd->pfs, updt->dir_id);
+    pfs_create_dir_with_id (pfsd->pfs, updt->ver->dst_id);
     goto done;
   }
 
