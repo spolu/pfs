@@ -4,8 +4,6 @@ pfsd
 pfs_init
 pfs_add_grp
 back2
-init2.sh
 lan_tun.py
 pfs_add_sd
 pfs_list_sd
-test2.sh
