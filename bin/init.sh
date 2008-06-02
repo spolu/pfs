@@ -5,5 +5,5 @@ rm -Rf back
 rm -Rf pfs
 mkdir back
 mkdir pfs
-./pfs_init back spolu imac
+./pfs_init back spolu macbook
 

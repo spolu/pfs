@@ -1189,8 +1189,8 @@ int pfs_statfs (struct pfs_instance * pfs,
   free (info_path);
 
   buf->f_namemax = PFS_NAME_LEN - 1;
-  buf->f_flag = ST_NOSUID;
-  buf->f_fsid = 0;
+  //buf->f_flag = ST_NOSUID;
+  //buf->f_fsid = 0;
 
   //printf ("PFS_LOG : PFS_STATFS DONE\n");
 

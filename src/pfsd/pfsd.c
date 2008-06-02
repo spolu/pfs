@@ -74,7 +74,6 @@ main (int argc, char ** argv)
     exit (0);
   }
  
-  
   fuse_main (argc, argv, &pfs_operations, NULL);
   
   exit (0);
@@ -173,7 +172,8 @@ int pfsd_destroy ()
   pfsd_updt_log (pfsd);
   pfsd_write_back_log (pfsd);
 
-  kill (SIGINT, pfsd->tun_pid);
+  printf ("sending signal to %d\n", pfsd->tun_pid);
+  kill (pfsd->tun_pid, SIGTSTP);
 
   sleep (2);
 
