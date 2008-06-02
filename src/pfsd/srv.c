@@ -433,6 +433,7 @@ handle_updt (int cli_sd)
   int len;
   int b_done;
   int b_left;
+  int b_tot;
   int fd;
   char buf[4096];
   int retval;
@@ -480,19 +481,21 @@ handle_updt (int cli_sd)
   
   b_left = len;
   b_done = 0;
-  while (b_left > 0)
+  b_tot = len;
+  while (b_left > 0 && len > 0)
     {
-      printf ("received %s : %d / %d\n", updt->name, b_done, len);
       len = read (cli_sd, buf, ((b_left > 4096) ? 4096 : b_left));
-      if (len == -1) {
-	close (fd);
-	unlink (file_path);
-	goto error;
-      }
       writen (fd, buf, len);
       b_done += len;
       b_left -= len;
+      printf ("received %s : %d / %d\n", updt->name, b_done, b_tot);
     }
+
+  if (b_left != 0) {
+    close (fd);
+    unlink (file_path);
+    goto error;
+  }
 
   close (fd);
   free (file_path);

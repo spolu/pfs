@@ -357,6 +357,7 @@ net_prop_updt (int tun_sd,
   int len;
   int b_left;
   int b_done;
+  int b_tot;
 
   writeline (tun_sd, UPDT, strlen (UPDT));
   net_write_updt (tun_sd, updt);
@@ -388,18 +389,22 @@ net_prop_updt (int tun_sd,
 	  file_path = NULL;
 	  
 	  b_left = (int) st_buf.st_size;
+	  b_tot = (int) st_buf.st_size;
 	  b_done = 0;
-	  while (b_left > 0)
+	  while (b_left > 0 && len > 0)
 	    {
-	      printf ("sent %s : %d / %d\n", updt->name, b_done, (int) st_buf.st_size);
 	      len = readn (fd, out_buf, ((b_left > 4096) ? 4096 : b_left));
 	      writen (tun_sd, out_buf, len);
 	      b_done += len;
 	      b_left -= len;
+	      printf ("sent %s : %d / %d\n", updt->name, b_done, b_tot);
 	    }
 	  
 	  close (fd);
 	}
+
+      if (b_left != 0)
+	goto error;
 	  
       in_buf = readline (tun_sd);
       if (in_buf == NULL) goto error;
