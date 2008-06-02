@@ -263,7 +263,6 @@ handle_grp_stat (int cli_sd)
 
  done:
   pfs_mutex_unlock (&pfsd->pfs->group_lock);
-  pfsd->update = 1;
   return 0;
  error:
   return -1;
