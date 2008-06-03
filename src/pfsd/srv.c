@@ -506,12 +506,13 @@ handle_updt (int cli_sd)
   file_path = NULL;
   
  done:
-  if ((retval = pfs_set_entry (pfsd->pfs,
-			       updt->grp_id,
-			       updt->dir_id,
-			       updt->name,
-			       updt->reclaim,
-			       updt->ver, 1)) != 0) {
+  retval = pfs_set_entry (pfsd->pfs,
+			  updt->grp_id,
+			  updt->dir_id,
+			  updt->name,
+			  updt->reclaim,
+			  updt->ver, 1);
+  if (retval != 0 && retval != -2) {
     printf ("PFS_SET_ENTRY failed with value %d\n", retval);
     goto error;
   }
