@@ -27,17 +27,14 @@ main (int argc, char ** argv)
   char root_path [PFS_NAME_LEN];  
   int pfsd_port;
 
-  if (argc <= 3) {
-    printf ("usage : ./pfs port root_path [FUSE ARGS]\n");
+  if (argc != 4) {
+    printf ("usage : ./pfsd port root_path dest_path\n");
     exit (1);
   }
 
   pfsd_port = atoi (argv[1]);
   strncpy (root_path, argv[2], PFS_NAME_LEN);
   pfs = pfs_init (root_path);
-  strncpy (argv[2], argv[0], strlen (argv[1]));
-  argv += 2;
-  argc -= 2;
     
   pfs_set_updt_cb (pfs, updt_cb);
   pfsd_init (pfs, pfsd_port);
@@ -58,13 +55,15 @@ main (int argc, char ** argv)
   }  
 
   
+  /* Starting TUN. */
+
   char * args[5];
   args[0] = "lan_tun.py";
+  args[2] = pfs->sd_owner;
+  args[3] = pfs->sd_name;
   char str1[PFS_ID_LEN + 1];
   sprintf (str1, "%.*s", PFS_ID_LEN, pfs->sd_id);
   args[1] = str1;
-  args[2] = pfs->sd_owner;
-  args[3] = pfs->sd_name;
   char str2 [10];
   sprintf (str2, "%d", pfsd_port);
   args[4] = str2;
@@ -73,8 +72,26 @@ main (int argc, char ** argv)
     execl ("./lan_tun.py", args[0], args[1], args[2], args[3], args[4], NULL);
     exit (0);
   }
+
+  /* Starting FUSE. */
+
+  char * fuse_args [9];
+  int fuse_argc = 9;
+  fuse_args[0] = "./pfsd";
+  fuse_args[1] = argv[3];
+  fuse_args[2] = "-f";
+  fuse_args[3] = "-o";
+  fuse_args[4] = (char *) malloc (strlen (pfs->sd_owner) +
+				  strlen (pfs->sd_name) +
+				  20);
+  sprintf (fuse_args[4], "volname=pFS.%s.%s", pfs->sd_owner, pfs->sd_name);
+  fuse_args[5] = "-o";
+  fuse_args[6] = "defer_permissions";
+  fuse_args[7] = "-o";
+  fuse_args[8] = "nolocalcaches";
  
-  fuse_main (argc, argv, &pfs_operations, NULL);
+
+  fuse_main (fuse_argc, fuse_args, &pfs_operations, NULL);
   
   exit (0);
 }
