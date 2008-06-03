@@ -102,10 +102,6 @@ handle_client (void * sd_arg)
   cli_sd = ((struct sd_arg *) sd_arg)->sd;
   free (sd_arg);
 
-#ifdef DEBUG
-  printf ("*** HANDLE_CLIENT : new client\n");
-#endif
-
   while (1) {
 
     /* Handle timeouts. */
@@ -131,17 +127,11 @@ handle_client (void * sd_arg)
     }
     
     else if (strcmp (ONLINE, buf) == 0) {
-#ifdef DEBUG
-      printf ("*** HANDLE_CLIENT : cmd %s\n", ONLINE);
-#endif
       if (handle_online (cli_sd) != 0)
 	goto error;
     }
 
     else if (strcmp (OFFLINE, buf) == 0) {
-#ifdef DEBUG
-      printf ("*** HANDLE_CLIENT : cmd %s\n", OFFLINE);
-#endif
       if (handle_offline (cli_sd) != 0)
 	goto error;
     }
@@ -196,11 +186,11 @@ handle_client (void * sd_arg)
   
  error:
   writeline (cli_sd, ERROR, strlen (ERROR));
+#ifdef DEBUG
+  printf ("*** ERROR\n");
+#endif
   close (cli_sd);  
  done:
-#ifdef DEBUG
-  printf ("*** HANDLE_CLIENT : client closed\n");
-#endif
   return 0;
 }
 
@@ -437,6 +427,7 @@ handle_updt (int cli_sd)
   char buf[4096];
   int retval;
   struct stat st_buf;
+  int progress;
 
   updt = net_read_updt (cli_sd);
   if (updt == NULL)
@@ -482,15 +473,20 @@ handle_updt (int cli_sd)
   b_done = 0;
   b_tot = len;
   len = 1;
+  progress = 0;
   while (b_left > 0 && len > 0)
     {
       len = read (cli_sd, buf, ((b_left > 4096) ? 4096 : b_left));
       writen (fd, buf, len);
       b_done += len;
       b_left -= len;
+      if (((b_done * 100) / b_tot) >= (progress + 10) ||
+	  ((b_done * 100) / b_tot) == 100) {
+	progress = (b_done * 100) / b_tot;
 #ifdef DEBUG
-      printf ("received %s : %d / %d\n", updt->name, b_done, b_tot);
+	printf ("*** RCVD %s : %d/100\n", updt->name, progress);
 #endif
+      }
       sprintf (buf, "%d", b_done);
       writeline (cli_sd, buf, strlen (buf));
     }
@@ -513,7 +509,6 @@ handle_updt (int cli_sd)
 			  updt->reclaim,
 			  updt->ver, 1);
   if (retval != 0 && retval != -2) {
-    printf ("PFS_SET_ENTRY failed with value %d\n", retval);
     goto error;
   }
 
@@ -586,14 +581,11 @@ handle_add_sd (int cli_sd)
 
   pfs_mutex_lock (&pfsd->sd_lock);
   sd = pfsd->sd;
-  printf ("Search %s.%s\n", sd_owner, sd_name);
   while (sd != NULL)
     {
-      printf ("Compare %s.%s\n", sd->sd_owner, sd->sd_name);
       if (strncmp (sd_owner, sd->sd_owner, PFS_NAME_LEN) == 0 &&
 	  strncmp (sd_name, sd->sd_name, PFS_NAME_LEN) == 0 &&
 	  sd->tun_conn < tun_conn) {
-	printf ("Found %s.%s %d\n", sd_owner, sd_name, sd->tun_port);
 	tun_port = sd->tun_port;
 	tun_conn = sd->tun_conn;
 	strncpy (sd_id, sd->sd_id, PFS_ID_LEN);

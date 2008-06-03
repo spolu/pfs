@@ -139,8 +139,8 @@ updater (struct prop_arg * prop_arg)
   free (prop_arg);
 
 #ifdef DEBUG
-  printf ("STARTING UPDATER FOR : %.*s:%.*s\n",
-	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
+  printf ("UPDATING : %.*s (%.2s)\n",
+	  PFS_ID_LEN, sd_id, grp_id);
 #endif
   
   if ((tun_sd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
@@ -163,7 +163,7 @@ updater (struct prop_arg * prop_arg)
     if (strcmp (in_buf, "FAIL") == 0) {
       free (in_buf);
 #ifdef DEBUG
-      printf ("SD OFFLINE\n");
+      printf ("*** SD OFFLINE\n");
 #endif
       goto done;
     }
@@ -179,11 +179,6 @@ updater (struct prop_arg * prop_arg)
   
   
   /* Push the non-propagated updates. */
-
-#ifdef DEBUG
-  printf ("PUSHING UPDATES for %.*s:%.*s...\n",
-	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
-#endif
   
   sd_sv = pfs_group_get_sv (pfsd->pfs, grp_id, sd_id);
   if (sd_sv == NULL)
@@ -198,12 +193,10 @@ updater (struct prop_arg * prop_arg)
     grp_log = grp_log->next;
   }
   
-  printf ("grp not found\n");
   pfs_mutex_unlock (&pfsd->log_lock);
   goto done;
   
  found_grp:
-  printf ("grp found\n");
   log = grp_log->log;
   
   while (log != NULL) {
@@ -229,8 +222,8 @@ updater (struct prop_arg * prop_arg)
 
  error:
 #ifdef DEBUG
-  printf ("ERROR DURING TRANSFER WITH %.*s:%.*s...\n",
-	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
+  printf ("*** ERROR DURING UPDATE %.*s (%.2s)\n",
+	  PFS_ID_LEN, sd_id, grp_id);
 #endif
   if (sd_sv != NULL)
     pfs_free_vv (sd_sv);
@@ -261,9 +254,6 @@ update_status (int tun_sd,
   struct pfs_vv * updt_sv = NULL;
   char * in_buf;
   int cnt;
-
-  printf ("UDPATING STATUS for %.*s:%.*s...\n",
-	  PFS_ID_LEN, grp_id, PFS_ID_LEN, sd_id);
  
   writeline (tun_sd, GRP_STAT, strlen (GRP_STAT));
   writeline (tun_sd, grp_id, PFS_ID_LEN);
@@ -332,7 +322,6 @@ update_status (int tun_sd,
       pfs_free_vv (updt_sv);
     }
   
-  printf ("done\n");
   return 0;
 
  error:
@@ -359,6 +348,7 @@ net_prop_updt (int tun_sd,
   int b_done;
   int b_tot;
   int ack;
+  int progress;
 
   writeline (tun_sd, UPDT, strlen (UPDT));
   net_write_updt (tun_sd, updt);
@@ -372,18 +362,27 @@ net_prop_updt (int tun_sd,
       file_path = pfs_mk_file_path (pfsd->pfs,
 				    updt->ver->dst_id);
       
+      progress = 0;
       if (stat (file_path, &st_buf) != 0)
 	{
 	  sprintf (out_buf, "%d", 3);
 	  writeline (tun_sd, out_buf, strlen (out_buf));
 	  writen (tun_sd, "DEL", 3);
-	  printf ("sent %s : %d / %d\n", updt->name, 3, 3);
 	  b_tot = 3;
-	  in_buf = readline (tun_sd);
-	  if (in_buf == NULL) goto error;
-	  len = atoi (in_buf);
-	  free (in_buf);
-	  printf ("acked %s : %d / %d\n", updt->name, 3, b_tot);
+	  ack = -1;
+	  while (ack != 0 && ack != b_tot) {
+	    in_buf = readline (tun_sd);
+	    if (in_buf == NULL) goto error;
+	    ack = atoi (in_buf);
+	    free (in_buf);
+	  }
+	  if (((ack * 100) / b_tot) >= (progress + 10) ||
+	      ((ack * 100) / b_tot) == 100) {
+	    progress = (ack * 100) / b_tot;
+#ifdef DEBUG
+	    printf ("*** SENT %s : %d/100\n", updt->name, progress);
+#endif
+	  }
 	}
       else
 	{
@@ -400,20 +399,26 @@ net_prop_updt (int tun_sd,
 	  b_tot = (int) st_buf.st_size;
 	  b_done = 0;
 	  len = 1;
+	  progress = 0;
 	  while (b_left > 0 && len > 0)
 	    {
 	      len = readn (fd, out_buf, ((b_left > 4096) ? 4096 : b_left));
 	      writen (tun_sd, out_buf, len);
 	      b_done += len;
 	      b_left -= len;
-	      printf ("sent %s : %d / %d\n", updt->name, b_done, b_tot);
+	      if (((b_done * 100) / b_tot) >= (progress + 10) ||
+		  ((b_done * 100) / b_tot) == 100) {
+		progress = (b_done * 100) / b_tot;
+#ifdef DEBUG
+		printf ("*** SENT %s : %d/100\n", updt->name, progress);
+#endif
+	      }
 	      ack = -1;
 	      while (ack != 0 && ack != b_done) {
 		in_buf = readline (tun_sd);
 		if (in_buf == NULL) goto error;
 		ack = atoi (in_buf);
 		free (in_buf);
-		printf ("acked %s : %d / %d\n", updt->name, ack, b_tot);
 	      }
 	    }
 	  close (fd);

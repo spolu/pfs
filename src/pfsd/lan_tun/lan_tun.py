@@ -256,7 +256,7 @@ class SDevice (Thread):
         except:
             self.stop ()
 
-        print 'Starting SDServer on port ', self.local_port, ' kill : ', self.kill
+        #print 'Starting SDServer on port ', self.local_port, ' kill : ', self.kill
         while not self.kill:
             ready = select.select ([srv_sock], [], [], 1)
             if srv_sock in ready[0]:
@@ -302,7 +302,7 @@ class SDService (Thread):
         self.remote_ip = ip
         self.remote_port = port
         self.remote_sd_id = sd_id
-        print 'SDService from ', address
+        print 'SDService : FROM ', self.address
 
     def run (self):        
         global pfsd_port
@@ -333,7 +333,7 @@ class SDService (Thread):
                     cli = Connect ('', 0)
                     cli.setsock (self.client)
                     cli.writeline ('OK')
-                    print 'Connection to tun ', self.remote_sd_id
+                    #print 'Connection to tun ', self.remote_sd_id
                 
                     try:
                         while not self.kill:
@@ -344,7 +344,7 @@ class SDService (Thread):
                                     data = self.client.recv (4096)
                                     len = self.tun_sock.send (data)
                                 else:
-                                    print 'not ready 1'
+                                    print 'SDService : ERROR 1'
                                     self.stop ()
                             elif (self.tun_sock in ready_r[0]):
                                 ready_w = select.select ([], [self.client], [], 1)
@@ -352,13 +352,12 @@ class SDService (Thread):
                                     data = self.tun_sock.recv (4096)
                                     len = self.client.send (data)
                                 else:
-                                    print 'not ready 2'
+                                    print 'SDService : ERROR 2'
                                     self.stop ()
                             else:
-                                print 'not ready 3'
+                                print 'SDService : ERROR 3'
                                 self.stop ()
                             if (len == 0):
-                                print 'len = 0'
                                 self.stop ()
 
                     except:
@@ -368,7 +367,7 @@ class SDService (Thread):
 
         self.tun_sock.close ()
         self.client.close ()                
-        print 'SDService closed'
+        print 'SDService : CLOSE ', self.address
 
     def stop (self):
         self.kill = True
@@ -399,7 +398,7 @@ class TUNServer(Thread):
         except:
             self.stop ()
 
-        print 'Starting TUNServer on port ', tun_port, ' kill : ', self.kill
+        #print 'Starting TUNServer on port ', tun_port, ' kill : ', self.kill
         while not self.kill:
             ready = select.select ([srv_sock], [], [], 1)
             if srv_sock in ready[0]:
@@ -427,7 +426,7 @@ class TUNService (Thread):
         self.kill = False
         self.client = client
         self.address = address
-        print 'TUNService from ', address
+        print 'TUNService : FROM ', self.address
 
     def run (self):
         global sd_id
@@ -464,7 +463,7 @@ class TUNService (Thread):
                                 data = self.client.recv (4096)
                                 len = self.pfsd_sock.send (data)
                             else:
-                                print 'not ready 1'
+                                print 'TUNService : ERROR 1'
                                 self.stop ()
                         elif (self.pfsd_sock in ready_r[0]):
                             ready_w = select.select ([], [self.client], [], 1)
@@ -472,13 +471,12 @@ class TUNService (Thread):
                                 data = self.pfsd_sock.recv (4096)
                                 len = self.client.send (data)
                             else:
-                                print 'not ready 2'
+                                print 'TUNService : ERROR 2'
                                 self.stop ()
                         else:
-                            print 'not ready 3'
+                            print 'TUNService : ERROR 3'
                             self.stop ()
                         if (len == 0):
-                            print 'len = 0'
                             self.stop ()
                 except:
                     pass
@@ -486,7 +484,7 @@ class TUNService (Thread):
         except:
             pass
         self.client.close ()
-        print 'TUNService Closed'
+        print 'TUNService : CLOSE ', self.address
 
     def stop (self):
         self.kill = True

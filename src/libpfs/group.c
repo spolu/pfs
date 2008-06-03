@@ -183,10 +183,6 @@ pfs_group_updt_sv (struct pfs_instance * pfs,
 	      pfs->grp_dirty = 1;
 	      pfs_mutex_unlock (&pfs->group_lock);
 	      
-	      printf ("*** UPDT_SV : %.2s sd : ", next_sd->sd_id);
-	      pfs_print_vv (next_sd->sd_sv);
-	      printf ("\n");
-
 	      return 0;
 	    }
 	    next_sd = next_sd->next;
@@ -265,7 +261,6 @@ pfs_group_add_sd (struct pfs_instance * pfs,
 	next_sd = next_grp->sd;
 	while (next_sd != NULL) {
 	  if (strncmp (next_sd->sd_id, sd_id, PFS_ID_LEN) == 0) {
-	    printf ("sd already present\n");
 	    pfs_mutex_unlock (&pfs->group_lock);
 	    return 0;	    
 	  }

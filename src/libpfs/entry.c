@@ -220,11 +220,6 @@ pfs_set_entry (struct pfs_instance * pfs,
     ver_cnt = 1;
   if (entry != NULL) {
     for (i = 0; i < entry->ver_cnt; i ++) {
-      printf ("set_entry comp : ");
-      pfs_print_vv (ver->mv);
-      printf (" ");
-      pfs_print_vv (entry->ver[i]->mv);
-      printf ("\n");
       cmp_val = pfs_vv_cmp (ver->mv, entry->ver[i]->mv);
       if (cmp_val == 0) {
 	if (ver->type == PFS_DEL) {
@@ -245,7 +240,6 @@ pfs_set_entry (struct pfs_instance * pfs,
 	  pfs_free_ver (replay_ver);
 	  return 0;
 	}
-	printf ("kept !\n");
 	ver_cnt ++;
       }
       if (cmp_val == -1) {
@@ -253,7 +247,6 @@ pfs_set_entry (struct pfs_instance * pfs,
 	goto error;
       }
       if (cmp_val == 1 && reclaim) {
-	printf ("not kept !\n");
 	if (entry->ver[i]->type == PFS_DIR) {
 	  /*
 	   * Nothing to do cf. replay in next loop
