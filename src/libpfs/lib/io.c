@@ -10,8 +10,8 @@
 size_t
 readn (int fd, void *vptr, size_t n)
 {
-  size_t nleft;
-  size_t nread;
+  ssize_t nleft;
+  ssize_t nread;
   char *ptr;
 
   ptr = vptr;
@@ -50,7 +50,6 @@ writen (int fd, const void *vptr, size_t n)
     }
     if (nwritten < 0)
       return -1;
-    printf ("writen : nwritten : %d\n", (int) nwritten);
     nleft -= nwritten;
     ptr += nwritten;
   }
