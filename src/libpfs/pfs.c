@@ -163,11 +163,13 @@ int pfs_open (struct pfs_instance * pfs,
 	  if (pfs_file_link_new_id (pfs, pi.dst_id, open_file->id) != 0 ||
 	      (prt_path = pfs_mk_file_path (pfs, open_file->id)) == NULL ||
 	      (open_file->fd = open (prt_path, flags)) < 0) {
-	    if (open_file->fd < 0)
+	    if (open_file->fd < 0) {
 	      retval = open_file->fd;
-	    else
+	    }
+	    else {
 	      retval = -EIO;
-	    goto error;
+	    }
+	    goto error;	    
 	  }
 	  open_file->dirty = 0;
 	}
@@ -178,8 +180,9 @@ int pfs_open (struct pfs_instance * pfs,
 	     (open_file->fd = open (prt_path, flags)) < 0) {
 	    if (open_file->fd < 0)
 	      retval = open_file->fd;
-	    else
+	    else {
 	      retval = -EIO;
+	    }
 	    goto error;
 	  }
 	  open_file->dirty = 2;

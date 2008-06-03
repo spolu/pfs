@@ -325,13 +325,13 @@ int pfs_create_dir_cache (struct pfs_instance * pfs,
 
   dir_path = pfs_mk_dir_path (pfs, val->dir->id);
   if ((fd = open (dir_path, 
-		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT,
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT)) < 0) {
     free (dir_path);
     pfs_free_pdce (val);
     return -EIO;
   }  
   free (dir_path);
+  fchmod (fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
   flock (fd, LOCK_EX);
   pfs_write_dir (fd, val->dir);
@@ -383,13 +383,13 @@ int pfs_create_dir_cache_with_id (struct pfs_instance * pfs,
 
   dir_path = pfs_mk_dir_path (pfs, val->dir->id);
   if ((fd = open (dir_path, 
-		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT,
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		  O_WRONLY|O_APPEND|O_TRUNC|O_CREAT)) < 0) {
     free (dir_path);
     pfs_free_pdce (val);
     return -EIO;
   }  
   free (dir_path);
+  fchmod (fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
   flock (fd, LOCK_EX);
   pfs_write_dir (fd, val->dir);

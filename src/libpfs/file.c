@@ -31,8 +31,8 @@ pfs_file_link_new_id (struct pfs_instance * pfs,
 		      const char * file_id,
 		      char * new_id)
 {
-  char * file_path;
-  char * new_file_path;
+  char * file_path = NULL;
+  char * new_file_path = NULL;
 
   pfs_mk_id (pfs, new_id);
 
@@ -42,11 +42,19 @@ pfs_file_link_new_id (struct pfs_instance * pfs,
   if (link (file_path, new_file_path) != 0) {
     free (file_path);
     free (new_file_path);
-    return -errno;
+    file_path = NULL;
+    new_file_path = NULL;
+
+  /* file system does not support links we copy the file. */
+    if (pfs_file_copy_id (pfs, file_id, new_id) < 0) {      
+      return -errno;
+    }
   }
   
-  free (file_path);
-  free (new_file_path);
+  if (file_path != NULL)
+    free (file_path);
+  if (new_file_path != NULL)
+    free (new_file_path);
   return 0;
 }
 
@@ -96,11 +104,11 @@ pfs_file_create (struct pfs_instance * pfs,
   file_path = pfs_mk_file_path (pfs, id);
 
   if ((fd = open (file_path, 
-		  flags, 
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		  flags)) < 0) {
     free (file_path);
     return -errno;
   }  
+  fchmod (fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
   free (file_path);
 
@@ -139,13 +147,13 @@ pfs_file_copy_id (struct pfs_instance * pfs,
   }
     
   if ((fd_to = open (new_file_path, 
-		     O_CREAT | O_WRONLY | O_APPEND,
-		     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		     O_CREAT | O_WRONLY | O_APPEND)) < 0) {
     close (fd_from);
     free (file_path);
     free (new_file_path);
     return -errno;
   }
+  fchmod (fd_to, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   
   while ((len = readn (fd_from, buf, 4096)) > 0) {
     writen (fd_to, buf, len);

@@ -465,9 +465,9 @@ handle_updt (int cli_sd)
   free (in_buf);
   
   if ((fd = open (file_path, 
-		  O_CREAT | O_WRONLY | O_APPEND | O_TRUNC, 
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+		  O_CREAT | O_WRONLY | O_APPEND | O_TRUNC)) < 0)
     goto error;
+  fchmod (fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   
   b_left = len;
   b_done = 0;
