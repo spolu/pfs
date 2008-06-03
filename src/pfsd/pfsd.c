@@ -115,6 +115,12 @@ updt_cb (struct pfs_instance * pfs,
 {
   struct pfs_updt * new_updt;
   struct pfs_updt * next;
+
+  if (updt == NULL) {
+    pfsd->update = 1;
+    return 0;
+  }
+
   new_updt = pfs_cpy_updt (updt);
   
   pfs_mutex_lock (&pfsd->updt_lock);

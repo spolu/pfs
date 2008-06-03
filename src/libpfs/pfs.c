@@ -264,6 +264,9 @@ ssize_t pfs_pwrite (struct pfs_instance * pfs,
   if (lseek (open_file->fd, offset, SEEK_SET) != offset ||
       (lenw = write (open_file->fd, buf, len)) < 0)
     return -errno;
+
+  if (pfs->updt_cb != NULL)
+    pfs->updt_cb (pfs, NULL);
   
   return lenw;
 }
@@ -331,6 +334,9 @@ int pfs_fsync (struct pfs_instance * pfs,
   
   if (open_file->dirty == 2)
     retval = pfs_write_back_dir_cache (pfs, open_file->dir_id);
+
+  if (pfs->updt_cb != NULL)
+    pfs->updt_cb (pfs, NULL);
   
   return retval;
 }
@@ -522,6 +528,9 @@ int pfs_ftruncate (struct pfs_instance * pfs,
   
   if (ftruncate (open_file->fd, (off_t) len) < 0)
     return -errno;
+
+  if (pfs->updt_cb != NULL)
+    pfs->updt_cb (pfs, NULL);
 
   return 0;
 }
