@@ -23,7 +23,6 @@
 #include "../libpfs/pfs.h"
 #include "../libpfs/lib/io.h"
 
-#define PFSD_PORT 9999
 
 int 
 main (int argc, char ** argv)
@@ -36,23 +35,25 @@ main (int argc, char ** argv)
   struct hostent *he;
   struct sockaddr_in pfsd_addr;
   
+  unsigned short pfsd_port;
   char * in_buf;
 
-  if (argc != 4) {
-    printf ("usage : pfs_add_sd grp_name sd_owner sd_name\n");
+  if (argc != 5) {
+    printf ("usage : pfs_add_sd port grp_name sd_owner sd_name\n");
     exit (-1);
   }
 
-  if (strlen (argv[1]) > PFS_NAME_LEN - 1 &&
-      strlen (argv[2]) > PFS_NAME_LEN - 1 &&
-      strlen (argv[3]) > PFS_NAME_LEN - 1) {
+  if (strlen (argv[2]) > PFS_NAME_LEN - 1 &&
+      strlen (argv[3]) > PFS_NAME_LEN - 1 &&
+      strlen (argv[4]) > PFS_NAME_LEN - 1) {
     printf ("grp_name, sd_owner, sd_name must be %d character max\n", PFS_NAME_LEN - 1);
   }
 
-  strncpy (grp_name, argv[1], PFS_NAME_LEN);
-  strncpy (sd_owner, argv[2], PFS_NAME_LEN);
-  strncpy (sd_name, argv[3], PFS_NAME_LEN);
-  
+  strncpy (grp_name, argv[2], PFS_NAME_LEN);
+  strncpy (sd_owner, argv[3], PFS_NAME_LEN);
+  strncpy (sd_name, argv[4], PFS_NAME_LEN);
+  pfsd_port = atoi (argv[1]);
+
   /* 
    * We try to connect to the local pfsd server. 
    */
@@ -64,7 +65,7 @@ main (int argc, char ** argv)
   
   bzero (&pfsd_addr, sizeof (pfsd_addr));
   pfsd_addr.sin_family = AF_INET;
-  pfsd_addr.sin_port = htons (PFSD_PORT);
+  pfsd_addr.sin_port = htons (pfsd_port);
   pfsd_addr.sin_addr = *((struct in_addr *) he->h_addr);
   
   if (connect(pfsd_sd, (struct sockaddr *)&pfsd_addr,

@@ -69,7 +69,7 @@ main (int argc, char ** argv)
   args[4] = str2;
   
   if ((pfsd->tun_pid = fork ()) == 0) {
-    execl ("./lan_tun.py", args[0], args[1], args[2], args[3], args[4], NULL);
+    execlp ("lan_tun.py", args[0], args[1], args[2], args[3], args[4], NULL);
     exit (0);
   }
 

@@ -23,8 +23,6 @@
 #include "../libpfs/pfs.h"
 #include "../libpfs/lib/io.h"
 
-#define PFSD_PORT 9999
-
 int 
 main (int argc, char ** argv)
 {
@@ -35,11 +33,14 @@ main (int argc, char ** argv)
   char * in_buf;
   int sd_cnt;
   int i;
+  unsigned short pfsd_port;
 
-  if (argc != 1) {
-    printf ("usage : pfs_list_sd\n");
+  if (argc != 2) {
+    printf ("usage : pfs_list_sd port\n");
     exit (-1);
   }
+
+  pfsd_port = atoi (argv[1]);
 
   /* 
    * We try to connect to the local pfsd server. 
@@ -52,7 +53,7 @@ main (int argc, char ** argv)
   
   bzero (&pfsd_addr, sizeof (pfsd_addr));
   pfsd_addr.sin_family = AF_INET;
-  pfsd_addr.sin_port = htons (PFSD_PORT);
+  pfsd_addr.sin_port = htons (pfsd_port);
   pfsd_addr.sin_addr = *((struct in_addr *) he->h_addr);
   
   if (connect(pfsd_sd, (struct sockaddr *)&pfsd_addr,
